@@ -1,14 +1,13 @@
 # Continuar en Claude Code (VS Code) con Spec Kit
 
-Guía para retomar el trabajo en local. El repo queda en `~/py/jano`; la cuenta AWS es la de Fenora y el perfil local es `fintrack-dev`.
+Guía para retomar el trabajo en local. El repo queda en `~/py/jano`; la cuenta AWS es la de Fenora y Cardea y el perfil local es `fintrack-dev`.
 
 ## 1. Preparar el entorno (una vez)
 
 ```bash
-cd ~/py
-git clone git@github.com:andres-mejia/jano.git
-cd jano
-git checkout feat/mvp-scaffold          # mientras no esté fusionada
+cd ~/py/jano
+git fetch origin && git checkout main && git pull
+git checkout docs/lineamiento-cardea     # mientras no esté fusionada
 
 corepack enable && corepack prepare pnpm@10.4.0 --activate
 pnpm install
@@ -32,42 +31,51 @@ Tras `specify init`, Claude Code tendrá los comandos `/speckit.constitution`, `
 |---|---|
 | `AGENTS.md`, `CLAUDE.md` | Constitución del repo y adaptador para Claude Code |
 | `.specify/memory/constitution.md` | Constitución para Spec Kit (derivada de `AGENTS.md`) |
-| `specs/001-base-monorepo` | Implementada en `feat/mvp-scaffold`: landing, app con mocks, contrato, dominio, CI |
-| `specs/002-infra-dev-aws` | spec + plan + tasks: la siguiente feature |
+| `specs/001-base-monorepo` | Implementada y en `main`: landing, app con mocks, contrato, dominio, CI |
+| `specs/002-infra-dev-aws` | spec + plan + tasks con todas las decisiones tomadas: la siguiente feature |
 | `specs/003-api-y-motor`, `004-agentes-ia`, `005-canales-microsoft-365` | spec; el plan se hace con `/speckit.plan` cuando toque |
 | `contracts/openapi/jano-api.yaml` | Contrato de la API, fuente de las pantallas |
 | `packages/domain` | Tipos, esquemas zod, máquina de estados, tests |
 | `frontend/jano-web`, `frontend/jano-app` | Builds verdes; la app funciona en modo mock |
 | `infra/environments/dev` | `versions`, `backend`, `provider`, `variables`; `main.tf` vacío a propósito |
-| `docs/ADR` | ADR-001 (monorepo y plataforma), ADR-002 (IA decide, motor ejecuta) |
-| `docs/producto` | Pitch en PDF: pantallas de referencia |
+| `docs/ADR` | ADR-001 (monorepo, plataforma, TypeScript, dominio y CI como Cardea), ADR-002 (IA decide, motor ejecuta) |
+| `docs/producto` | Pitch en PDF y capturas de las pantallas |
 
-## 3. Decisiones que están esperando a Andrés
+## 3. Decisiones ya tomadas (mismo lineamiento que Cardea, misma cuenta)
 
-1. **Dominio** del producto y si la zona de Route 53 existe.
-2. **VPC** propia para Aurora o reutilizar la de Fenora.
-3. Remitente SES y tenant de Microsoft 365 de pruebas.
+| Tema | Decisión |
+|---|---|
+| Backend | TypeScript (Node 22), dominio compartido en `packages/domain` (ADR-001) |
+| Dominio | `jano.tekhos.com` (landing) y `jano-app.tekhos.com` (app) sobre la zona existente de `tekhos.com`; Cognito con prefijo `jano-dev` |
+| Correo | Rule set de recepción de `tekhos.com` reutilizado; regla para `jano@tekhos.com` con la misma redirección que Cardea (`ramejiafernandez@gmail.com`); remitente `jano@tekhos.com` |
+| Rol de apply | Patrón Fenora: política de arranque `Allow *` con caducidad y `Deny` de guarda, pegada por CLI una vez |
+| Rol de plan | `jano-dev-github-actions-plan`, solo lectura, acotado a `pull_request` |
+| Aurora | Privada + Data API, Lambdas sin VPC (el backend es TypeScript; no aplica el motivo JDBC/Helm de Cardea). Si Andrés prefiere unificar con Cardea: VPC + NAT instance + bastión SSM |
+| Estado Terraform | Bucket `fenora-terraform-state-<ACCOUNT_ID>` y tabla `fenora-terraform-locks`, clave `jano/dev/terraform.tfstate` |
+
+Lo único abierto es la fila de Aurora, y solo si Andrés quiere un patrón único en la cuenta.
 
 ## 4. Prompt para la primera sesión en Claude Code
 
 Pégalo tal cual en Claude Code dentro de `~/py/jano`:
 
 ```text
-Estás en ~/py/jano, el monorepo de Jano (equipo comercial de IA para pymes B2B). Lee en este orden: CLAUDE.md, AGENTS.md, .specify/memory/constitution.md, docs/ADR/ADR-001-monorepo-y-plataforma.md, docs/ADR/ADR-002-ia-decide-motor-ejecuta.md y docs/guias/continuar-en-claude-code.md. No resumas lo leído; actúa.
+Estás en ~/py/jano, el monorepo de Jano (equipo comercial de IA para pymes B2B). Lee en este orden: CLAUDE.md, AGENTS.md, .specify/memory/constitution.md, docs/ADR/ADR-001-monorepo-y-plataforma.md, docs/ADR/ADR-002-ia-decide-motor-ejecuta.md, docs/guias/continuar-en-claude-code.md y specs/002-infra-dev-aws/{spec,plan,tasks}.md. No resumas lo leído; actúa.
 
 Contexto que no está en el repo:
-- La cuenta AWS es la de Fenora (repo andres-mejia/fintrack, clonado en ~/py/fintrack si existe; si no, clónalo en solo lectura para consultar infra/modules). Perfil local: `aws sso login --profile fintrack-dev`; ya está iniciado. Región eu-west-1. Estado de Terraform compartido: bucket fenora-terraform-state-<ACCOUNT_ID> (obtén el ID con sts) y tabla fenora-terraform-locks, con la clave jano/dev/terraform.tfstate que ya fija infra/environments/dev/backend.tf.
-- Trabajamos con Spec-Driven Development usando Spec Kit (comandos /speckit.*). Las specs viven en specs/. La 001 está implementada en la rama feat/mvp-scaffold; la 002 (infra dev) tiene spec, plan y tasks y es la siguiente.
+- La cuenta AWS es la misma que Fenora (~/py/fintrack, repo andres-mejia/fintrack) y que Cardea (~/py/cardea). Si falta alguno de los dos clones, clónalo en solo lectura para consultar infra/modules. Perfil local: `aws sso login --profile fintrack-dev`, ya iniciado. Región eu-west-1. Estado de Terraform compartido: bucket fenora-terraform-state-<ACCOUNT_ID> (obtén el ID con sts) y tabla fenora-terraform-locks, con la clave jano/dev/terraform.tfstate que ya fija infra/environments/dev/backend.tf.
+- Jano sigue el mismo lineamiento que Cardea en todo lo transversal de la cuenta: subdominios de tekhos.com (jano.tekhos.com y jano-app.tekhos.com) sobre la zona existente de Route 53; reutilizar el rule set de recepción SES de tekhos.com con una regla para jano@tekhos.com y la misma redirección que Cardea; rol de apply con el patrón Fenora (política de arranque Allow * con caducidad y Deny de guarda, pegada por CLI una vez) y rol de plan de solo lectura para PR. Donde Cardea ya resolvió algo (Terraform de dominio, SES, OIDC, Amplify), copia la forma desde ~/py/cardea cambiando nombres cardea-* por jano-*; no reinventes.
+- Trabajamos con Spec-Driven Development usando Spec Kit (comandos /speckit.*). La spec 001 está en main; la 002 (infra dev) tiene spec, plan y tasks cerrados y es la que toca ahora. El backend será TypeScript (ADR-001).
 - Identidad git: Andrés Mejía <49398769+andres-mejia@users.noreply.github.com>. Nunca una identidad de IA, nunca Co-Authored-By de IA, nunca emojis en commits. Parada obligatoria antes de cualquier push o PR: me reportas rama, ficheros, mensaje y validaciones y esperas mi OK.
 
 Tarea de esta sesión:
-1. Comprueba el entorno: `pnpm type-check && pnpm build && pnpm test` en verde, `aws sts get-caller-identity --profile fintrack-dev` devuelve la cuenta, `terraform -chdir=infra/environments/dev init -backend=false && terraform validate`.
-2. Abre el PR de feat/mvp-scaffold contra main siguiendo la parada obligatoria (primero me enseñas rama, ficheros y mensaje). El cuerpo del PR lleva la evidencia de las validaciones (comando y salida), sin atribución de IA.
-3. Lee specs/002-infra-dev-aws/spec.md y hazme las tres preguntas abiertas ([NEEDS CLARIFICATION]) de una en una con tu recomendación. Con mis respuestas, ejecuta /speckit.clarify sobre la 002 y actualiza spec.md y plan.md.
-4. Crea la rama infra/dev-base y ejecuta /speckit.implement sobre specs/002-infra-dev-aws/tasks.md por fases. Antes de cada `terraform apply` me enseñas el plan y esperas mi OK; aplica con `-var aws_profile=fintrack-dev`. Replica la forma de los módulos de ~/py/fintrack/infra/modules (naming jano-dev-*, tags, variables, outputs, comentarios de decisión), no su contenido literal, y deja fuera VPC para Lambda, NAT, RDS Proxy, ECR, passkeys e IdP sociales.
-5. Al cerrar cada fase: `terraform fmt -recursive`, `terraform validate`, commit en infra/dev-base y parada para el OK.
+1. Comprueba el entorno: `pnpm type-check && pnpm build && pnpm test` en verde; `aws sts get-caller-identity --profile fintrack-dev` devuelve la cuenta; `terraform -chdir=infra/environments/dev init -backend=false && terraform -chdir=infra/environments/dev validate`.
+2. La rama docs/lineamiento-cardea lleva las decisiones de la 002. Ábrele el PR contra main (parada obligatoria antes) con la evidencia del paso 1 en el cuerpo, sin atribución de IA, y pídeme que lo fusione.
+3. Ejecuta /speckit.analyze sobre specs/002-infra-dev-aws para comprobar que spec, plan y tasks son coherentes con la constitución. Si encuentra algo, corrígelo y dímelo.
+4. Crea la rama infra/dev-base desde main (cuando el PR esté fusionado) y ejecuta /speckit.implement sobre specs/002-infra-dev-aws/tasks.md por fases, empezando por la fase 0 (inventario de ~/py/fintrack y ~/py/cardea). Antes de cada `terraform apply` me enseñas el plan y esperas mi OK; aplica con `-var aws_profile=fintrack-dev`. Replica la forma de los módulos de Fenora y Cardea (naming jano-dev-*, tags, variables, outputs, comentarios de decisión), no su contenido literal, y deja fuera VPC para Lambda, NAT, RDS Proxy, ECR, passkeys e IdP sociales salvo que yo te diga que unifiquemos Aurora con el patrón de Cardea.
+5. Al cerrar cada fase: `terraform fmt -recursive`, `terraform validate`, commit en infra/dev-base y parada para el OK. La fase 6 incluye pegar por CLI la política de arranque del rol de apply con el mismo comando que usamos en Cardea; me lo enseñas antes de ejecutarlo.
 
-Pregúntame lo que necesites decidir yo; lo que sea una convención del repo, aplícala sin preguntar.
+Pregúntame lo que necesites decidir yo; lo que sea una convención del repo o algo ya resuelto en Cardea, aplícalo sin preguntar.
 ```
 
 ## 5. Después de la 002

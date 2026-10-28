@@ -1,3 +1,7 @@
 # Copia a terraform.tfvars (ignorado por git).
-aws_profile = "fintrack-dev"
-domain_name = "jano.example"
+aws_profile        = "fintrack-dev"
+parent_zone_name   = "tekhos.com"
+landing_fqdn       = "jano.tekhos.com"
+app_fqdn           = "jano-app.tekhos.com"
+ses_from_address   = "jano@tekhos.com"
+ses_notify_address = "ramejiafernandez@gmail.com"

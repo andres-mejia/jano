@@ -6,10 +6,34 @@ variable "environment" {
   default = "dev"
 }
 
-variable "domain_name" {
+variable "parent_zone_name" {
   type        = string
-  description = "Apex del producto. Placeholder hasta decidir el dominio (ADR-001); la hosted zone debe existir en Route 53 antes del primer apply."
-  default     = "jano.example"
+  description = "Zona de Route 53 ya existente bajo la que cuelgan los subdominios de Jano. Terraform solo la lee."
+  default     = "tekhos.com"
+}
+
+variable "landing_fqdn" {
+  type        = string
+  description = "FQDN de la landing (Amplify WEB). Mismo lineamiento que Cardea: subdominio del dominio principal hasta decidir dominio propio."
+  default     = "jano.tekhos.com"
+}
+
+variable "app_fqdn" {
+  type        = string
+  description = "FQDN de la app (Amplify WEB_COMPUTE)."
+  default     = "jano-app.tekhos.com"
+}
+
+variable "ses_from_address" {
+  type        = string
+  description = "Remitente de los correos del producto y de la waitlist, sobre la identidad SES ya verificada del dominio principal."
+  default     = "jano@tekhos.com"
+}
+
+variable "ses_notify_address" {
+  type        = string
+  description = "Buzón externo que recibe el aviso de cada alta en la waitlist y la redirección de jano@tekhos.com."
+  default     = ""
 }
 
 variable "github_repository" {

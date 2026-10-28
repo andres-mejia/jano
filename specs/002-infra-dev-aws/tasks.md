@@ -4,8 +4,8 @@ Convención: `[Tn] [P?] descripción · verificación`. `[P]` = paralelizable. C
 
 ## Fase 0 · Inventario
 - [ ] T001 Leer `fintrack/infra/modules/{aurora,cognito,landing,cdn,waitlist,email,assets,github-oidc,dns}/main.tf` y anotar en `specs/002-infra-dev-aws/research.md` qué se replica y qué se recorta · fichero creado con una tabla módulo → decisión.
-- [ ] T002 Confirmar con Andrés las tres dudas de la spec (dominio, VPC, remitente SES) y cerrarlas en `research.md` · sin `[NEEDS CLARIFICATION]` en spec.md.
-- [ ] T003 `aws sts get-caller-identity` y `aws s3 ls s3://fenora-terraform-state-$ACCOUNT_ID/` · cuenta correcta y bucket accesible.
+- [ ] T002 Confirmar en `~/py/cardea` cómo quedaron el rol de apply (política de arranque y Deny de guarda), el rol de plan, la regla SES en el rule set de `tekhos.com` y la asociación de dominio en Amplify, y anotar en `research.md` qué se replica igual · tabla en research.md.
+- [ ] T003 `aws sts get-caller-identity`, `aws s3 ls s3://fenora-terraform-state-$ACCOUNT_ID/`, `aws route53 list-hosted-zones-by-name --dns-name tekhos.com` y `aws ses describe-active-receipt-rule-set --region eu-west-1` · cuenta, bucket, zona y rule set activo identificados.
 
 ## Fase 1 · Datos y almacenamiento
 - [ ] T010 [P] `infra/modules/vpc`: VPC `jano-dev`, 2 subnets privadas, sin NAT ni IGW · `validate` OK.
@@ -21,7 +21,7 @@ Convención: `[Tn] [P?] descripción · verificación`. `[P]` = paralelizable. C
 - [ ] T022 `apply`; crear usuario piloto con `aws cognito-idp admin-create-user` y atributos custom · ID token decodificado lleva ambos claims.
 
 ## Fase 3 · Correo y acceso anticipado
-- [ ] T030 `infra/modules/email`: identidad SES del dominio, DKIM, configuration set, registros DNS si hay zona · `validate` OK.
+- [ ] T030 `infra/modules/email`: `data` del rule set activo de `tekhos.com`, `aws_ses_receipt_rule` para `jano@tekhos.com` con la misma redirección que Cardea, configuration set `jano-dev` · `validate` OK.
 - [ ] T031 `infra/modules/waitlist`: tabla, rol, Lambda Node 22, HTTP API con CORS y throttling · `validate` OK.
 - [ ] T032 `lambda/handler/index.mjs` con validación de email, honeypot, idempotencia (409), rate limit por IP con TTL, SES; `index.test.mjs` con `node --test` · tests verdes.
 - [ ] T033 `apply`; `curl -X POST $WAITLIST_URL -d '{"email":"prueba@example.com"}'` · 201, item en DynamoDB, correo recibido; segundo POST → 409.
@@ -31,13 +31,13 @@ Convención: `[Tn] [P?] descripción · verificación`. `[P]` = paralelizable. C
 - [ ] T041 Ruta `GET /v1/health` sin autorizador con integración mock y `GET /v1/dashboard/summary` con autorizador apuntando a una Lambda placeholder que devuelve 501 · `curl` sin token → 401; con token → 501.
 
 ## Fase 5 · Hosting
-- [ ] T050 `infra/modules/landing`: Amplify WEB, build_spec igual al `amplify.yml`, variables `PUBLIC_*`, `AMPLIFY_MONOREPO_APP_ROOT=frontend/jano-web`, dominio condicional · `validate` OK.
-- [ ] T051 `infra/modules/app-hosting`: Amplify WEB_COMPUTE, `NEXT_PUBLIC_*` desde outputs, `AMPLIFY_MONOREPO_APP_ROOT=frontend/jano-app` · `validate` OK.
+- [ ] T050 `infra/modules/landing`: Amplify WEB, build_spec igual al `amplify.yml`, variables `PUBLIC_*`, `AMPLIFY_MONOREPO_APP_ROOT=frontend/jano-web`, dominio `jano.tekhos.com` sobre la zona de `tekhos.com` · `validate` OK.
+- [ ] T051 `infra/modules/app-hosting`: Amplify WEB_COMPUTE, `NEXT_PUBLIC_*` desde outputs, `AMPLIFY_MONOREPO_APP_ROOT=frontend/jano-app`, dominio `jano-app.tekhos.com` · `validate` OK.
 - [ ] T052 `apply`; autorizar la CodeStar Connection en consola; `aws amplify start-job --job-type RELEASE` en las dos apps · ambas URL responden 200 y la app muestra `/login` con Cognito.
 - [ ] T053 Push de prueba a `main` (un cambio de texto en la landing) · Amplify publica solo; anotar el tiempo.
 
 ## Fase 6 · CI con OIDC
-- [ ] T060 `infra/modules/github-oidc`: proveedor (si no existe ya en la cuenta: usar `data` sobre el de Fenora), rol `jano-dev-github-actions` acotado · `validate` OK.
+- [ ] T060 `infra/modules/github-oidc`: `data` del proveedor OIDC existente, rol de apply `jano-dev-github-actions` (main) y rol de plan `jano-dev-github-actions-plan` (pull_request); la política de arranque del rol de apply se pega por CLI con el mismo comando que Cardea y se documenta · `validate` OK.
 - [ ] T061 `.github/workflows/infra-plan.yml` (PR, comenta el plan) e `infra-apply.yml` (push a `main`, guarda del plan: aborta si hay `destroy`) · un PR de prueba comenta el plan.
 - [ ] T062 `docs/guias/despliegue-dev.md` con bootstrap, variables, comandos y qué se hace a mano (zona DNS, conexión Amplify, usuario piloto) · guía revisada por Andrés.
 

@@ -10,7 +10,8 @@ Jano arranca con un desarrollador, un socio de producto y cero clientes. Fenora 
 2. **Misma plataforma que Fenora**: cuenta AWS, región `eu-west-1`, bucket y tabla de estado de Terraform compartidos (clave `jano/dev/…`), perfil local `fintrack-dev`, OIDC desde GitHub Actions, Amplify para las dos apps, Cognito, API Gateway HTTP, Aurora Serverless v2 con Data API, S3, SES, Bedrock.
 3. **Forma, no copia**: los módulos de Terraform replican los patrones de `fintrack/infra/modules` (naming, tags, variables, outputs, comentarios sobre decisiones) y descartan lo que Jano no usa: VPC para Lambda y NAT, RDS Proxy, Quarkus/ECR, passkeys, IdP sociales, WAF en dev.
 4. **TypeScript en todo el monorepo**, incluido el backend (decisión de Andrés, 2026-10-29): tipos compartidos con la app vía `@jano/domain`, un solo toolchain, Lambdas en zip sin ECR, mismo patrón que `fintrack/infra/modules/advisor-api/lambda` (la pieza de IA de Fenora ya es Node).
-5. **Dominio pendiente**: `domain_name` es variable; hasta decidirlo se usan las URL de Amplify.
+5. **Dominio y correo como Cardea** (el otro producto de la misma cuenta): subdominios de `tekhos.com` (`jano.tekhos.com`, `jano-app.tekhos.com`) sobre la zona existente, y `jano@tekhos.com` como remitente y buzón, con una regla en el rule set de recepción de `tekhos.com`. Dominio propio cuando se decida el nombre definitivo.
+6. **CI como Cardea**: rol de apply con política de arranque del patrón Fenora (Allow * con caducidad y Deny de guarda) y rol de plan de solo lectura para PR.
 
 ## Alternativas
 - **Dos repos (landing y app)**: descartado; el contrato y el dominio son compartidos y una sola rama viva simplifica el flujo con agentes.

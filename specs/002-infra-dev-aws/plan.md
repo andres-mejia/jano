@@ -9,7 +9,7 @@ Terraform plano en `infra/environments/dev` (sin Terragrunt), módulos propios e
 - Terraform ≥ 1.9, provider AWS ~> 6.1, archive ~> 2.0. Región `eu-west-1`; alias `us-east-1` para ACM de Amplify/CloudFront.
 - Lambda waitlist en Node 22 (`index.mjs`, sin bundler; SDK v3 ya en el runtime).
 - Amplify: landing `WEB` (Astro `dist/`), app `WEB_COMPUTE` (Next `.next/`); conexión GitHub por CodeStar Connection autorizada una vez en consola, igual que en Fenora (`lifecycle.ignore_changes` en `repository`/`access_token`).
-- Cognito: USER_AUTH, email como username, MFA `OPTIONAL` (TOTP), atributos custom `tenant_id` y `role`, trigger `pre_token_generation` en Node 22 que copia ambos a los claims; Hosted UI con prefijo `jano-dev`.
+- Cognito: USER_AUTH, email como username, MFA `OPTIONAL` (TOTP), atributos custom `tenant_id` y `role`, trigger `pre_token_generation` en Node 22 que copia ambos a los claims; Hosted UI con prefijo `jano-dev` (sin dominio propio).
 - Aurora PostgreSQL Serverless v2 16.x, `min_capacity = 0`, `seconds_until_auto_pause = 300`, `enable_http_endpoint = true`, `manage_master_user_password = true`, `storage_encrypted = true`, subnets privadas, sin acceso público.
 
 ## Puerta de constitución
@@ -24,8 +24,9 @@ Terraform plano en `infra/environments/dev` (sin Terragrunt), módulos propios e
 ## Decisiones
 1. **Estado compartido** (FR-001): `-backend-config=bucket=fenora-terraform-state-$ACCOUNT_ID`, clave propia. Justificación: cero bootstrap y un solo lugar donde mirar.
 2. **VPC**: crear `jano-dev` mínima (2 AZ, solo subnets privadas, sin NAT, sin IGW) para Aurora. Ninguna Lambda entra en la VPC; Data API no la necesita. Si Andrés prefiere reutilizar la de Fenora, cambia solo `module.aurora.subnet_ids`.
-3. **OIDC**: rol `jano-dev-github-actions` con trust al repo `andres-mejia/jano` y permisos limitados a recursos con prefijo `jano-` más lectura del bucket de estado y la tabla de locks.
-4. **Dominio**: variable `domain_name`; hasta decidirlo, se despliega sin `aws_amplify_domain_association` (`count = var.domain_name != "jano.example" ? 1 : 0`) y se usan las URL `amplifyapp.com`.
+3. **OIDC** (como Cardea): rol de apply `jano-dev-github-actions` (trust `repo:andres-mejia/jano:ref:refs/heads/main`) con la política de arranque `Allow *` con caducidad y los `Deny` de guarda del patrón Fenora, pegada por CLI una vez; rol de plan `jano-dev-github-actions-plan` (trust `repo:andres-mejia/jano:pull_request`) con `ReadOnlyAccess`, `s3:GetObject` del estado y `dynamodb:PutItem/DeleteItem/GetItem` del lock.
+4. **Dominio** (como Cardea): `jano.tekhos.com` y `jano-app.tekhos.com` sobre la zona existente de `tekhos.com`; `aws_amplify_domain_association` por app con un solo `sub_domain` de prefijo vacío sobre el FQDN; registros de validación en la zona vía `data.aws_route53_zone`.
+5. **SES** (como Cardea): regla `jano-dev-inbound` para `jano@tekhos.com` en el rule set activo de `tekhos.com` (`data` sobre el rule set; `aws_ses_receipt_rule` propia), misma acción de redirección que Cardea; remitente `jano@tekhos.com`.
 
 ## Estructura
 ```
@@ -52,10 +53,10 @@ docs/guias/despliegue-dev.md
 ## Orden de implementación
 1. VPC + Aurora + assets (sin dependencias externas; `apply` y medir coste en reposo).
 2. Cognito + trigger; crear un usuario piloto a mano y comprobar los claims.
-3. Email (SES) + waitlist; probar con `curl` y comprobar DynamoDB y correo.
+3. Email (regla SES en el rule set de tekhos.com) + waitlist; probar con `curl`, comprobar DynamoDB, el correo de confirmación y la redirección de `jano@tekhos.com`.
 4. API Gateway vacía con autorizador; `curl` sin token → 401.
-5. Landing y app en Amplify; autorizar la conexión en consola; primer build desde `main`.
-6. OIDC + workflows; segundo `apply` desde CI con plan idempotente.
+5. Landing y app en Amplify con `jano.tekhos.com` y `jano-app.tekhos.com`; autorizar la conexión en consola; primer build desde `main`.
+6. OIDC (rol de apply con política de arranque pegada por CLI, rol de plan) + workflows; plan en un PR de prueba y `apply` desde CI idempotente.
 
 ## Riesgos
 - La política de cuenta que bloquea Function URLs públicas (vista en Fenora) obliga a HTTP API para la waitlist: ya contemplado.
