@@ -45,9 +45,8 @@ Tras `specify init`, Claude Code tendrá los comandos `/speckit.constitution`, `
 ## 3. Decisiones que están esperando a Andrés
 
 1. **Dominio** del producto y si la zona de Route 53 existe.
-2. **Backend en TypeScript** (propuesta en ADR-001 y spec 003) o Java 21 + Quarkus como Fenora.
-3. **VPC** propia para Aurora o reutilizar la de Fenora.
-4. Remitente SES y tenant de Microsoft 365 de pruebas.
+2. **VPC** propia para Aurora o reutilizar la de Fenora.
+3. Remitente SES y tenant de Microsoft 365 de pruebas.
 
 ## 4. Prompt para la primera sesión en Claude Code
 
@@ -73,6 +72,6 @@ Pregúntame lo que necesites decidir yo; lo que sea una convención del repo, ap
 
 ## 5. Después de la 002
 
-- `/speckit.clarify` y `/speckit.plan` sobre `specs/003-api-y-motor` (decidir antes el lenguaje del backend).
+- `/speckit.clarify` y `/speckit.plan` sobre `specs/003-api-y-motor` (backend en TypeScript, ADR-001).
 - `/speckit.plan` sobre `004-agentes-ia` una vez cotizados los proveedores de datos y verificación.
 - `005-canales-microsoft-365` cuando exista el dictamen legal y un tenant de pruebas.

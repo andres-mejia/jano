@@ -44,5 +44,5 @@ Tablas: `tenants`, `campaigns`, `icp_turns`, `accounts`, `account_evidence`, `co
 ## Fuera de alcance
 Prompts y adaptadores Bedrock (004), conexión real a Microsoft 365 (005), exportación a CRM.
 
-## Dudas abiertas
-- **[NEEDS CLARIFICATION]** Lenguaje del backend: la constitución y este plan proponen TypeScript (un toolchain, tipos compartidos con la app, Lambda zip sin ECR). La alternativa es Java 21 + Quarkus como los servicios de Fenora. Lo decide Andrés antes de `/speckit.plan`.
+## Decisiones tomadas
+- Lenguaje del backend: **TypeScript (Node 22)**, decidido por Andrés el 2026-10-29 (ADR-001). Alternativas y motivos en el ADR.
