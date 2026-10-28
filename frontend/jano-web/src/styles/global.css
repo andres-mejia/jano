@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+/*
+ * Tokens de marca Jano (AGENTS.md §5 y docs/producto, anexo de marca).
+ * Solo se usan estos; nunca colores sueltos.
+ */
+@theme {
+  --color-jano-tinta: #14162b;
+  --color-jano-tinta-2: #23264a;
+  --color-jano-tinta-3: #34386a;
+  --color-jano-cobalto: #4338d6;
+  --color-jano-cobalto-oscuro: #2e25a8;
+  --color-jano-cobalto-claro: #7b73f0;
+  --color-jano-cobalto-tinte: #ecebfc;
+  --color-jano-cobalto-linea: #c9c6f5;
+  --color-jano-bronce: #e39a2e;
+  --color-jano-bronce-tinte: #fbf0dd;
+  --color-jano-bronce-texto: #7a4406;
+  --color-jano-niebla: #f4f5f8;
+  --color-jano-papel: #fcfcfe;
+  --color-jano-linea: #dcdfea;
+  --color-jano-muted: #5b6078;
+  --color-jano-verde: #1b7f5c;
+  --color-jano-verde-tinte: #e3f3ec;
+  --color-jano-verde-texto: #14614a;
+  --color-jano-rojo-tinte: #fbe9e5;
+  --color-jano-rojo-texto: #8e2a1a;
+
+  --font-display: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
+  --font-sans: "Figtree", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-jano-niebla);
+  color: var(--color-jano-tinta);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Borde "decide la IA": degradado cobalto a bronce sobre fondo papel. */
+.ai-border {
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--color-jano-papel), var(--color-jano-papel)) padding-box,
+    linear-gradient(120deg, var(--color-jano-cobalto-claro), var(--color-jano-cobalto) 45%, var(--color-jano-bronce)) border-box;
+}
+
+.ai-border-dark {
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--color-jano-tinta-2), var(--color-jano-tinta-2)) padding-box,
+    linear-gradient(120deg, var(--color-jano-cobalto-claro), var(--color-jano-cobalto) 45%, var(--color-jano-bronce)) border-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

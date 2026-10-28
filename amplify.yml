@@ -1,0 +1,47 @@
+version: 1
+applications:
+  # ── App Next.js (app.jano.*) ──────────────────────────────────────
+  # El build corre desde la raíz del workspace para que pnpm resuelva
+  # packages/domain. Amplify fija AMPLIFY_MONOREPO_APP_ROOT en la app.
+  - appRoot: frontend/jano-app
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - corepack enable
+            - corepack prepare pnpm@10.4.0 --activate
+            - cd ../.. && pnpm install --frozen-lockfile && cd frontend/jano-app
+        build:
+          commands:
+            - pnpm run build
+      artifacts:
+        baseDirectory: .next
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - ../../node_modules/**/*
+          - node_modules/**/*
+          - .next/cache/**/*
+
+  # ── Landing Astro (apex + www) ────────────────────────────────────
+  - appRoot: frontend/jano-web
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - corepack enable
+            - corepack prepare pnpm@10.4.0 --activate
+            - cd ../.. && pnpm install --frozen-lockfile && cd frontend/jano-web
+        build:
+          commands:
+            - pnpm run build
+      artifacts:
+        baseDirectory: dist
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - ../../node_modules/**/*
+          - node_modules/**/*
+          - .astro/**/*

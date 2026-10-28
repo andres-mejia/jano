@@ -1,0 +1,3 @@
+# Copia a terraform.tfvars (ignorado por git).
+aws_profile = "fintrack-dev"
+domain_name = "jano.example"

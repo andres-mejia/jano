@@ -1,0 +1,28 @@
+# Guardarraíl de AGENTS.md §6: ningún commit ni cuerpo de PR atribuye la
+# autoría a una IA. El script vive en scripts/check-ai-attribution.sh.
+
+name: attribution
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  sin-coautoria-de-ia:
+    name: attribution · sin coautoría de IA
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: commits de la rama
+        run: scripts/check-ai-attribution.sh --commits origin/${{ github.base_ref }}..HEAD
+
+      - name: cuerpo del PR
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s\n' "$PR_BODY" > /tmp/pr-body.txt
+          scripts/check-ai-attribution.sh --text /tmp/pr-body.txt

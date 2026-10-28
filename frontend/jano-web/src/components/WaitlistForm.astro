@@ -1,0 +1,80 @@
+---
+/**
+ * Formulario de acceso anticipado. El endpoint lo inyecta Amplify en
+ * build-time vía PUBLIC_WAITLIST_ENDPOINT (output del módulo waitlist). Sin
+ * endpoint, el formulario simula el éxito para que la landing se pueda
+ * revisar sin red.
+ */
+interface Props {
+  id?: string;
+  compact?: boolean;
+}
+const { id = "waitlist", compact = false } = Astro.props;
+const endpoint = import.meta.env.PUBLIC_WAITLIST_ENDPOINT ?? "";
+---
+
+<form class="w-full" novalidate data-waitlist data-endpoint={endpoint} id={id}>
+  <div class={`flex flex-wrap gap-2 ${compact ? "" : "sm:flex-nowrap"}`}>
+    <label class="sr-only" for={`${id}-email`}>Tu email de empresa</label>
+    <input
+      id={`${id}-email`}
+      type="email"
+      name="email"
+      required
+      autocomplete="email"
+      placeholder="tu@empresa.com"
+      class="min-h-12 min-w-0 flex-1 rounded-xl border border-jano-linea bg-white px-4 text-[15px] outline-none placeholder:text-jano-muted focus:border-jano-cobalto focus:ring-2 focus:ring-jano-cobalto/25"
+    />
+    <input type="text" name="empresa" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true" />
+    <button
+      type="submit"
+      class="min-h-12 shrink-0 rounded-xl bg-jano-cobalto px-5 text-[15px] font-semibold text-white hover:bg-jano-cobalto-oscuro disabled:opacity-60"
+      data-submit
+    >
+      Pedir acceso
+    </button>
+  </div>
+  <p class="mt-2 min-h-5 text-sm text-jano-muted" role="status" aria-live="polite" data-status></p>
+  <p class="mt-1 text-sm text-jano-muted">
+    Solo te escribimos cuando abramos plazas. Sin secuencias ni newsletters.
+  </p>
+</form>
+
+<script>
+  const forms = document.querySelectorAll<HTMLFormElement>("form[data-waitlist]");
+  forms.forEach((form) => {
+    const endpoint = form.dataset.endpoint ?? "";
+    const status = form.querySelector<HTMLElement>("[data-status]")!;
+    const button = form.querySelector<HTMLButtonElement>("[data-submit]")!;
+    const email = form.querySelector<HTMLInputElement>('input[name="email"]')!;
+    const honeypot = form.querySelector<HTMLInputElement>('input[name="empresa"]')!;
+
+    form.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      if (honeypot.value) return;
+      if (!email.checkValidity()) {
+        status.textContent = "Revisa el email: no parece válido.";
+        return;
+      }
+      button.disabled = true;
+      status.textContent = "Enviando…";
+      try {
+        if (!endpoint) {
+          await new Promise((r) => setTimeout(r, 400));
+        } else {
+          const res = await fetch(endpoint, {
+            method: "POST",
+            headers: { "content-type": "application/json", "x-jano-source": "landing" },
+            body: JSON.stringify({ email: email.value.trim().toLowerCase(), locale: "es" }),
+          });
+          if (!res.ok && res.status !== 409) throw new Error(`HTTP ${res.status}`);
+        }
+        form.querySelectorAll("input, button").forEach((el) => ((el as HTMLInputElement).disabled = true));
+        status.textContent = "Hecho. Te escribimos cuando tengamos plaza.";
+      } catch {
+        button.disabled = false;
+        status.textContent = "No se ha podido enviar. Prueba otra vez en un momento.";
+      }
+    });
+  });
+</script>

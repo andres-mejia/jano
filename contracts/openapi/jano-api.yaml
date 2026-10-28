@@ -1,0 +1,967 @@
+openapi: 3.1.0
+info:
+  title: Jano API
+  version: 0.1.0
+  description: |
+    API de la app de Jano. Contract-first: este fichero cambia antes que el
+    código que lo usa. Los esquemas replican `packages/domain` (TypeScript +
+    zod), que es la fuente de verdad de los tipos; cualquier divergencia es un
+    bug del contrato.
+
+    Autenticación: JWT de Cognito (ID token) en `Authorization: Bearer`. El
+    `tenant_id` viaja como claim `custom:tenant_id` y nunca en el cuerpo.
+
+    Convenciones:
+    - Fechas en ISO 8601 UTC.
+    - Importes en euros enteros (facturación registral), nunca decimales.
+    - Los endpoints que ejecutan una acción del motor devuelven el recurso
+      actualizado y el evento registrado.
+servers:
+  - url: https://api.jano.example/v1
+    description: Placeholder hasta fijar dominio (ADR-001)
+  - url: http://localhost:8080/v1
+    description: Local
+
+security:
+  - cognito: []
+
+tags:
+  - name: dashboard
+  - name: campaigns
+  - name: accounts
+  - name: prospects
+  - name: inbox
+  - name: compliance
+  - name: connections
+
+paths:
+  /dashboard/summary:
+    get:
+      tags: [dashboard]
+      summary: Centro de mando
+      operationId: getDashboardSummary
+      responses:
+        "200":
+          description: Resumen del tenant (campaña activa, embudo, agentes, pendientes)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DashboardSummary" }
+
+  /campaigns:
+    get:
+      tags: [campaigns]
+      summary: Listar campañas
+      operationId: listCampaigns
+      responses:
+        "200":
+          description: Campañas del tenant
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Campaign" }
+    post:
+      tags: [campaigns]
+      summary: Crear campaña desde una frase
+      description: El Orquestador convierte la frase en un ICP estructurado y responde con la campaña en borrador y el primer turno del diálogo.
+      operationId: createCampaign
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateCampaign" }
+      responses:
+        "201":
+          description: Campaña creada en estado draft
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [campaign, turn]
+                properties:
+                  campaign: { $ref: "#/components/schemas/Campaign" }
+                  turn: { $ref: "#/components/schemas/IcpTurn" }
+
+  /campaigns/{campaignId}:
+    parameters:
+      - $ref: "#/components/parameters/campaignId"
+    get:
+      tags: [campaigns]
+      operationId: getCampaign
+      responses:
+        "200":
+          description: Campaña
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Campaign" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /campaigns/{campaignId}/icp:
+    parameters:
+      - $ref: "#/components/parameters/campaignId"
+    get:
+      tags: [campaigns]
+      summary: Historial del diálogo de ICP
+      operationId: getIcpTurns
+      responses:
+        "200":
+          description: Turnos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/IcpTurn" }
+    post:
+      tags: [campaigns]
+      summary: Afinar el ICP con una instrucción
+      operationId: refineIcp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string, minLength: 2, maxLength: 500 }
+      responses:
+        "200":
+          description: Turno de respuesta del Orquestador con el ICP actualizado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IcpTurn" }
+
+  /campaigns/{campaignId}/status:
+    parameters:
+      - $ref: "#/components/parameters/campaignId"
+    put:
+      tags: [campaigns]
+      summary: Activar, pausar o cerrar
+      operationId: setCampaignStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { $ref: "#/components/schemas/CampaignStatus" }
+      responses:
+        "200":
+          description: Campaña actualizada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Campaign" }
+
+  /campaigns/{campaignId}/flow:
+    parameters:
+      - $ref: "#/components/parameters/campaignId"
+    get:
+      tags: [campaigns]
+      summary: Mapa de flujo
+      operationId: getFlowMap
+      responses:
+        "200":
+          description: Nodos, salidas y cuello de botella, proyectados del registro de eventos
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FlowMap" }
+
+  /campaigns/{campaignId}/flow/{stage}/events:
+    parameters:
+      - $ref: "#/components/parameters/campaignId"
+      - name: stage
+        in: path
+        required: true
+        schema: { $ref: "#/components/schemas/ProspectStage" }
+    get:
+      tags: [campaigns]
+      summary: Registros de una etapa
+      operationId: listStageEvents
+      parameters:
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: Eventos más recientes de los prospects que están en esa etapa
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ProspectEvent" }
+
+  /campaigns/{campaignId}/accounts:
+    parameters:
+      - $ref: "#/components/parameters/campaignId"
+    get:
+      tags: [accounts]
+      summary: Cuentas encontradas
+      operationId: listAccounts
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: "#/components/schemas/AccountStatus" }
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: Cuentas ordenadas por fit
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Account" }
+
+  /campaigns/{campaignId}/accounts/approve:
+    parameters:
+      - $ref: "#/components/parameters/campaignId"
+    post:
+      tags: [accounts]
+      summary: Aprobar cuentas y lanzar el Contact Finder
+      operationId: approveAccounts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AccountSelection" }
+      responses:
+        "202":
+          description: Aceptado; el Contact Finder trabaja en segundo plano
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [approved]
+                properties:
+                  approved: { type: integer }
+
+  /campaigns/{campaignId}/accounts/discard:
+    parameters:
+      - $ref: "#/components/parameters/campaignId"
+    post:
+      tags: [accounts]
+      summary: Descartar cuentas
+      operationId: discardAccounts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AccountSelection" }
+      responses:
+        "200":
+          description: Descartadas
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [discarded]
+                properties:
+                  discarded: { type: integer }
+
+  /prospects/{prospectId}:
+    parameters:
+      - $ref: "#/components/parameters/prospectId"
+    get:
+      tags: [prospects]
+      summary: Prospect con cuenta, contacto y secuencia
+      operationId: getProspect
+      responses:
+        "200":
+          description: Detalle
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProspectDetail" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /prospects/{prospectId}/events:
+    parameters:
+      - $ref: "#/components/parameters/prospectId"
+    get:
+      tags: [prospects]
+      summary: Registro del prospect
+      operationId: listProspectEvents
+      responses:
+        "200":
+          description: Eventos en orden cronológico
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ProspectEvent" }
+
+  /prospects/{prospectId}/stop:
+    parameters:
+      - $ref: "#/components/parameters/prospectId"
+    post:
+      tags: [prospects]
+      summary: Detener la secuencia
+      operationId: stopProspect
+      responses:
+        "200":
+          description: Prospect detenido y evento registrado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProspectActionResult" }
+
+  /prospects/{prospectId}/steps/{stepId}/approve:
+    parameters:
+      - $ref: "#/components/parameters/prospectId"
+      - name: stepId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [prospects]
+      summary: Aprobar un paso que esperaba OK humano (por ejemplo, WhatsApp)
+      operationId: approveStep
+      responses:
+        "200":
+          description: Paso aprobado; el motor lo ejecuta si las reglas lo permiten
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProspectActionResult" }
+        "409":
+          description: Una regla lo bloquea; el evento explica cuál
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProspectActionResult" }
+
+  /inbox:
+    get:
+      tags: [inbox]
+      summary: Respuestas clasificadas
+      operationId: listInbox
+      parameters:
+        - name: intent
+          in: query
+          schema: { $ref: "#/components/schemas/ReplyIntent" }
+        - name: status
+          in: query
+          schema: { $ref: "#/components/schemas/DraftStatus" }
+      responses:
+        "200":
+          description: Elementos de la bandeja, los pendientes primero
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/InboxItem" }
+
+  /inbox/{itemId}:
+    parameters:
+      - $ref: "#/components/parameters/itemId"
+    get:
+      tags: [inbox]
+      operationId: getInboxItem
+      responses:
+        "200":
+          description: Elemento
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InboxItem" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /inbox/{itemId}/approve:
+    parameters:
+      - $ref: "#/components/parameters/itemId"
+    post:
+      tags: [inbox]
+      summary: Aprobar el borrador (con edición opcional) y ejecutar sus efectos
+      operationId: approveDraft
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ApproveDraft" }
+      responses:
+        "200":
+          description: Enviado y efectos aplicados
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InboxItem" }
+
+  /inbox/{itemId}/discard:
+    parameters:
+      - $ref: "#/components/parameters/itemId"
+    post:
+      tags: [inbox]
+      operationId: discardDraft
+      responses:
+        "200":
+          description: Borrador descartado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InboxItem" }
+
+  /inbox/{itemId}/regenerate:
+    parameters:
+      - $ref: "#/components/parameters/itemId"
+    post:
+      tags: [inbox]
+      summary: Pedir otro tono al Response agent
+      operationId: regenerateDraft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegenerateDraft" }
+      responses:
+        "200":
+          description: Nuevo borrador, pendiente de aprobación
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InboxItem" }
+
+  /compliance/summary:
+    get:
+      tags: [compliance]
+      operationId: getComplianceSummary
+      responses:
+        "200":
+          description: Cifras de hoy y salud de dominios
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ComplianceSummary" }
+
+  /compliance/audit:
+    get:
+      tags: [compliance]
+      summary: Registro de auditoría
+      operationId: listAudit
+      parameters:
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: Entradas más recientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AuditEntry" }
+
+  /compliance/guardrails:
+    get:
+      tags: [compliance]
+      operationId: getGuardrails
+      responses:
+        "200":
+          description: Reglas vigentes
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Guardrails" }
+    put:
+      tags: [compliance]
+      summary: Cambiar reglas
+      description: Activar `autopilot` exige el rol `owner`; el cambio queda en auditoría.
+      operationId: setGuardrails
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Guardrails" }
+      responses:
+        "200":
+          description: Reglas actualizadas
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Guardrails" }
+
+  /connections:
+    get:
+      tags: [connections]
+      operationId: listConnections
+      responses:
+        "200":
+          description: Estado de proveedores, buzón, calendario y CRM
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Connection" }
+
+components:
+  securitySchemes:
+    cognito:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    campaignId:
+      name: campaignId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    prospectId:
+      name: prospectId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    itemId:
+      name: itemId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+
+  responses:
+    NotFound:
+      description: No existe o no pertenece al tenant
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    Problem:
+      type: object
+      required: [title, status]
+      properties:
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+
+    # ── Campaña ──────────────────────────────────────────────────────
+    BuyingSignal:
+      type: string
+      enum: [vacante_comercial, nueva_oficina, web_renovada, cambio_administrador, ronda_financiacion, nuevo_producto]
+    Icp:
+      type: object
+      required: [sector, cnae, country, regions, revenueMinEur, revenueMaxEur, employeesMin, signals, exclusions]
+      properties:
+        sector: { type: string }
+        cnae: { type: array, items: { type: string, pattern: "^\\d{4}$" } }
+        country: { type: string, enum: [ES] }
+        regions: { type: array, items: { type: string } }
+        revenueMinEur: { type: [integer, "null"] }
+        revenueMaxEur: { type: [integer, "null"] }
+        employeesMin: { type: [integer, "null"] }
+        signals: { type: array, items: { $ref: "#/components/schemas/BuyingSignal" } }
+        exclusions: { type: array, items: { type: string } }
+    CampaignStatus:
+      type: string
+      enum: [draft, active, paused, finished]
+    CampaignStats:
+      type: object
+      required: [accountsFound, accountsHighFit, contactsVerified, contacted, replied, meetings]
+      properties:
+        accountsFound: { type: integer }
+        accountsHighFit: { type: integer }
+        contactsVerified: { type: integer }
+        contacted: { type: integer }
+        replied: { type: integer }
+        meetings: { type: integer }
+    Campaign:
+      type: object
+      required: [id, name, prompt, icp, status, meetingsGoal, stats, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        prompt: { type: string }
+        icp: { $ref: "#/components/schemas/Icp" }
+        status: { $ref: "#/components/schemas/CampaignStatus" }
+        meetingsGoal: { type: integer }
+        stats: { $ref: "#/components/schemas/CampaignStats" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CreateCampaign:
+      type: object
+      required: [prompt]
+      properties:
+        prompt: { type: string, minLength: 10, maxLength: 500 }
+        meetingsGoal: { type: integer, default: 12 }
+    IcpTurn:
+      type: object
+      required: [role, text, suggestions, at]
+      properties:
+        role: { type: string, enum: [user, jano] }
+        text: { type: string }
+        icp: { $ref: "#/components/schemas/Icp" }
+        suggestions: { type: array, items: { type: string } }
+        at: { type: string, format: date-time }
+
+    # ── Cuenta y contacto ────────────────────────────────────────────
+    DataSource:
+      type: string
+      enum: [registro, web, prensa, linkedin, proveedor]
+    Evidence:
+      type: object
+      required: [source, summary, url, observedAt]
+      properties:
+        source: { $ref: "#/components/schemas/DataSource" }
+        summary: { type: string }
+        url: { type: [string, "null"], format: uri }
+        observedAt: { type: string, format: date-time }
+    Trigger:
+      type: object
+      required: [signal, summary, evidence]
+      properties:
+        signal: { $ref: "#/components/schemas/BuyingSignal" }
+        summary: { type: string }
+        evidence: { $ref: "#/components/schemas/Evidence" }
+    AccountStatus:
+      type: string
+      enum: [found, approved, discarded, enriching, contacted]
+    Account:
+      type: object
+      required: [id, campaignId, name, domain, city, cnae, revenueEur, employees, fitScore, fitReasoning, fitEvidence, trigger, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        campaignId: { type: string, format: uuid }
+        name: { type: string }
+        domain: { type: string }
+        city: { type: [string, "null"] }
+        cnae: { type: [string, "null"] }
+        revenueEur: { type: [integer, "null"] }
+        employees: { type: [integer, "null"] }
+        fitScore: { type: integer, minimum: 0, maximum: 100 }
+        fitReasoning: { type: string }
+        fitEvidence: { type: array, items: { $ref: "#/components/schemas/Evidence" } }
+        trigger: { oneOf: [{ $ref: "#/components/schemas/Trigger" }, { type: "null" }] }
+        status: { $ref: "#/components/schemas/AccountStatus" }
+        createdAt: { type: string, format: date-time }
+    AccountSelection:
+      type: object
+      required: [accountIds]
+      properties:
+        accountIds: { type: array, minItems: 1, maxItems: 500, items: { type: string, format: uuid } }
+    LegalBasisStatus:
+      type: string
+      enum: [pending, validated, rejected]
+    Contact:
+      type: object
+      required: [id, accountId, name, role, email, emailSource, emailVerified, verificationConfidence, verificationProvider, companyWhatsapp, legalBasis, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        accountId: { type: string, format: uuid }
+        name: { type: string }
+        role: { type: string }
+        email: { type: string, format: email }
+        emailSource: { $ref: "#/components/schemas/DataSource" }
+        emailVerified: { type: boolean }
+        verificationConfidence: { type: [integer, "null"], minimum: 0, maximum: 100 }
+        verificationProvider: { type: [string, "null"] }
+        companyWhatsapp: { type: [string, "null"] }
+        legalBasis: { $ref: "#/components/schemas/LegalBasisStatus" }
+        createdAt: { type: string, format: date-time }
+
+    # ── Prospect y eventos ───────────────────────────────────────────
+    ProspectStage:
+      type: string
+      enum: [found, enriched, unverified, in_sequence, waiting, replied, meeting, not_now, opted_out, discarded]
+    Channel:
+      type: string
+      enum: [email, whatsapp]
+    SequenceKind:
+      type: string
+      enum: [consultiva, trigger]
+    StepStatus:
+      type: string
+      enum: [planned, awaiting_approval, sent, skipped, cancelled, blocked]
+    SequenceStep:
+      type: object
+      required: [id, day, channel, title, intent, status, scheduledFor]
+      properties:
+        id: { type: string, format: uuid }
+        day: { type: integer }
+        channel: { $ref: "#/components/schemas/Channel" }
+        title: { type: string }
+        intent: { type: string }
+        status: { $ref: "#/components/schemas/StepStatus" }
+        scheduledFor: { type: [string, "null"], format: date-time }
+    Sequence:
+      type: object
+      required: [id, kind, steps, switchedFrom, switchedAt]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { $ref: "#/components/schemas/SequenceKind" }
+        steps: { type: array, items: { $ref: "#/components/schemas/SequenceStep" } }
+        switchedFrom: { oneOf: [{ $ref: "#/components/schemas/SequenceKind" }, { type: "null" }] }
+        switchedAt: { type: [string, "null"], format: date-time }
+    Agent:
+      type: string
+      enum: [orchestrator, account_finder, contact_finder, outreach, response, guardrail, human]
+    EventType:
+      type: string
+      enum: [decision, sent, blocked, deferred, stopped, replied, approved, rejected, opt_out, meeting_booked]
+    RuleCheck:
+      type: object
+      required: [rule, passed, detail]
+      properties:
+        rule: { type: string }
+        passed: { type: boolean }
+        detail: { type: [string, "null"] }
+    ProspectEvent:
+      type: object
+      required: [id, prospectId, at, agent, type, summary, reasoning, evidence, rulesChecked, message, stepId]
+      properties:
+        id: { type: string, format: uuid }
+        prospectId: { type: string, format: uuid }
+        at: { type: string, format: date-time }
+        agent: { $ref: "#/components/schemas/Agent" }
+        type: { $ref: "#/components/schemas/EventType" }
+        summary: { type: string }
+        reasoning: { type: [string, "null"] }
+        evidence: { type: array, items: { type: string } }
+        rulesChecked: { type: array, items: { $ref: "#/components/schemas/RuleCheck" } }
+        message:
+          oneOf:
+            - type: object
+              required: [channel, subject, body]
+              properties:
+                channel: { $ref: "#/components/schemas/Channel" }
+                subject: { type: [string, "null"] }
+                body: { type: string }
+            - type: "null"
+        stepId: { type: [string, "null"], format: uuid }
+    Prospect:
+      type: object
+      required: [id, campaignId, accountId, contactId, stage, sequence, nextActionAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        campaignId: { type: string, format: uuid }
+        accountId: { type: string, format: uuid }
+        contactId: { type: [string, "null"], format: uuid }
+        stage: { $ref: "#/components/schemas/ProspectStage" }
+        sequence: { oneOf: [{ $ref: "#/components/schemas/Sequence" }, { type: "null" }] }
+        nextActionAt: { type: [string, "null"], format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ProspectDetail:
+      type: object
+      required: [prospect, account, contact]
+      properties:
+        prospect: { $ref: "#/components/schemas/Prospect" }
+        account: { $ref: "#/components/schemas/Account" }
+        contact: { oneOf: [{ $ref: "#/components/schemas/Contact" }, { type: "null" }] }
+    ProspectActionResult:
+      type: object
+      required: [prospect, event]
+      properties:
+        prospect: { $ref: "#/components/schemas/Prospect" }
+        event: { $ref: "#/components/schemas/ProspectEvent" }
+
+    # ── Bandeja ──────────────────────────────────────────────────────
+    ReplyIntent:
+      type: string
+      enum: [interest, objection, not_now, out_of_office, opt_out, wrong_person, other]
+    DraftStatus:
+      type: string
+      enum: [pending_approval, approved, sent, discarded]
+    MeetingSlot:
+      type: object
+      required: [start, end, held]
+      properties:
+        start: { type: string, format: date-time }
+        end: { type: string, format: date-time }
+        held: { type: boolean }
+    Draft:
+      type: object
+      required: [channel, subject, body, slots, confidence, status]
+      properties:
+        channel: { $ref: "#/components/schemas/Channel" }
+        subject: { type: [string, "null"] }
+        body: { type: string }
+        slots: { type: array, items: { $ref: "#/components/schemas/MeetingSlot" } }
+        confidence: { type: string, enum: [alta, media, baja] }
+        status: { $ref: "#/components/schemas/DraftStatus" }
+    ApprovalEffect:
+      type: string
+      enum: [send_reply, hold_slots, create_opportunity, stop_sequence, add_to_suppression, schedule_follow_up]
+    InboxItem:
+      type: object
+      required: [id, prospectId, accountName, contactName, receivedAt, channel, text, intent, intentReasoning, draft, effects]
+      properties:
+        id: { type: string, format: uuid }
+        prospectId: { type: string, format: uuid }
+        accountName: { type: string }
+        contactName: { type: string }
+        receivedAt: { type: string, format: date-time }
+        channel: { $ref: "#/components/schemas/Channel" }
+        text: { type: string }
+        intent: { $ref: "#/components/schemas/ReplyIntent" }
+        intentReasoning: { type: string }
+        draft: { oneOf: [{ $ref: "#/components/schemas/Draft" }, { type: "null" }] }
+        effects: { type: array, items: { $ref: "#/components/schemas/ApprovalEffect" } }
+    ApproveDraft:
+      type: object
+      properties:
+        body: { type: string }
+        subject: { type: string }
+    RegenerateDraft:
+      type: object
+      required: [tone]
+      properties:
+        tone: { type: string, enum: [mas_breve, mas_formal, mas_cercano, otra_propuesta] }
+
+    # ── Cumplimiento y conexiones ────────────────────────────────────
+    Guardrails:
+      type: object
+      required: [maxSendsPerMailboxPerDay, requireVerifiedEmail, whatsappOnlyAfterReply, stopSequenceOnReply, autopilot]
+      properties:
+        maxSendsPerMailboxPerDay: { type: integer, minimum: 1, maximum: 200 }
+        requireVerifiedEmail: { type: boolean }
+        whatsappOnlyAfterReply: { type: boolean }
+        stopSequenceOnReply: { type: boolean }
+        autopilot: { type: boolean }
+    DomainHealth:
+      type: object
+      required: [domain, spf, dkim, dmarc, warmupDay, warmupTotalDays, bounceRatePct, complaints]
+      properties:
+        domain: { type: string }
+        spf: { type: boolean }
+        dkim: { type: boolean }
+        dmarc: { type: boolean }
+        warmupDay: { type: integer }
+        warmupTotalDays: { type: integer }
+        bounceRatePct: { type: number }
+        complaints: { type: integer }
+    ComplianceSummary:
+      type: object
+      required: [sendsToday, sendsLimit, contactsWithSource, contactsTotal, optOutsHandled, optOutsTotal, legalBasisValidatedPct, legalOpinionPending, domains]
+      properties:
+        sendsToday: { type: integer }
+        sendsLimit: { type: integer }
+        contactsWithSource: { type: integer }
+        contactsTotal: { type: integer }
+        optOutsHandled: { type: integer }
+        optOutsTotal: { type: integer }
+        legalBasisValidatedPct: { type: number }
+        legalOpinionPending: { type: boolean }
+        domains: { type: array, items: { $ref: "#/components/schemas/DomainHealth" } }
+    AuditEntry:
+      type: object
+      required: [id, at, agent, type, prospectId, accountName, summary, ruleApplied]
+      properties:
+        id: { type: string, format: uuid }
+        at: { type: string, format: date-time }
+        agent: { $ref: "#/components/schemas/Agent" }
+        type: { $ref: "#/components/schemas/EventType" }
+        prospectId: { type: [string, "null"], format: uuid }
+        accountName: { type: [string, "null"] }
+        summary: { type: string }
+        ruleApplied: { type: [string, "null"] }
+    Connection:
+      type: object
+      required: [kind, name, detail, status, lastCheckedAt]
+      properties:
+        kind: { type: string, enum: [microsoft365, company_data, email_verification, calendar, crm, llm] }
+        name: { type: string }
+        detail: { type: string }
+        status: { type: string, enum: [connected, error, not_configured] }
+        lastCheckedAt: { type: [string, "null"], format: date-time }
+
+    # ── Vistas agregadas ─────────────────────────────────────────────
+    Kpi:
+      type: object
+      required: [value, note, trend]
+      properties:
+        value: { type: integer }
+        note: { type: string }
+        trend: { type: array, items: { type: number } }
+    FunnelStage:
+      type: object
+      required: [key, label, value]
+      properties:
+        key: { type: string, enum: [found, high_fit, contacted, replied, meetings] }
+        label: { type: string }
+        value: { type: integer }
+    AgentActivity:
+      type: object
+      required: [agent, status, summary, at]
+      properties:
+        agent: { $ref: "#/components/schemas/Agent" }
+        status: { type: string, enum: [working, deciding, waiting_human, idle] }
+        summary: { type: string }
+        at: { type: string, format: date-time }
+    PendingDecision:
+      type: object
+      required: [id, kind, title, subtitle, href]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [inbox_draft, accounts_approval, whatsapp_approval] }
+        title: { type: string }
+        subtitle: { type: string }
+        href: { type: string }
+    UpcomingMeeting:
+      type: object
+      required: [id, accountName, contactName, start, status]
+      properties:
+        id: { type: string, format: uuid }
+        accountName: { type: string }
+        contactName: { type: string }
+        start: { type: string, format: date-time }
+        status: { type: string, enum: [confirmed, proposed, draft] }
+    JanoInsight:
+      type: object
+      required: [text, action]
+      properties:
+        text: { type: string }
+        action: { type: [string, "null"] }
+    DashboardSummary:
+      type: object
+      required: [campaignId, campaignName, kpis, meetingsGoal, funnel, agents, guardrailNotice, insight, pending, meetingsByWeek, upcomingMeetings]
+      properties:
+        campaignId: { type: [string, "null"], format: uuid }
+        campaignName: { type: [string, "null"] }
+        kpis:
+          type: object
+          required: [accountsFound, contactsVerified, openConversations, meetingsBooked]
+          properties:
+            accountsFound: { $ref: "#/components/schemas/Kpi" }
+            contactsVerified: { $ref: "#/components/schemas/Kpi" }
+            openConversations: { $ref: "#/components/schemas/Kpi" }
+            meetingsBooked: { $ref: "#/components/schemas/Kpi" }
+        meetingsGoal: { type: integer }
+        funnel: { type: array, items: { $ref: "#/components/schemas/FunnelStage" } }
+        agents: { type: array, items: { $ref: "#/components/schemas/AgentActivity" } }
+        guardrailNotice: { type: [string, "null"] }
+        insight: { oneOf: [{ $ref: "#/components/schemas/JanoInsight" }, { type: "null" }] }
+        pending: { type: array, items: { $ref: "#/components/schemas/PendingDecision" } }
+        meetingsByWeek:
+          type: array
+          items:
+            type: object
+            required: [week, count]
+            properties:
+              week: { type: string }
+              count: { type: integer }
+        upcomingMeetings: { type: array, items: { $ref: "#/components/schemas/UpcomingMeeting" } }
+    FlowNode:
+      type: object
+      required: [stage, label, value, note, active]
+      properties:
+        stage:
+          oneOf:
+            - $ref: "#/components/schemas/ProspectStage"
+            - type: string
+              enum: [icp]
+        label: { type: string }
+        value: { type: integer }
+        note: { type: string }
+        active: { type: boolean }
+    FlowExit:
+      type: object
+      required: [afterStage, label, value, note]
+      properties:
+        afterStage: { $ref: "#/components/schemas/ProspectStage" }
+        label: { type: string }
+        value: { type: integer }
+        note: { type: string }
+    FlowMap:
+      type: object
+      required: [campaignId, campaignName, nodes, exits, bottleneck]
+      properties:
+        campaignId: { type: string, format: uuid }
+        campaignName: { type: string }
+        nodes: { type: array, items: { $ref: "#/components/schemas/FlowNode" } }
+        exits: { type: array, items: { $ref: "#/components/schemas/FlowExit" } }
+        bottleneck:
+          oneOf:
+            - type: object
+              required: [stage, text, option, effect]
+              properties:
+                stage: { $ref: "#/components/schemas/ProspectStage" }
+                text: { type: string }
+                option: { type: string }
+                effect: { type: string }
+            - type: "null"

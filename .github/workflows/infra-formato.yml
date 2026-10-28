@@ -1,0 +1,33 @@
+# Formato y validación sintáctica del Terraform. No toca AWS: `validate`
+# corre con `-backend=false`, así que no necesita credenciales ni estado.
+
+name: infra
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  formato:
+    name: infra · formato y validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: infra/environments/dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - name: fmt
+        run: terraform fmt -check -recursive ../..
+
+      - name: init sin backend
+        run: terraform init -backend=false -input=false
+
+      - name: validate
+        run: terraform validate -no-color

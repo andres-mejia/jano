@@ -1,0 +1,26 @@
+{
+  "name": "@jano/domain",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tipos y esquemas del dominio de Jano, compartidos entre la app y el backend. No conoce infraestructura.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "type-check": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts",
+    "lint": "echo 'sin lint propio: lo cubre tsc'"
+  },
+  "dependencies": {
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.0"
+  }
+}

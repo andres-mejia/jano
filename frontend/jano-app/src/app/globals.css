@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+/* Tokens de marca Jano (AGENTS.md §5). Solo estos; nunca colores sueltos. */
+@theme {
+  --color-jano-tinta: #14162b;
+  --color-jano-tinta-2: #23264a;
+  --color-jano-tinta-3: #34386a;
+  --color-jano-cobalto: #4338d6;
+  --color-jano-cobalto-oscuro: #2e25a8;
+  --color-jano-cobalto-claro: #7b73f0;
+  --color-jano-cobalto-tinte: #ecebfc;
+  --color-jano-cobalto-linea: #c9c6f5;
+  --color-jano-bronce: #e39a2e;
+  --color-jano-bronce-tinte: #fbf0dd;
+  --color-jano-bronce-texto: #7a4406;
+  --color-jano-niebla: #ecedf4;
+  --color-jano-papel: #ffffff;
+  --color-jano-linea: #e1e3ee;
+  --color-jano-muted: #5b6078;
+  --color-jano-gris: #e9eaf1;
+  --color-jano-gris-texto: #3a3e57;
+  --color-jano-verde: #1b7f5c;
+  --color-jano-verde-tinte: #e3f3ec;
+  --color-jano-verde-texto: #14614a;
+  --color-jano-rojo: #b93a26;
+  --color-jano-rojo-tinte: #fbe9e5;
+  --color-jano-rojo-texto: #8e2a1a;
+  --color-jano-nav-texto: #c9cce0;
+  --color-jano-nav-muted: #8388a8;
+
+  --font-display: var(--font-bricolage), "Figtree", system-ui, sans-serif;
+  --font-sans: var(--font-figtree), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+}
+
+body {
+  background: var(--color-jano-niebla);
+  color: var(--color-jano-tinta);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Borde "decide la IA": todo lo que propone o razona el modelo lo lleva. */
+.ai-border {
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--color-jano-papel), var(--color-jano-papel)) padding-box,
+    linear-gradient(120deg, var(--color-jano-cobalto-claro), var(--color-jano-cobalto) 45%, var(--color-jano-bronce)) border-box;
+}
+
+.dot-grid {
+  background-color: #fafafd;
+  background-image: radial-gradient(#d5d7e6 1px, transparent 1px);
+  background-size: 18px 18px;
+}

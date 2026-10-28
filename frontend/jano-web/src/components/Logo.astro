@@ -1,0 +1,37 @@
+---
+/**
+ * Símbolo de Jano: puerta de dos hojas con un tirador en cada una.
+ * Se lee también como dos perfiles mirando en sentidos opuestos.
+ */
+interface Props {
+  size?: number;
+  left?: string;
+  right?: string;
+  dots?: string;
+  dotsRight?: string;
+  class?: string;
+}
+
+const {
+  size = 32,
+  left = "var(--color-jano-cobalto)",
+  right = "var(--color-jano-bronce)",
+  dots = "var(--color-jano-papel)",
+  dotsRight = "var(--color-jano-tinta)",
+  class: className = "",
+} = Astro.props;
+---
+
+<svg
+  width={size}
+  height={size}
+  viewBox="0 0 32 32"
+  aria-hidden="true"
+  class={className}
+  style="flex-shrink: 0"
+>
+  <path d="M4 29V15A11 11 0 0 1 15 4v25z" fill={left}></path>
+  <path d="M17 4a11 11 0 0 1 11 11v14H17z" fill={right}></path>
+  <circle cx="11.5" cy="18" r="1.6" fill={dots}></circle>
+  <circle cx="20.5" cy="18" r="1.6" fill={dotsRight}></circle>
+</svg>

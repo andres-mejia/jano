@@ -1,0 +1,53 @@
+# Fusible de CI del frontend.
+#
+# Amplify construye y publica las dos apps en cuanto algo entra en main, sin
+# ningún check previo. Este workflow replica el build de Amplify (mismo pnpm,
+# mismo lockfile) y añade el type-check, para que un PR roto no llegue al
+# sitio publicado.
+#
+# Sin filtro `paths` en el disparador: un check obligatorio con filtro de
+# rutas no reporta en los PR que no tocan esas rutas y los deja bloqueados.
+
+name: Frontend CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck-build:
+    name: frontend · typecheck + build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: type-check
+        run: pnpm type-check
+
+      - name: build (modo mock, sin Cognito)
+        env:
+          NEXT_PUBLIC_AUTH_MODE: mock
+          NEXT_PUBLIC_ENVIRONMENT: dev
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:8080
+          PUBLIC_APP_URL: http://localhost:3000
+        run: pnpm build
+
+      - name: tests
+        run: pnpm test

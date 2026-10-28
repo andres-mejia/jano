@@ -1,0 +1,32 @@
+---
+import Logo from "./Logo.astro";
+
+const appUrl = import.meta.env.PUBLIC_APP_URL ?? "http://localhost:3000";
+const links = [
+  { href: "#como-funciona", label: "Cómo funciona" },
+  { href: "#reglas", label: "Reglas" },
+  { href: "#precio", label: "Precio" },
+];
+---
+
+<header class="sticky top-0 z-20 border-b border-jano-linea/70 bg-jano-niebla/85 backdrop-blur">
+  <div class="mx-auto flex max-w-6xl items-center gap-6 px-5 py-4">
+    <a href="/" class="flex items-center gap-2.5 text-jano-tinta no-underline" aria-label="Jano, inicio">
+      <Logo size={28} />
+      <span class="font-display text-2xl font-bold">Jano</span>
+    </a>
+    <nav class="ml-auto hidden items-center gap-1 md:flex" aria-label="Principal">
+      {links.map((l) => (
+        <a href={l.href} class="rounded-lg px-3 py-2 text-[15px] font-semibold text-jano-muted hover:bg-white hover:text-jano-tinta">
+          {l.label}
+        </a>
+      ))}
+    </nav>
+    <div class="flex items-center gap-2 md:ml-2">
+      <a href={`${appUrl}/login`} class="rounded-lg px-3 py-2 text-[15px] font-semibold text-jano-tinta hover:bg-white">Entrar</a>
+      <a href="#lista" class="rounded-lg bg-jano-cobalto px-4 py-2 text-[15px] font-semibold text-white hover:bg-jano-cobalto-oscuro">
+        Pedir acceso
+      </a>
+    </div>
+  </div>
+</header>

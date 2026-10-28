@@ -1,0 +1,49 @@
+# Node
+node_modules/
+.pnpm-store/
+*.tsbuildinfo
+.eslintcache
+
+# Next.js
+frontend/jano-app/.next/
+frontend/jano-app/out/
+next-env.d.ts
+
+# Astro
+frontend/jano-web/dist/
+frontend/jano-web/.astro/
+
+# Paquetes compilados
+packages/*/dist/
+
+# Lambdas empaquetadas por Terraform
+infra/modules/*/lambda/*.zip
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+tfplan
+tfplan.*
+
+# Entorno local
+.env
+.env.*
+!.env.example
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Capturas y salidas locales
+tmp/
+coverage/
+playwright-report/
+test-results/
