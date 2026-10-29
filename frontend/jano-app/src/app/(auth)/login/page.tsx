@@ -1,12 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useState, useSyncExternalStore } from "react";
 
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/primitives";
-import { signIn } from "@/lib/auth/session";
+import { mensajeDeRetorno } from "@/lib/auth/oauth-retorno";
+import { signIn, signInWithGoogle } from "@/lib/auth/session";
 import { ENV, isMockMode } from "@/lib/config/env";
+
+const sinSuscripcion = () => () => {};
+const leerErrorDeRetorno = () => mensajeDeRetorno(new URLSearchParams(window.location.search).get("error"));
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,9 +18,29 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const conGoogle = !isMockMode() && !!ENV.cognito.domain;
+
+  // Error del retorno de Google (lo deja aquí el layout del dashboard). Se lee de la URL
+  // en el cliente (en el servidor no hay mensaje) y deja de mostrarse al volver a intentar.
+  const errorDeRetorno = useSyncExternalStore(sinSuscripcion, leerErrorDeRetorno, () => null);
+  const [retornoVisto, setRetornoVisto] = useState(false);
+  const aviso = error ?? (retornoVisto ? null : errorDeRetorno);
+
+  async function onGoogle() {
+    setRetornoVisto(true);
+    setBusy(true);
+    setError(null);
+    try {
+      await signInWithGoogle();
+    } catch {
+      setError(mensajeDeRetorno("google"));
+      setBusy(false);
+    }
+  }
 
   async function onSubmit(ev: FormEvent) {
     ev.preventDefault();
+    setRetornoVisto(true);
     setBusy(true);
     setError(null);
     try {
@@ -55,14 +79,24 @@ export default function LoginPage() {
             Contraseña
             <input type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5 w-full rounded-[10px] border border-jano-linea px-3.5 py-2.5 text-[15px] outline-none focus:border-jano-cobalto focus:ring-2 focus:ring-jano-cobalto/25" />
           </label>
-          {error && (
+          {aviso && (
             <p role="alert" className="mt-3 rounded-[10px] bg-jano-rojo-tinte p-3 text-sm text-jano-rojo-texto">
-              {error}
+              {aviso}
             </p>
           )}
           <Button type="submit" size="lg" disabled={busy} className="mt-6 w-full">
             {busy ? "Entrando…" : "Entrar"}
           </Button>
+          {conGoogle && (
+            <>
+              <div className="my-4 flex items-center gap-3 text-xs text-jano-muted" aria-hidden="true">
+                <span className="h-px flex-1 bg-jano-linea" />o<span className="h-px flex-1 bg-jano-linea" />
+              </div>
+              <Button type="button" variant="outline" size="lg" disabled={busy} onClick={onGoogle} className="w-full">
+                Continuar con Google
+              </Button>
+            </>
+          )}
           {isMockMode() && <p className="mt-3 text-center text-xs text-jano-muted">En modo de ejemplo cualquier credencial entra.</p>}
         </form>
       </section>
