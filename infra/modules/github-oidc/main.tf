@@ -193,13 +193,20 @@ resource "aws_iam_role_policy" "plan_state" {
         Sid    = "SinPlanosDeDatos"
         Effect = "Deny"
         Action = [
-          "secretsmanager:GetSecretValue", "ssm:GetParameter", "ssm:GetParameters", "ssm:GetParametersByPath",
+          "ssm:GetParameter", "ssm:GetParameters", "ssm:GetParametersByPath",
           "sqs:ReceiveMessage", "rds-db:connect", "rds-data:*",
           "cognito-idp:ListUsers", "cognito-idp:AdminGetUser", "cognito-idp:ListUsersInGroup",
           "logs:GetLogEvents", "logs:FilterLogEvents", "logs:StartQuery",
           "kinesis:GetRecords", "athena:GetQueryResults",
         ]
         Resource = "*"
+      },
+      {
+        # El plan lee con `data` el client OAuth de Google (spec 006); ningún otro secreto.
+        Sid         = "SinSecretosSalvoGoogleOAuth"
+        Effect      = "Deny"
+        Action      = ["secretsmanager:GetSecretValue"]
+        NotResource = ["arn:aws:secretsmanager:${local.region}:${local.account_id}:secret:jano/${var.environment}/google-oauth-*"]
       },
       {
         Sid      = "SinEscrituras"
