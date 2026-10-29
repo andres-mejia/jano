@@ -22,10 +22,10 @@ Convención: `[Tn] [P?] descripción · verificación`. `[P]` = paralelizable. C
 - [X] T022 `apply`; crear usuario piloto con `aws cognito-idp admin-create-user` y atributos custom · ID token decodificado lleva ambos claims.
 
 ## Fase 3 · Correo y acceso anticipado
-- [ ] T030 `infra/modules/email`: configuration set `jano-dev`, SNS y alarmas de reputación como Cardea; sin regla de recepción (`research.md` T002) · `validate` OK.
-- [ ] T031 `infra/modules/waitlist`: tabla, rol, Lambda Node 22 con log group de retención 30 d, HTTP API con CORS (solo `jano.tekhos.com`, `jano-app.tekhos.com` y localhost) y throttling · `validate` OK.
-- [ ] T032 `lambda/handler/index.mjs` con validación de email, honeypot, idempotencia (409), rate limit por IP con TTL, SES; `index.test.mjs` con `node --test` · tests verdes.
-- [ ] T033 `apply`; `curl -X POST $WAITLIST_URL -d '{"email":"prueba@example.com"}'` · 201, item en DynamoDB, correo recibido; segundo POST → 409.
+- [X] T030 `infra/modules/email`: configuration set `jano-dev`, SNS y alarmas de reputación como Cardea; sin regla de recepción (`research.md` T002) · `validate` OK.
+- [X] T031 `infra/modules/waitlist`: tabla, rol, Lambda Node 22 con log group de retención 30 d, HTTP API con CORS (solo `jano.tekhos.com`, `jano-app.tekhos.com` y localhost) y throttling · `validate` OK.
+- [X] T032 `lambda/handler/index.mjs` con validación de email, honeypot, idempotencia (409), rate limit por IP con TTL, SES; `index.test.mjs` con `node --test` · tests verdes.
+- [X] T033 `apply`; `curl -X POST $WAITLIST_URL -d '{"email":"prueba@example.com"}'` · 201, item en DynamoDB, correo recibido; segundo POST → 409.
 
 ## Fase 4 · API vacía con autorizador
 - [ ] T040 `infra/modules/api-gateway`: HTTP API `jano-dev`, autorizador JWT (issuer del pool, audience del cliente), CORS para app y localhost, stage `$default` con throttling · `validate` OK.

@@ -75,3 +75,18 @@ aws cognito-idp initiate-auth --auth-flow USER_AUTH (piloto@rumbonorte.example, 
 initiate-auth de un usuario sin tenant (borrado después)
   -> UserLambdaValidationException: PreTokenGeneration failed with error usuario sin custom:tenant_id.
 ```
+
+### Fase 3 · Correo y acceso anticipado (2026-10-29)
+
+```
+node --test infra/modules/waitlist/lambda/handler -> tests 6, pass 6, fail 0 (201, 409, 429, honeypot, 400, 405)
+terraform apply tfplan                            -> Apply complete! Resources: 16 added, 0 changed, 0 destroyed.
+curl -X POST $WAITLIST_URL -d '{"email":"success@simulator.amazonses.com"}'  -> {"ok":true} 201
+mismo POST otra vez                               -> {"ok":false,"error":"already_registered"} 409
+OPTIONS con origin https://evil.example           -> 204 sin access-control-allow-origin
+OPTIONS con origin https://jano.tekhos.com        -> 204 access-control-allow-origin: https://jano.tekhos.com
+aws dynamodb get-item                             -> {email, partition: waitlist, created_at, locale: es, source: landing}
+Gmail (redirección del catch-all)                 -> aviso de jano@tekhos.com a jano@tekhos.com recibido
+```
+
+Se prueba con el simulador de SES y no con `prueba@example.com`: `example.com` no acepta correo y el rebote contaría en la reputación de SES, que es de toda la cuenta. El 429 se cubre con el test unitario para no generar cinco avisos reales; el item de prueba se borró después.
