@@ -39,8 +39,8 @@ Convención: `[Tn] [P?] descripción · verificación`. `[P]` = paralelizable. C
 
 ## Fase 6 · CI con OIDC
 - [X] T060 `infra/modules/github-oidc`: `data` del proveedor OIDC existente, rol de apply `jano-dev-github-actions` (main) y rol de plan `jano-dev-github-actions-plan` (pull_request); la política de arranque del rol de apply se pega por CLI con el mismo comando que Cardea y se documenta · `validate` OK.
-- [ ] T061 `.github/workflows/infra-plan.yml` (PR, comenta el plan) e `infra-apply.yml` (push a `main`, guarda del plan: aborta si hay `destroy`) · un PR de prueba comenta el plan.
+- [X] T061 `.github/workflows/infra-plan.yml` (PR, comenta el plan) e `infra-apply.yml` (push a `main`, guarda del plan: aborta si hay `destroy`) · un PR de prueba comenta el plan.
 - [ ] T062 `docs/guias/despliegue-dev.md` con bootstrap, variables, comandos y qué se hace a mano (zona DNS, conexión Amplify, usuario piloto) · guía revisada por Andrés.
 
 ## Cierre
-- [ ] T070 `terraform plan` sin cambios; `specs/002-infra-dev-aws/spec.md` con los SC marcados y la evidencia (comando y salida) en el cuerpo del PR.
+- [X] T070 `terraform plan` sin cambios; `specs/002-infra-dev-aws/spec.md` con los SC marcados y la evidencia (comando y salida) en el cuerpo del PR.
