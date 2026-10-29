@@ -20,7 +20,8 @@ Decisiones de Andrés (2026-10-29):
 5. Outreach elige la secuencia (consultiva o por señal) y redacta cada paso. El motor comprueba las reglas y deja cada paso en la bandeja de aprobación. Si aparece una señal a mitad de la consultiva, Outreach propone cambiar de rama con razonamiento y evidencia; la persona lo aprueba.
 6. La persona aprueba y el correo sale por SES. La persona responde desde Gmail; la respuesta entra sola y detiene la secuencia.
 7. Response clasifica la intención, redacta la contestación con dos huecos y la deja en la bandeja. Al aprobar, sale la contestación con una invitación de calendario (`.ics`), se crea la oportunidad y el prospect pasa a `meeting`.
-8. Centro de mando, campañas, prospects, flujo, bandeja y auditoría muestran ese recorrido, calculado del registro de eventos. Las oportunidades se exportan a Excel (CSV).
+8. En cualquier pantalla, «Pide algo a Jano» (Ctrl K) responde preguntas sobre la campaña citando el registro: «¿por qué se descartó Travesía?», «¿qué tengo pendiente de Valencia?».
+9. Centro de mando, campañas, prospects, flujo, bandeja y auditoría muestran ese recorrido, calculado del registro de eventos. Las oportunidades se exportan a Excel (CSV).
 
 ## Escenarios de usuario
 
@@ -45,6 +46,10 @@ Decisiones de Andrés (2026-10-29):
 ### US6 · La app sin datos de ejemplo (P1)
 **Aceptación**: con el tenant de prueba, todas las rutas del contrato las sirve el backend real; `demo_data` pasa a `false` en dev y la app no cambia de forma.
 
+### US7 · Pide algo a Jano (P2)
+La barra «Pide algo a Jano» de las pantallas de referencia deja de ser decorativa: la persona pregunta en lenguaje natural sobre sus datos y Jano responde citando de dónde lo saca.
+**Aceptación**: «¿por qué se descartó X?» devuelve el motivo con enlace al evento; «¿qué tengo pendiente?» lista los elementos de la bandeja con enlace; una pregunta sobre otro tenant o sin datos responde que no lo sabe; «aprueba el borrador de X» no aprueba nada y lleva a la pantalla de aprobación.
+
 ## Requisitos funcionales
 
 ### Motor y datos
@@ -63,6 +68,7 @@ Decisiones de Andrés (2026-10-29):
 - **FR-013b** Fuente de candidatas `CompanySource` con adaptador `OsmCompanySource` (Overpass API, `shop=travel_agency` y `office=travel_agent` con `website`, por región del ICP; se descartan las de cadena con etiqueta `brand`), y `ManualCompanySource` para dominios pegados. Cada cuenta guarda su origen (`osm:<tipo>/<id>` o `manual`) y la atribución ODbL se muestra en la app.
 - **FR-014** `PiiStripper` antes de cada llamada al modelo: teléfonos, emails, NIF/DNI e IBAN se sustituyen por marcadores.
 - **FR-015** Sin datos personales de terceros reales: el Contact Finder devuelve un cargo y el motivo, nunca nombre ni email de una persona real de la web; el contacto se guarda como «Cargo (prueba)» con el destinatario de la lista blanca.
+- **FR-017** Orquestador con IA (ADR-002, capa de planificación): en cada punto de decisión (cuenta aprobada, paso vencido, respuesta clasificada, señal nueva) el puerto `PlanificadorOrquestador` propone **una** acción de un menú cerrado derivado del estado del prospect (`planificar_secuencia`, `cambiar_rama`, `esperar_hasta`, `pedir_borrador`, `detener`, `escalar_a_humano`, `descartar`) con razonamiento y evidencia. El motor la valida contra las transiciones y las reglas; si no cabe, la rechaza, lo registra y la pasa a una persona. Una vez al día revisa la campaña y deja la «Lectura de Jano» (cuello de botella y prioridad) en el centro de mando.
 - **FR-016** Coste y latencia por llamada en logs JSON con `tenant_id` y agente; tope diario de 500 llamadas por tenant.
 
 ### Correo (SES)
@@ -79,12 +85,20 @@ Decisiones de Andrés (2026-10-29):
 - **FR-031b** Oportunidades: lista en el centro de mando y `GET /opportunities/export` (CSV con separador `;` y BOM UTF-8 para Excel en español).
 - **FR-032** Una marca visible «Prueba de concepto: destinatarios de prueba» en prospects y bandeja mientras el destinatario sea de la lista blanca.
 
+### Pide algo a Jano
+- **FR-040** Contrato: `POST /copilot/questions` (`{ question, context?: { screen, entityId } }`) devuelve `{ answer, citations: [{ kind: event|prospect|account|inbox, id, label, href }] }`; antes del código.
+- **FR-041** El modelo solo tiene herramientas de lectura sobre los datos del tenant, con RLS como cualquier petición: buscar cuenta o prospect por nombre, eventos de un prospect, resumen y flujo de la campaña, bandeja pendiente y auditoría por regla. Ninguna herramienta escribe; una petición de acción devuelve el enlace a la pantalla donde se aprueba.
+- **FR-042** Cada afirmación de la respuesta con datos lleva cita; sin datos que lo respalden, responde que no lo sabe. Pregunta y respuesta quedan en `copilot_turns` (append-only) con las herramientas usadas.
+- **FR-043** Interfaz: la barra existente abre un panel con Ctrl K o al pulsarla, con preguntas sugeridas según la pantalla y respuestas con enlaces; el contexto de la pantalla (campaña o prospect abierto) viaja con la pregunta.
+- **FR-044** Mismo `PiiStripper`, tope diario y registro de coste que los agentes (FR-014, FR-016).
+
 ## Criterios de éxito
 - **SC-001** El recorrido 1-8 completo en dev con una empresa real y un Gmail de la lista blanca, sin tocar la base de datos a mano.
 - **SC-002** Cero envíos fuera de la lista blanca: comprobable en `prospect_events` y en las métricas de SES.
 - **SC-003** Respuesta en la bandeja en menos de 2 minutos desde que se envía desde Gmail.
 - **SC-004** Coste medio por cuenta analizada y por prospect anotado en `research.md`.
 - **SC-005** Tests del motor y de las reglas contra Postgres real; agentes con adaptador determinista en CI.
+- **SC-006** «Pide algo a Jano» responde con cita a 10 preguntas de un guion de demo sobre el recorrido real, sin una sola afirmación sin respaldo.
 
 ## Dependencias elegidas
 Investigadas el 2026-10-29 frente a alternativas open source (Firecrawl, Crawlee, Temporal, Inngest, LangGraph.js, Mastra, Reacher, AgentSDR, Twenty); el motivo de cada descarte está en `research.md`.
