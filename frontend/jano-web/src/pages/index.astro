@@ -12,8 +12,12 @@ const problems = [
   { title: "Responder y agendar", text: "Las respuestas se contestan tarde y la oportunidad no queda registrada." },
 ];
 
-const agents = [
-  { name: "Orquestador", text: "Convierte una frase en ICP, planifica la campaña y elige el siguiente paso de cada prospect.", lead: true },
+const lead = {
+  name: "Orquestador",
+  text: "Convierte una frase en ICP, planifica la campaña y elige el siguiente paso de cada prospect.",
+};
+
+const crew = [
   { name: "Account Finder", text: "Lee registros, webs y prensa; puntúa el fit y cita la evidencia y el trigger." },
   { name: "Contact Finder", text: "Elige al interlocutor, cruza fuentes y verifica el email con un proveedor externo." },
   { name: "Outreach", text: "Elige la secuencia, redacta cada mensaje con contexto y cambia de rama según la reacción." },
@@ -36,6 +40,13 @@ const flow = [
   { label: "En secuencia", value: "96" },
   { label: "Respuestas", value: "23" },
   { label: "Reuniones", value: "7" },
+];
+
+const included = [
+  "Datos registrales y verificación incluidos",
+  "Buzón de Microsoft 365 propio, dominio secundario calentado",
+  "Exportación a Excel y a tu CRM",
+  "Métrica única: coste por reunión",
 ];
 
 const faqs = [
@@ -71,7 +82,7 @@ const faqs = [
         <h1 class="font-display text-5xl font-bold leading-[1.02] text-jano-tinta sm:text-6xl">
           Abre la puerta correcta.
         </h1>
-        <p class="mt-5 max-w-xl text-lg leading-relaxed text-jano-muted">
+        <p class="mt-5 max-w-xl text-pretty text-lg leading-relaxed text-jano-muted">
           Jano es un equipo comercial de IA. Encuentra cuentas, localiza al contacto, escribe en el momento oportuno y agenda la reunión. Tú apruebas lo que sale con tu nombre.
         </p>
         <div class="mt-8 max-w-lg">
@@ -97,92 +108,132 @@ const faqs = [
 
     <!-- Problema -->
     <section class="border-y border-jano-linea bg-white">
-      <div class="mx-auto max-w-6xl px-5 py-20">
-        <h2 class="font-display max-w-3xl text-3xl font-bold sm:text-4xl">Cuatro tareas de prospección y nadie con tiempo para hacerlas</h2>
-        <p class="mt-4 max-w-2xl text-jano-muted">Una pyme B2B no tiene SDR. Prospectar bien son quince horas a la semana que nadie hace con constancia, y las herramientas que lo resuelven están pensadas para Estados Unidos: datos pobres de empresas españolas, inglés por defecto y precios de equipo de ventas.</p>
-        <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {problems.map((p) => (
-            <div class="rounded-2xl border border-jano-linea bg-jano-niebla p-5">
-              <h3 class="font-display text-lg font-bold">{p.title}</h3>
-              <p class="mt-2 text-sm leading-relaxed text-jano-muted">{p.text}</p>
-            </div>
-          ))}
+      <div class="mx-auto grid max-w-6xl gap-10 px-5 py-20 sm:py-24 lg:grid-cols-[5fr_7fr] lg:gap-16">
+        <div>
+          <h2 class="font-display text-balance text-3xl font-bold sm:text-4xl">Cuatro tareas de prospección y nadie con tiempo para hacerlas</h2>
+          <p class="mt-4 text-pretty leading-relaxed text-jano-muted">Una pyme B2B no tiene SDR. Prospectar bien son quince horas a la semana que nadie hace con constancia, y las herramientas que lo resuelven están pensadas para Estados Unidos: datos pobres de empresas españolas, inglés por defecto y precios de equipo de ventas.</p>
         </div>
+        <ol class="divide-y divide-jano-linea border-y border-jano-linea">
+          {problems.map((p, i) => (
+            <li class="grid grid-cols-[2.5rem_1fr] gap-x-4 py-6 sm:grid-cols-[3rem_14rem_1fr] sm:gap-x-6">
+              <span class="font-mono pt-1 text-sm text-jano-muted tabular">{String(i + 1).padStart(2, "0")}</span>
+              <h3 class="font-display text-lg font-bold">{p.title}</h3>
+              <p class="col-start-2 mt-1 text-pretty leading-relaxed text-jano-muted sm:col-start-3 sm:mt-0">{p.text}</p>
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
 
     <!-- Cómo funciona -->
-    <section id="como-funciona" class="mx-auto max-w-6xl px-5 py-20">
-      <div class="max-w-3xl">
+    <section id="como-funciona" class="mx-auto max-w-6xl px-5 py-20 sm:py-28">
+      <div class="max-w-4xl">
         <p class="text-sm font-semibold uppercase tracking-wide text-jano-cobalto">Cómo funciona</p>
-        <h2 class="font-display mt-2 text-3xl font-bold sm:text-4xl">Un orquestador y cuatro agentes. La IA decide, un motor con límites ejecuta.</h2>
-        <p class="mt-4 text-jano-muted">Describes tu cliente ideal en una frase. Lo demás lo hace el equipo, y cada decisión queda registrada con el razonamiento, la evidencia leída y las reglas comprobadas.</p>
-      </div>
-      <div class="mt-10 grid gap-4 md:grid-cols-5">
-        {agents.map((a) => (
-          <div class={`rounded-2xl p-5 ${a.lead ? "bg-jano-cobalto text-white md:col-span-5 lg:col-span-1" : "ai-border"}`}>
-            <h3 class="font-display text-lg font-bold">{a.name}</h3>
-            <p class={`mt-2 text-sm leading-relaxed ${a.lead ? "text-[#E3E1FB]" : "text-jano-muted"}`}>{a.text}</p>
-          </div>
-        ))}
+        <h2 class="font-display mt-3 text-balance text-4xl font-bold leading-[1.05] sm:text-5xl">Un orquestador y cuatro agentes. La IA decide, un motor con límites ejecuta.</h2>
+        <p class="mt-5 max-w-2xl text-pretty text-lg leading-relaxed text-jano-muted">Describes tu cliente ideal en una frase. Lo demás lo hace el equipo, y cada decisión queda registrada con el razonamiento, la evidencia leída y las reglas comprobadas.</p>
       </div>
 
-      <!-- Flujo -->
-      <div class="mt-12 rounded-3xl border border-jano-linea bg-jano-papel p-6 sm:p-8">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <h3 class="font-display text-xl font-bold">El mapa de flujo, en directo</h3>
-          <span class="text-sm text-jano-muted">En la app, cada etapa se abre y enseña sus registros</span>
+      <!-- Agentes: el orquestador coordina a los otros cuatro, en orden -->
+      <div class="mt-14 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,3fr)] lg:gap-10">
+        <div class="relative rounded-2xl bg-jano-cobalto p-6 text-white">
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-sm text-jano-sobre-cobalto tabular">01</span>
+            <span class="text-xs font-semibold uppercase tracking-wide text-jano-sobre-cobalto">Coordina</span>
+          </div>
+          <h3 class="font-display mt-6 text-2xl font-bold">{lead.name}</h3>
+          <p class="mt-2 text-pretty leading-relaxed text-jano-sobre-cobalto">{lead.text}</p>
+          <span aria-hidden="true" class="absolute -right-10 top-10 hidden h-0.5 w-10 bg-jano-cobalto-linea lg:block"></span>
+          <span aria-hidden="true" class="absolute -bottom-8 left-[1.4rem] h-8 w-0.5 bg-jano-cobalto-linea lg:hidden"></span>
         </div>
-        <ol class="mt-6 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
-          {flow.map((f, i) => (
-            <li class={`relative rounded-2xl border p-4 ${i === flow.length - 1 ? "border-jano-tinta bg-jano-tinta text-white" : "border-jano-linea bg-white"}`}>
-              <div class={`text-xs font-semibold ${i === flow.length - 1 ? "text-[#C9CCE0]" : "text-jano-muted"}`}>{f.label}</div>
-              <div class="font-display mt-1 text-2xl font-bold tabular">{f.value}</div>
+        <ol class="relative grid gap-8 lg:grid-cols-4 lg:gap-6">
+          <span aria-hidden="true" class="absolute bottom-4 left-[1.4rem] top-0 w-0.5 bg-jano-cobalto-linea lg:left-0 lg:right-[calc((100%-4.5rem)/4-3rem)] lg:bottom-auto lg:top-[2.45rem] lg:h-0.5 lg:w-auto"></span>
+          {crew.map((a, i) => (
+            <li class="relative pl-16 lg:pl-0 lg:pt-[4.5rem]">
+              <span class="absolute left-0 top-0 flex h-12 w-12 items-center justify-center rounded-full border-2 border-jano-cobalto-linea bg-jano-niebla font-mono text-sm font-medium text-jano-cobalto-oscuro tabular lg:top-4">
+                {String(i + 2).padStart(2, "0")}
+              </span>
+              <h3 class="font-display pt-2.5 text-lg font-bold lg:pt-0">{a.name}</h3>
+              <p class="mt-1.5 text-pretty text-[15px] leading-relaxed text-jano-muted">{a.text}</p>
             </li>
           ))}
         </ol>
-        <p class="mt-5 text-sm text-jano-muted">Dónde está cada prospect, dónde se atasca el embudo y qué decidió la IA en cada etapa. No hay cajas negras: si un correo salió, puedes ver por qué y qué reglas se comprobaron antes.</p>
+      </div>
+
+      <!-- Flujo -->
+      <div class="mt-16 rounded-3xl border border-jano-linea bg-jano-papel p-6 sm:p-8">
+        <div class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+          <h3 class="font-display text-xl font-bold">El mapa de flujo, en directo</h3>
+          <span class="text-sm text-jano-muted">En la app, cada etapa se abre y enseña sus registros</span>
+        </div>
+        <ol class="mt-8 lg:grid lg:grid-cols-6">
+          {flow.map((f, i) => {
+            const last = i === flow.length - 1;
+            return (
+              <li class="relative flex items-baseline justify-between gap-4 py-2 pl-8 lg:block lg:py-0 lg:pl-0 lg:pr-4">
+                {!last && (
+                  <span aria-hidden="true" class="absolute left-[5px] top-1/2 h-full w-0.5 bg-jano-cobalto-linea lg:left-4 lg:right-2 lg:top-[5px] lg:h-0.5 lg:w-auto"></span>
+                )}
+                {!last && (
+                  <svg aria-hidden="true" viewBox="0 0 8 12" class="absolute right-1 top-0 hidden h-3 w-2 text-jano-cobalto-claro lg:block">
+                    <path d="M1.5 1.5 6 6l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                )}
+                <span aria-hidden="true" class={`absolute left-0 top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border-2 lg:top-0 lg:translate-y-0 ${last ? "border-jano-bronce bg-jano-bronce" : "border-jano-cobalto bg-jano-papel"}`}></span>
+                <span class="text-sm font-semibold text-jano-muted lg:mt-6 lg:block">{f.label}</span>
+                <span class={`font-mono text-xl font-medium tabular lg:mt-1 lg:block lg:text-2xl ${last ? "text-jano-cobalto-oscuro" : "text-jano-tinta"}`}>{f.value}</span>
+              </li>
+            );
+          })}
+        </ol>
+        <p class="mt-8 max-w-3xl text-pretty text-sm leading-relaxed text-jano-muted">Dónde está cada prospect, dónde se atasca el embudo y qué decidió la IA en cada etapa. No hay cajas negras: si un correo salió, puedes ver por qué y qué reglas se comprobaron antes.</p>
       </div>
     </section>
 
     <!-- Reglas -->
     <section id="reglas" class="bg-jano-tinta text-white">
-      <div class="mx-auto max-w-6xl px-5 py-20">
+      <div class="mx-auto max-w-6xl px-5 py-20 sm:py-24">
         <p class="text-sm font-semibold uppercase tracking-wide text-jano-bronce">Reglas</p>
-        <h2 class="font-display mt-2 max-w-3xl text-3xl font-bold sm:text-4xl">Lo que la IA no puede saltarse</h2>
-        <p class="mt-4 max-w-2xl text-[#C9CCE0]">Competimos en precisión, no en volumen. Estas reglas viven en el motor de ejecución, no en el modelo, y la autonomía se gradúa por cliente.</p>
-        <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <h2 class="font-display mt-3 text-balance text-3xl font-bold sm:text-4xl">Lo que la IA no puede saltarse</h2>
+        <p class="mt-4 max-w-2xl text-pretty leading-relaxed text-jano-sobre-tinta">Competimos en precisión, no en volumen. Estas reglas viven en el motor de ejecución, no en el modelo, y la autonomía se gradúa por cliente.</p>
+        <ul class="mt-12 grid gap-x-16 sm:grid-cols-2">
           {rules.map((r) => (
-            <div class="ai-border-dark rounded-2xl p-5">
+            <li class="border-t border-jano-tinta-3 py-6">
               <h3 class="font-display text-lg font-bold">{r.title}</h3>
-              <p class="mt-2 text-sm leading-relaxed text-[#C9CCE0]">{r.text}</p>
-            </div>
+              <p class="mt-1.5 text-pretty leading-relaxed text-jano-sobre-tinta">{r.text}</p>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </section>
 
     <!-- Precio -->
-    <section id="precio" class="mx-auto max-w-6xl px-5 py-20">
-      <div class="grid gap-8 lg:grid-cols-[1fr_1fr]">
+    <section id="precio" class="mx-auto max-w-6xl px-5 py-20 sm:py-24">
+      <div class="grid gap-10 lg:grid-cols-2 lg:gap-16">
         <div>
           <p class="text-sm font-semibold uppercase tracking-wide text-jano-cobalto">Precio</p>
-          <h2 class="font-display mt-2 text-3xl font-bold sm:text-4xl">Una cuota mensual. Sin contrato anual.</h2>
-          <p class="mt-4 text-jano-muted">Precio de pyme, por volumen de cuentas trabajadas al mes. Lo cerraremos con los primeros clientes piloto; esta es la hipótesis con la que arrancamos.</p>
-          <ul class="mt-6 space-y-2 text-sm text-jano-muted">
-            <li>· Datos registrales y verificación incluidos</li>
-            <li>· Buzón de Microsoft 365 propio, dominio secundario calentado</li>
-            <li>· Exportación a Excel y a tu CRM</li>
-            <li>· Métrica única: coste por reunión</li>
+          <h2 class="font-display mt-3 text-balance text-3xl font-bold sm:text-4xl">Una cuota mensual. Sin contrato anual.</h2>
+          <p class="mt-4 text-pretty leading-relaxed text-jano-muted">Precio de pyme, por volumen de cuentas trabajadas al mes. Lo cerraremos con los primeros clientes piloto; esta es la hipótesis con la que arrancamos.</p>
+          <ul class="mt-8 space-y-3">
+            {included.map((item) => (
+              <li class="flex gap-3 text-jano-tinta">
+                <svg aria-hidden="true" viewBox="0 0 20 20" class="mt-0.5 h-5 w-5 shrink-0 text-jano-cobalto">
+                  <path d="M4.5 10.5 8 14l7.5-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>{item}</span>
+              </li>
+            ))}
           </ul>
         </div>
-        <div class="rounded-3xl border border-jano-linea bg-jano-papel p-7">
+        <div class="rounded-3xl border border-jano-linea bg-jano-papel p-6 sm:p-8">
           <div class="flex items-center justify-between">
             <span class="font-display text-xl font-bold">Piloto</span>
             <span class="rounded-full bg-jano-bronce-tinte px-2.5 py-1 text-xs font-semibold text-jano-bronce-texto">Hipótesis</span>
           </div>
-          <div class="font-display mt-6 text-5xl font-bold tabular">300–900 €<span class="text-lg font-semibold text-jano-muted"> / mes</span></div>
-          <p class="mt-2 text-sm text-jano-muted">Según cuentas trabajadas. Por debajo de las herramientas de SDR autónomo del mercado.</p>
+          <div class="mt-6 flex flex-wrap items-baseline gap-x-2">
+            <span class="font-mono text-4xl font-medium tracking-tight tabular sm:text-5xl">300–900 €</span>
+            <span class="text-lg font-semibold text-jano-muted">/ mes</span>
+          </div>
+          <p class="mt-3 text-pretty text-sm leading-relaxed text-jano-muted">Según cuentas trabajadas. Por debajo de las herramientas de SDR autónomo del mercado.</p>
           <div class="mt-6">
             <WaitlistForm id="precio-form" compact />
           </div>
@@ -192,29 +243,28 @@ const faqs = [
 
     <!-- FAQ -->
     <section class="border-t border-jano-linea bg-white">
-      <div class="mx-auto max-w-3xl px-5 py-20">
-        <h2 class="font-display text-3xl font-bold">Preguntas que nos hacen</h2>
-        <div class="mt-8 divide-y divide-jano-linea">
+      <div class="mx-auto grid max-w-6xl gap-8 px-5 py-20 sm:py-24 lg:grid-cols-[5fr_7fr] lg:gap-16">
+        <h2 class="font-display text-balance text-3xl font-bold sm:text-4xl">Preguntas que nos hacen</h2>
+        <div class="divide-y divide-jano-linea border-y border-jano-linea">
           {faqs.map((f) => (
-            <details class="group py-4">
-              <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold">
+            <details class="group">
+              <summary class="flex list-none items-center justify-between gap-6 py-5 text-lg font-semibold [&::-webkit-details-marker]:hidden">
                 {f.q}
-                <span class="text-jano-muted transition group-open:rotate-45">+</span>
+                <span aria-hidden="true" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-jano-linea text-jano-muted transition group-open:rotate-45 group-hover:border-jano-cobalto group-hover:text-jano-cobalto">+</span>
               </summary>
-              <p class="mt-3 text-sm leading-relaxed text-jano-muted">{f.a}</p>
+              <p class="pb-5 pr-12 text-pretty leading-relaxed text-jano-muted">{f.a}</p>
             </details>
           ))}
         </div>
       </div>
     </section>
-
     <!-- CTA -->
-    <section id="lista" class="mx-auto max-w-6xl px-5 py-20">
+    <section id="lista" class="mx-auto max-w-6xl px-5 py-20 sm:py-24">
       <div class="rounded-3xl bg-jano-cobalto p-6 text-white sm:p-12">
         <div class="grid items-center gap-8 lg:grid-cols-[1.2fr_1fr]">
           <div>
-            <h2 class="font-display text-3xl font-bold sm:text-4xl">Menos correos, más reuniones.</h2>
-            <p class="mt-3 text-[#E3E1FB]">Abrimos plazas por verticales. Déjanos tu email y te avisamos cuando toque el tuyo.</p>
+            <h2 class="font-display text-balance text-3xl font-bold sm:text-4xl">Menos correos, más reuniones.</h2>
+            <p class="mt-3 text-jano-sobre-cobalto">Abrimos plazas por verticales. Déjanos tu email y te avisamos cuando toque el tuyo.</p>
           </div>
           <div class="rounded-2xl bg-white p-4 text-jano-tinta sm:p-5">
             <WaitlistForm id="cta" compact />

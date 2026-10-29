@@ -25,6 +25,11 @@
   --color-jano-verde-texto: #14614a;
   --color-jano-rojo-tinte: #fbe9e5;
   --color-jano-rojo-texto: #8e2a1a;
+  /* Texto secundario sobre fondos oscuros (tinta y cobalto). */
+  --color-jano-sobre-tinta: #c9cce0;
+  --color-jano-sobre-cobalto: #e3e1fb;
+
+  --shadow-jano-elevado: 0 30px 80px -30px rgb(20 22 43 / 0.35);
 
   --font-display: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
   --font-sans: "Figtree", system-ui, sans-serif;
@@ -80,5 +85,14 @@ body {
   label[for],
   select {
     cursor: pointer;
+  }
+
+  /* Foco visible en todo lo navegable con teclado. */
+  a:focus-visible,
+  button:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid var(--color-jano-cobalto);
+    outline-offset: 2px;
+    border-radius: 0.375rem;
   }
 }
