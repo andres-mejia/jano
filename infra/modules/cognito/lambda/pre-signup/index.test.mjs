@@ -46,6 +46,20 @@ test("un email sin alta: no entra ni se enlaza", async () => {
   assert.equal(enlaces.length, 0);
 });
 
+test("email_verified llega como \"True\": se enlaza igual", async () => {
+  const { enlaces, handler } = entorno([piloto]);
+  await handler(desdeGoogle(piloto.email, "True"));
+  assert.equal(enlaces.length, 1);
+});
+
+test("sin email (el cliente no puede escribirlo): no entra", async () => {
+  const { enlaces, handler } = entorno([piloto]);
+  const ev = desdeGoogle(piloto.email);
+  ev.request.userAttributes = { name: "Lucía", "cognito:email_alias": "", "cognito:phone_number_alias": "" };
+  await assert.rejects(handler(ev), new RegExp(SIN_ACCESO));
+  assert.equal(enlaces.length, 0);
+});
+
 test("email no verificado por Google: no entra", async () => {
   const { enlaces, handler } = entorno([piloto]);
   await assert.rejects(handler(desdeGoogle(piloto.email, "false")), new RegExp(SIN_ACCESO));

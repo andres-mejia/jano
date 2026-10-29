@@ -14,5 +14,5 @@ Convención: `[Tn] [P?] descripción · verificación`.
 - [X] T021 `/login`: botón «Continuar con Google» y mensaje de rechazo; el layout lleva el error a `/login` · `pnpm build`.
 
 ## Fase 3 · Cierre
-- [ ] T030 Andrés: redirect URI en Google Cloud Console y prueba en el navegador (alta existente entra con tenant y rol; desconocido no entra) · usuarios del pool antes y después.
+- [X] T030 Andrés: redirect URI en Google Cloud Console y prueba en el navegador (alta existente entra con tenant y rol; desconocido no entra) · usuarios del pool antes y después.
 - [X] T031 ADR-001 §3 y `docs/guias/despliegue-dev.md` (secreto y redirect URI) · revisión en el PR.

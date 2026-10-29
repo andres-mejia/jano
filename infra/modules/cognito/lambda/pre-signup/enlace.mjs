@@ -27,8 +27,15 @@ export function crearHandler({ directorio }) {
     const [proveedor, ...resto] = userName.split("_");
     const sujeto = resto.join("_");
 
-    if (!email || String(attrs.email_verified) !== "true" || !sujeto) {
-      log("rechazado", { motivo: "email_no_verificado", proveedor });
+    // Cognito pasa los atributos como texto; según el IdP llega "true" o "True".
+    const verificado = String(attrs.email_verified ?? "").toLowerCase() === "true";
+    if (!email || !verificado || !sujeto) {
+      log("rechazado", {
+        motivo: !email ? "sin_email" : !sujeto ? "sin_sujeto" : "email_no_verificado",
+        proveedor,
+        emailVerified: attrs.email_verified ?? null,
+        atributos: Object.keys(attrs),
+      });
       throw new Error(SIN_ACCESO);
     }
 
