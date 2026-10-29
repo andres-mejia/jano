@@ -25,14 +25,13 @@ Terraform plano en `infra/environments/dev` (sin Terragrunt), módulos propios e
 1. **Estado compartido** (FR-001): `-backend-config=bucket=fenora-terraform-state-$ACCOUNT_ID`, clave propia. Justificación: cero bootstrap y un solo lugar donde mirar.
 2. **VPC**: crear `jano-dev` mínima (2 AZ, solo subnets privadas, sin NAT, sin IGW) para Aurora. Ninguna Lambda entra en la VPC; Data API no la necesita. Si Andrés prefiere reutilizar la de Fenora, cambia solo `module.aurora.subnet_ids`.
 3. **OIDC** (como Cardea): rol de apply `jano-dev-github-actions` (trust `repo:andres-mejia/jano:ref:refs/heads/main`) con la política de arranque `Allow *` con caducidad y los `Deny` de guarda del patrón Fenora, pegada por CLI una vez; rol de plan `jano-dev-github-actions-plan` (trust `repo:andres-mejia/jano:pull_request`) con `ReadOnlyAccess`, `s3:GetObject` del estado y `dynamodb:PutItem/DeleteItem/GetItem` del lock.
-4. **Dominio** (como Cardea): `jano.tekhos.com` y `jano-app.tekhos.com` sobre la zona existente de `tekhos.com`; `aws_amplify_domain_association` por app con un solo `sub_domain` de prefijo vacío sobre el FQDN; registros de validación en la zona vía `data.aws_route53_zone`.
-5. **SES** (como Cardea): regla `jano-dev-inbound` para `jano@tekhos.com` en el rule set activo de `tekhos.com` (`data` sobre el rule set; `aws_ses_receipt_rule` propia), misma acción de redirección que Cardea; remitente `jano@tekhos.com`.
+4. **Dominio** (como Cardea): `jano.tekhos.com` y `jano-app.tekhos.com` sobre la zona existente de `tekhos.com`; `aws_amplify_domain_association` por app con un solo `sub_domain` de prefijo vacío sobre el FQDN; Amplify escribe la validación y los CNAME en la zona; Terraform solo la lee (`data.aws_route53_zone`).
+5. **SES** (como Cardea): sin regla de recepción propia; el catch-all de `tekhos-inbound` (us-east-1) ya redirige `jano@tekhos.com`. El módulo `email` crea el configuration set `jano-dev` y las alarmas de reputación; remitente `jano@tekhos.com`.
 
 ## Estructura
 ```
 infra/environments/dev/{versions,backend,provider,variables,main,outputs}.tf
 infra/modules/vpc/main.tf
-infra/modules/dns/main.tf
 infra/modules/cognito/{main.tf,lambda/pre-token/index.mjs}
 infra/modules/landing/main.tf
 infra/modules/app-hosting/main.tf
@@ -53,7 +52,7 @@ docs/guias/despliegue-dev.md
 ## Orden de implementación
 1. VPC + Aurora + assets (sin dependencias externas; `apply` y medir coste en reposo).
 2. Cognito + trigger; crear un usuario piloto a mano y comprobar los claims.
-3. Email (regla SES en el rule set de tekhos.com) + waitlist; probar con `curl`, comprobar DynamoDB, el correo de confirmación y la redirección de `jano@tekhos.com`.
+3. Email (configuration set) + waitlist; probar con `curl`, comprobar DynamoDB, el correo de confirmación y la redirección de `jano@tekhos.com`.
 4. API Gateway vacía con autorizador; `curl` sin token → 401.
 5. Landing y app en Amplify con `jano.tekhos.com` y `jano-app.tekhos.com`; autorizar la conexión en consola; primer build desde `main`.
 6. OIDC (rol de apply con política de arranque pegada por CLI, rol de plan) + workflows; plan en un PR de prueba y `apply` desde CI idempotente.

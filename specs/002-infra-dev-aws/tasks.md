@@ -3,9 +3,9 @@
 Convención: `[Tn] [P?] descripción · verificación`. `[P]` = paralelizable. Cada fase termina con `terraform fmt -recursive`, `terraform validate`, commit en `infra/dev-base` y parada para el OK antes de `apply`.
 
 ## Fase 0 · Inventario
-- [ ] T001 Leer `fintrack/infra/modules/{aurora,cognito,landing,cdn,waitlist,email,assets,github-oidc,dns}/main.tf` y anotar en `specs/002-infra-dev-aws/research.md` qué se replica y qué se recorta · fichero creado con una tabla módulo → decisión.
-- [ ] T002 Confirmar en `~/py/cardea` cómo quedaron el rol de apply (política de arranque y Deny de guarda), el rol de plan, la regla SES en el rule set de `tekhos.com` y la asociación de dominio en Amplify, y anotar en `research.md` qué se replica igual · tabla en research.md.
-- [ ] T003 `aws sts get-caller-identity`, `aws s3 ls s3://fenora-terraform-state-$ACCOUNT_ID/`, `aws route53 list-hosted-zones-by-name --dns-name tekhos.com` y `aws ses describe-active-receipt-rule-set --region eu-west-1` · cuenta, bucket, zona y rule set activo identificados.
+- [X] T001 Leer `fintrack/infra/modules/{aurora,cognito,landing,cdn,waitlist,email,assets,github-oidc,dns}/main.tf` y anotar en `specs/002-infra-dev-aws/research.md` qué se replica y qué se recorta · fichero creado con una tabla módulo → decisión.
+- [X] T002 Confirmar en `~/py/cardea` cómo quedaron el rol de apply (política de arranque y Deny de guarda), el rol de plan, la regla SES en el rule set de `tekhos.com` y la asociación de dominio en Amplify, y anotar en `research.md` qué se replica igual · tabla en research.md.
+- [X] T003 `aws sts get-caller-identity`, `aws s3 ls s3://fenora-terraform-state-$ACCOUNT_ID/`, `aws route53 list-hosted-zones-by-name --dns-name tekhos.com` y `aws ses describe-active-receipt-rule-set --region eu-west-1` · cuenta, bucket, zona y rule set activo identificados.
 
 ## Fase 1 · Datos y almacenamiento
 - [ ] T010 [P] `infra/modules/vpc`: VPC `jano-dev`, 2 subnets privadas, sin NAT ni IGW · `validate` OK.
@@ -14,7 +14,7 @@ Convención: `[Tn] [P?] descripción · verificación`. `[P]` = paralelizable. C
 - [ ] T013 `infra/environments/dev/main.tf`: componer vpc + assets + aurora; `infra/scripts/deploy-dev.sh` con `init -backend-config` · `plan` muestra solo creaciones.
 - [ ] T014 `apply` con OK · `aws rds-data execute-statement --sql "select 1"` responde (tras el resume).
 - [ ] T015 Medir coste en reposo 24 h después en Cost Explorer y anotarlo en `research.md` · cifra anotada.
-- [ ] T016 Presupuesto AWS Budgets `jano-dev-monthly` de 50 al mes en la moneda de facturación de la cuenta filtrado por `Project=jano`, aviso por email a `ses_notify_address` al 80 % y al 100 % (FR-009) · `aws budgets describe-budget` lo devuelve tras el `apply`.
+- [ ] T016 Presupuesto AWS Budgets `jano-dev-monthly` de 50 USD al mes (la moneda de Budgets en la cuenta), tras activar la etiqueta `Project` como etiqueta de costes filtrado por `Project=jano`, aviso por email a `ses_notify_address` al 80 % y al 100 % (FR-009) · `aws budgets describe-budget` lo devuelve tras el `apply`.
 
 ## Fase 2 · Identidad
 - [ ] T020 `infra/modules/cognito`: pool, cliente público (USER_AUTH, sin secret), dominio Hosted UI, atributos custom, misma política de contraseña que Cardea; log group del trigger con retención de 30 d · `validate` OK.
@@ -22,7 +22,7 @@ Convención: `[Tn] [P?] descripción · verificación`. `[P]` = paralelizable. C
 - [ ] T022 `apply`; crear usuario piloto con `aws cognito-idp admin-create-user` y atributos custom · ID token decodificado lleva ambos claims.
 
 ## Fase 3 · Correo y acceso anticipado
-- [ ] T030 `infra/modules/email`: `data` del rule set activo de `tekhos.com`, `aws_ses_receipt_rule` para `jano@tekhos.com` con la misma redirección que Cardea, configuration set `jano-dev` · `validate` OK.
+- [ ] T030 `infra/modules/email`: configuration set `jano-dev`, SNS y alarmas de reputación como Cardea; sin regla de recepción (`research.md` T002) · `validate` OK.
 - [ ] T031 `infra/modules/waitlist`: tabla, rol, Lambda Node 22 con log group de retención 30 d, HTTP API con CORS (solo `jano.tekhos.com`, `jano-app.tekhos.com` y localhost) y throttling · `validate` OK.
 - [ ] T032 `lambda/handler/index.mjs` con validación de email, honeypot, idempotencia (409), rate limit por IP con TTL, SES; `index.test.mjs` con `node --test` · tests verdes.
 - [ ] T033 `apply`; `curl -X POST $WAITLIST_URL -d '{"email":"prueba@example.com"}'` · 201, item en DynamoDB, correo recibido; segundo POST → 409.
