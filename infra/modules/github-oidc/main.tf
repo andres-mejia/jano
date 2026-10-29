@@ -37,6 +37,12 @@ variable "amplify_manual_deploy_app_arns" {
   description = "Apps de Amplify sin conexión a GitHub que se publican por despliegue manual desde CI."
 }
 
+variable "oidc_sub_prefix" {
+  type        = string
+  default     = ""
+  description = "Prefijo del claim `sub`. Vacío = `repo:<owner/repo>`. Con el formato inmutable de GitHub es `repo:<owner>@<id>/<repo>@<id>` (lo da `gh api repos/<owner/repo>/actions/oidc/customization/sub`)."
+}
+
 variable "state_bucket" { type = string }
 variable "lock_table" { type = string }
 
@@ -60,8 +66,9 @@ locals {
   oidc_aud        = "token.actions.githubusercontent.com:aud"
   oidc_sub        = "token.actions.githubusercontent.com:sub"
   oidc_wf         = "token.actions.githubusercontent.com:job_workflow_ref"
-  sub_main        = "repo:${var.github_repo}:ref:refs/heads/main"
-  sub_pr          = "repo:${var.github_repo}:pull_request"
+  sub_prefix      = var.oidc_sub_prefix != "" ? var.oidc_sub_prefix : "repo:${var.github_repo}"
+  sub_main        = "${local.sub_prefix}:ref:refs/heads/main"
+  sub_pr          = "${local.sub_prefix}:pull_request"
   deploy_wf_refs  = [for f in var.deploy_workflows : "${var.github_repo}/.github/workflows/${f}@refs/heads/main"]
   plan_wf_pattern = "${var.github_repo}/.github/workflows/infra-plan.yml@*"
   state_arn       = "arn:aws:s3:::${var.state_bucket}"

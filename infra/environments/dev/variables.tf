@@ -77,3 +77,11 @@ variable "github_repo" {
   default     = "andres-mejia/jano"
   description = "owner/repo que asume los roles OIDC."
 }
+
+# El repo usa el formato inmutable del claim `sub` de GitHub (owner y repo con su id
+# numérico): el trust con `repo:andres-mejia/jano:...` nunca casa. Se consulta con
+# `gh api repos/andres-mejia/jano/actions/oidc/customization/sub`.
+variable "github_oidc_sub_prefix" {
+  type    = string
+  default = "repo:andres-mejia@49398769/jano@1437715854"
+}
