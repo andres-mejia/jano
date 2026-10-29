@@ -7,14 +7,16 @@ import { requerida, serviciosDesdeEntorno } from "./servicios";
 
 const env = process.env;
 
+const db = new DataApiDb({
+  clusterArn: requerida(env, "CLUSTER_ARN"),
+  secretArn: requerida(env, "DB_SECRET_ARN"),
+  database: requerida(env, "DB_NAME"),
+});
+
 export const handler = crearManejador({
-  db: new DataApiDb({
-    clusterArn: requerida(env, "CLUSTER_ARN"),
-    secretArn: requerida(env, "DB_SECRET_ARN"),
-    database: requerida(env, "DB_NAME"),
-  }),
+  db,
   directorio: new CognitoDirectorio(requerida(env, "USER_POOL_ID")),
-  servicios: serviciosDesdeEntorno(env),
+  servicios: serviciosDesdeEntorno(env, db),
   // DEMO_DATA=on solo en dev: las rutas del contrato que el backend aún no sirve, con datos de ejemplo.
   // DEMO_TENANTS: tenants que ven datos de ejemplo en todo el contrato (la demo comercial).
   ...(env["DEMO_DATA"] === "on"

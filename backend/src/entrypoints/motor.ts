@@ -9,7 +9,7 @@ const db = new DataApiDb({
   secretArn: requerida(env, "DB_SECRET_ARN"),
   database: requerida(env, "DB_NAME"),
 });
-const servicios = serviciosDesdeEntorno(env);
+const servicios = serviciosDesdeEntorno(env, db);
 
 export const handler = async (): Promise<void> => {
   const r = await ejecutarMotor(db, servicios);

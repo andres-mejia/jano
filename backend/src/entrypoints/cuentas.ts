@@ -13,7 +13,7 @@ const db = new DataApiDb({
   secretArn: requerida(env, "DB_SECRET_ARN"),
   database: requerida(env, "DB_NAME"),
 });
-const servicios = serviciosDesdeEntorno(env);
+const servicios = serviciosDesdeEntorno(env, db);
 
 interface EventoSqs {
   readonly Records: readonly { readonly messageId: string; readonly body: string }[];
