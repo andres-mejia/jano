@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { after, before, beforeEach, test } from "node:test";
 
 import { crearManejador, type EventoHttp } from "../src/adapters/http";
+import { serviciosDePrueba } from "./servicios-prueba";
 import { DirectorioEnMemoria } from "./directorio-memoria";
 import { type BaseDePruebas, baseDePruebas } from "./pg";
 import { A, B, sembrarTenant } from "./semilla";
@@ -35,7 +36,7 @@ beforeEach(() => {
       habilitado: true,
     });
   }
-  manejar = crearManejador({ db: base.db, directorio });
+  manejar = crearManejador({ db: base.db, directorio, servicios: serviciosDePrueba().servicios });
 });
 
 const pedir = async (quien: string, tenant: string, routeKey: string, extra: Partial<EventoHttp> = {}) => {
@@ -166,7 +167,7 @@ test("un tenant suspendido no entra (US5)", async () => {
 
 test("demo: el resto del contrato sale de @jano/demo, con la misma comprobación de acceso", async () => {
   const { resolverDemo } = await import("@jano/demo");
-  const conDemo = crearManejador({ db: base.db, directorio, demo: (m, p, b) => resolverDemo(m, p, b, 0) });
+  const conDemo = crearManejador({ db: base.db, directorio, servicios: serviciosDePrueba().servicios, demo: (m, p, b) => resolverDemo(m, p, b, 0) });
   const pedirDemo = async (quien: string, routeKey: string, rawPath: string, extra: Partial<EventoHttp> = {}) => {
     const r = await conDemo({
       routeKey,
@@ -176,6 +177,7 @@ test("demo: el resto del contrato sale de @jano/demo, con la misma comprobación
     });
     return { status: r.statusCode, body: JSON.parse(r.body) as Record<string, unknown> };
   };
+  // Una ruta que el backend aún no sirviera iría por la comodín; todas las del contrato ya son reales.
   const d = await pedirDemo(ana(), "GET /v1/{proxy+}", "/v1/dashboard/summary");
   assert.equal(d.status, 200);
   assert.ok(d.body["kpis"]);
