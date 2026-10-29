@@ -17,6 +17,7 @@ Convención: `[Tn] [P?] descripción · verificación`. Cada fase es un PR y dej
 - [ ] T020b `OsmCompanySource` y `ManualCompanySource` (FR-013b), consultas troceadas por provincia y caché de 24 h · test con una respuesta de Overpass grabada.
 - [ ] T021 `PiiStripper` (FR-014) · tests con NIF, IBAN, teléfonos y emails.
 - [ ] T022 Adaptadores `Bedrock*` y prompts versionados (FR-010, FR-011, FR-015) · prueba manual contra Bedrock con 3 webs reales, salida válida.
+- [ ] T022b Adaptador Bedrock de `PlanificadorOrquestador` y revisión diaria de campaña (FR-017) · propuesta fuera del menú queda `rejected` y pasa a una persona.
 - [ ] T023 Coste, latencia y tope diario (FR-016) · log JSON por llamada.
 - [ ] T024 Infra: permiso `bedrock:InvokeModel` sobre el perfil de inferencia para las Lambdas · `plan` y `apply`.
 
@@ -33,3 +34,10 @@ Convención: `[Tn] [P?] descripción · verificación`. Cada fase es un PR y dej
 - [ ] T042 `demo_data = false` en dev y alta del tenant de prueba · todas las rutas responden desde el backend.
 - [ ] T043 Recorrido SC-001 en dev con 50 agencias de viajes reales, una de ellas llevada hasta la reunión; costes en `research.md` (SC-004) · capturas y registro de eventos.
 - [ ] T044 Guía `docs/guias/demo-poc.md`: cómo preparar y repetir la demo · revisión en el PR.
+
+## Fase E · Pide algo a Jano (`feat/poc-copiloto`)
+- [ ] T050 Contrato `POST /copilot/questions` y esquemas en `@jano/domain` (FR-040) · el YAML valida.
+- [ ] T051 Herramientas de solo lectura sobre el tenant y bucle de Converse con uso de herramientas (FR-041) · test: ninguna herramienta escribe; RLS impide leer otro tenant.
+- [ ] T052 Citas obligatorias, `copilot_turns` y respuesta «no lo sé» (FR-042) · test con preguntas sin datos.
+- [ ] T053 Panel con Ctrl K, preguntas sugeridas por pantalla y enlaces (FR-043) · capturas a 1440 y 390.
+- [ ] T054 Guion de 10 preguntas de la demo (SC-006) · respuestas revisadas en `docs/guias/demo-poc.md`.
