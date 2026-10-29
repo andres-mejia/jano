@@ -10,6 +10,13 @@ const site = process.env.PUBLIC_SITE_URL || "https://jano.tekhos.com";
 export default defineConfig({
   site,
   output: "static",
+  // Rutas legales anteriores: la de privacidad y la de términos están
+  // publicadas en la pantalla de consentimiento de Google y no pueden romperse.
+  redirects: {
+    "/privacidad": "/legal/privacidad/",
+    "/terminos": "/legal/terminos/",
+    "/aviso-legal": "/legal/aviso-legal/",
+  },
   i18n: {
     defaultLocale: "es",
     locales: [...locales],
