@@ -1,0 +1,30 @@
+{
+  "name": "@jano/video",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vídeo promocional de Jano con Remotion (es y en desde la misma composición).",
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "type-check": "tsc --noEmit",
+    "build": "tsc --noEmit",
+    "lint": "echo 'sin lint propio: lo cubre tsc'",
+    "test": "echo 'sin tests: composición de vídeo'",
+    "render:es": "node scripts/render.mjs es",
+    "render:en": "node scripts/render.mjs en",
+    "render": "node scripts/render.mjs es en",
+    "still": "node scripts/still.mjs"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.539",
+    "@remotion/google-fonts": "4.0.539",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "4.0.539"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "typescript": "^5.7.0"
+  }
+}
