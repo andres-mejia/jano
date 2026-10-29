@@ -15,7 +15,7 @@ import { IDS, nextMockId } from "./fixtures/ids";
 import { INBOX } from "./fixtures/inbox";
 import { EVENTS, PROSPECTS, STAGE_EVENTS } from "./fixtures/prospects";
 import { TEAM, TENANT } from "./fixtures/team";
-import { AUDIT, COMPLIANCE, CONNECTIONS, DASHBOARD, FLOW, GUARDRAILS } from "./fixtures/views";
+import { agentesEnVivo, AUDIT, COMPLIANCE, CONNECTIONS, DASHBOARD, FLOW, GUARDRAILS } from "./fixtures/views";
 
 export class DemoNoEncontrado extends Error {
   readonly status = 404;
@@ -52,7 +52,7 @@ function matchPath(pattern: string, path: string): Record<string, string> | null
 type Handler = (params: Record<string, string>, body: unknown, query: URLSearchParams) => unknown;
 
 const routes: Array<[method: string, pattern: string, handler: Handler]> = [
-  ["GET", "/dashboard/summary", () => DASHBOARD],
+  ["GET", "/dashboard/summary", () => ({ ...DASHBOARD, agents: agentesEnVivo() })],
 
   ["GET", "/campaigns", () => state.campaigns],
   [

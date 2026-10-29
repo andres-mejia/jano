@@ -79,7 +79,8 @@ export default function TeamPage() {
         </Pill>
         {usuarios.some((u) => u.status === "invited") && (
           <Pill tone="b">
-            <span className="tabular">{usuarios.filter((u) => u.status === "invited").length}</span> pendientes de entrar
+            <span className="tabular">{usuarios.filter((u) => u.status === "invited").length}</span>{" "}
+            {usuarios.filter((u) => u.status === "invited").length === 1 ? "pendiente" : "pendientes"} de entrar
           </Pill>
         )}
       </div>
