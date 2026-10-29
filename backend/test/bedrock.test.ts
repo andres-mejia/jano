@@ -202,6 +202,7 @@ test("Outreach: un borrador de más de 120 palabras o con precio se rechaza; sin
   assert.equal(revisarCorreo("Te lo dejamos por 99 € al mes.", "Asunto"), "menciona un precio o un importe");
   assert.equal(revisarCorreo("Lo tienes en 48 horas.", "Asunto"), "promete un plazo o una garantía");
   assert.equal(revisarCorreo("Si no te interesa, puedes darte de baja.", "Asunto"), "incluye el pie o la baja, que añade el sistema");
+  assert.equal(revisarCorreo("Desde Jano ayudamos a equipos comerciales.", "Asunto"), "menciona a Jano, que no firma el correo");
   assert.equal(revisarCorreo("Hola: vi que organizáis viajes de empresa. ¿Lo hablamos 20 minutos?", "Viajes de empresa"), null);
 
   const largo = JSON.stringify({ asunto: "Viajes de empresa", cuerpo: Array.from({ length: 130 }, () => "texto").join(" "), razonamiento: "x" });

@@ -496,7 +496,7 @@ resource "aws_scheduler_schedule" "motor" {
 # ── Trabajador de cuentas (spec 008 fase B) ──────────────────────────────
 
 # Cola estándar con DLQ: SQS puede entregar dos veces y el trabajador es idempotente
-# por campaña y dominio. La visibilidad cubre de sobra una invocación de 120 s.
+# por campaña y dominio. La visibilidad (3 × el timeout) cubre una invocación entera.
 resource "aws_sqs_queue" "cuentas_dlq" {
   name                      = "${local.cuentas_name}-dlq"
   message_retention_seconds = 1209600 # 14 días para revisar qué falló
@@ -506,7 +506,7 @@ resource "aws_sqs_queue" "cuentas_dlq" {
 
 resource "aws_sqs_queue" "cuentas" {
   name                       = local.cuentas_name
-  visibility_timeout_seconds = 720 # 6 × el timeout de la Lambda, como recomienda AWS para SQS
+  visibility_timeout_seconds = 900 # un fallo se reintenta a los 15 min
   message_retention_seconds  = 345600
   sqs_managed_sse_enabled    = true
   redrive_policy             = jsonencode({ deadLetterTargetArn = aws_sqs_queue.cuentas_dlq.arn, maxReceiveCount = 3 })
@@ -574,7 +574,7 @@ resource "aws_lambda_function" "cuentas" {
   role                           = aws_iam_role.cuentas.arn
   handler                        = "index.handler"
   runtime                        = "nodejs22.x"
-  timeout                        = 120 # robots.txt y 4 páginas de 10 s, más dos llamadas al modelo con reintento
+  timeout                        = 300 # una región: Overpass tarda 30-60 s por provincia; una cuenta: 4 páginas y el modelo
   memory_size                    = 512 # linkedom y Readability sobre páginas de hasta 512 KB
   reserved_concurrent_executions = var.cuentas_max_concurrency
   filename                       = data.archive_file.cuentas.output_path

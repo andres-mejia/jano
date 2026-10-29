@@ -70,7 +70,7 @@ export function consultaOverpass(provincia: string): string {
   const filtros = ['nwr["shop"="travel_agency"]', 'nwr["office"="travel_agent"]']
     .flatMap((f) => [`${f}["website"][!"brand"](area.a);`, `${f}["contact:website"][!"brand"](area.a);`])
     .join("");
-  return `[out:json][timeout:25];area["ISO3166-2"="${provincia}"]["boundary"="administrative"]->.a;(${filtros});out tags;`;
+  return `[out:json][timeout:90];area["ISO3166-2"="${provincia}"]["boundary"="administrative"]->.a;(${filtros});out tags;`;
 }
 
 const RespuestaOverpassSchema = z.object({
@@ -105,10 +105,12 @@ export function candidatasDe(respuesta: unknown): EmpresaCandidata[] {
   return [...vistas.values()].sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
 }
 
+const SATURADO: ReadonlySet<number> = new Set([429, 502, 503, 504]);
+
 export interface OpcionesOsm {
   readonly url?: string;
   readonly timeoutMs?: number;
-  /** Espera antes del único reintento tras un 429 o 504 del servidor público. */
+  /** Espera antes del único reintento cuando el servidor público está saturado (429, 502, 503, 504). */
   readonly esperaReintentoMs?: number;
   readonly pedir?: typeof fetch;
 }
@@ -141,11 +143,12 @@ export class OsmCompanySource implements CompanySource {
         method: "POST",
         headers: { accept: "application/json", "content-type": "application/x-www-form-urlencoded", "user-agent": AGENTE },
         body: new URLSearchParams({ data: consultaOverpass(provincia) }).toString(),
-        signal: AbortSignal.timeout(this.o.timeoutMs ?? 40_000),
+        // El servidor público tarda 30-60 s en una provincia grande (Valencia) en horas punta.
+        signal: AbortSignal.timeout(this.o.timeoutMs ?? 100_000),
       });
-      if ((res.status === 429 || res.status === 504) && intento === 0) {
+      if (SATURADO.has(res.status) && intento === 0) {
         await res.body?.cancel();
-        await new Promise((r) => setTimeout(r, this.o.esperaReintentoMs ?? 5000));
+        await new Promise((r) => setTimeout(r, this.o.esperaReintentoMs ?? 15_000));
         continue;
       }
       if (!res.ok) throw new Error(`Overpass respondió ${res.status} para ${provincia}`);

@@ -61,6 +61,7 @@ export function revisarCorreo(cuerpo: string, asunto: string): string | null {
   if (PLAZO.test(todo)) return "promete un plazo o una garantía";
   if (PIE.test(todo)) return "incluye el pie o la baja, que añade el sistema";
   if (MARCADOR.test(todo)) return "copia un marcador de datos personales";
+  if (/\bJano\b/i.test(todo)) return "menciona a Jano, que no firma el correo";
   return null;
 }
 

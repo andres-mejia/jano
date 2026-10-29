@@ -155,8 +155,9 @@ export class LectorWeb implements WebReader {
   }
 
   /**
-   * `robots.txt` del origen. Si no existe (4xx), todo permitido; si el servidor
-   * falla o no contesta, no se lee nada, como hacen los buscadores.
+   * `robots.txt` del origen. Si no existe (4xx) o redirige fuera de https, todo
+   * permitido; si el servidor falla o no contesta, no se lee nada, como hacen los
+   * buscadores.
    */
   private async robots(origen: string, senal: AbortSignal): Promise<RobotsDeOrigen> {
     const url = new URL("/robots.txt", origen);
@@ -182,7 +183,9 @@ export class LectorWeb implements WebReader {
         const reglas = robotsParser(url.href, await leerConTope(res, this.maxBytes, res.headers.get("content-type") ?? ""));
         return { ok: true, permite: (u) => reglas.isAllowed(u, AGENTE_ROBOTS) !== false };
       }
-      return { ok: false, motivo: "Su robots.txt redirige a una dirección no válida." };
+      // Una redirección que no se puede seguir (a http o en bucle) cuenta como si no
+      // hubiera robots.txt, como hacen los buscadores; la página dirá si se puede leer.
+      return { ok: true, permite: () => true };
     } catch (e) {
       return { ok: false, motivo: noResponde(e, this.timeoutMs) };
     }

@@ -21,7 +21,7 @@ test("regiones del ICP: una comunidad se trocea en sus provincias", () => {
 
 test("la consulta pide agencias con web propia y sin marca de cadena, en el área de la provincia", () => {
   const q = consultaOverpass("ES-V");
-  assert.match(q, /^\[out:json\]\[timeout:25\];area\["ISO3166-2"="ES-V"\]/);
+  assert.match(q, /^\[out:json\]\[timeout:90\];area\["ISO3166-2"="ES-V"\]/);
   for (const f of ['nwr["shop"="travel_agency"]["website"][!"brand"]', 'nwr["office"="travel_agent"]["contact:website"][!"brand"]']) assert.ok(q.includes(f), f);
 });
 
@@ -33,7 +33,7 @@ test("de la respuesta: un dominio por agencia, con su origen; fuera cadenas, red
   ]);
 });
 
-test("una región se consulta provincia a provincia, con cabeceras propias, y reintenta una vez un 429", async () => {
+test("una región se consulta provincia a provincia, con cabeceras propias, y reintenta una vez si el servidor está saturado", async () => {
   const llamadas: { url: string; accept: string | null; agente: string | null; data: string }[] = [];
   let primera = true;
   const pedir: typeof fetch = async (url, init) => {
@@ -46,7 +46,7 @@ test("una región se consulta provincia a provincia, con cabeceras propias, y re
     });
     if (primera) {
       primera = false;
-      return new Response("demasiadas", { status: 429 });
+      return new Response("saturado", { status: 502 });
     }
     return Response.json(grabada);
   };
