@@ -63,3 +63,15 @@ aws budgets describe-budget --budget-name jano-dev-monthly
 ```
 
 T015 (coste en reposo a las 24 h) queda pendiente: se mide el 2026-10-30 en Cost Explorer.
+
+### Fase 2 · Identidad (2026-10-29)
+
+```
+node --test infra/modules/cognito/lambda/pre-token   -> tests 4, pass 4, fail 0
+terraform apply tfplan                               -> Apply complete! Resources: 8 added, 0 changed, 0 destroyed.
+aws cognito-idp initiate-auth --auth-flow USER_AUTH (piloto@rumbonorte.example, tenant-rumbonorte, owner)
+  ID token -> {'aud': 'npfu3ule0vnct9lhup6b7438o', 'token_use': 'id', 'custom:tenant_id': 'tenant-rumbonorte',
+               'custom:role': 'owner', 'email': 'piloto@rumbonorte.example'}
+initiate-auth de un usuario sin tenant (borrado después)
+  -> UserLambdaValidationException: PreTokenGeneration failed with error usuario sin custom:tenant_id.
+```

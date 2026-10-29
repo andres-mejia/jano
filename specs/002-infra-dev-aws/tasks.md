@@ -17,9 +17,9 @@ Convención: `[Tn] [P?] descripción · verificación`. `[P]` = paralelizable. C
 - [X] T016 Presupuesto AWS Budgets `jano-dev-monthly` de 50 USD al mes (la moneda de Budgets en la cuenta), tras activar la etiqueta `Project` como etiqueta de costes filtrado por `Project=jano`, aviso por email a `ses_notify_address` al 80 % y al 100 % (FR-009) · `aws budgets describe-budget` lo devuelve tras el `apply`.
 
 ## Fase 2 · Identidad
-- [ ] T020 `infra/modules/cognito`: pool, cliente público (USER_AUTH, sin secret), dominio Hosted UI, atributos custom, misma política de contraseña que Cardea; log group del trigger con retención de 30 d · `validate` OK.
-- [ ] T021 `infra/modules/cognito/lambda/pre-token/index.mjs` + test con `node --test` · claims `custom:tenant_id` y `custom:role` presentes en el evento de salida.
-- [ ] T022 `apply`; crear usuario piloto con `aws cognito-idp admin-create-user` y atributos custom · ID token decodificado lleva ambos claims.
+- [X] T020 `infra/modules/cognito`: pool, cliente público (USER_AUTH, sin secret), dominio Hosted UI, atributos custom, misma política de contraseña que Cardea; log group del trigger con retención de 30 d · `validate` OK.
+- [X] T021 `infra/modules/cognito/lambda/pre-token/index.mjs` + test con `node --test` · claims `custom:tenant_id` y `custom:role` presentes en el evento de salida.
+- [X] T022 `apply`; crear usuario piloto con `aws cognito-idp admin-create-user` y atributos custom · ID token decodificado lleva ambos claims.
 
 ## Fase 3 · Correo y acceso anticipado
 - [ ] T030 `infra/modules/email`: configuration set `jano-dev`, SNS y alarmas de reputación como Cardea; sin regla de recepción (`research.md` T002) · `validate` OK.
