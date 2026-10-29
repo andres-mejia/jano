@@ -15,4 +15,10 @@ terraform apply                                     -> Apply complete! Resources
 aws cognito-idp describe-identity-provider Google   -> client_id 37030998588-… (proyecto Jano)
 ```
 
-Pendiente (T030, Andrés): prueba en el navegador con una cuenta de «Test users».
+Prueba en el navegador (T030, Andrés, 2026-10-29). Los primeros intentos volvieron a `/login?error=sin_acceso`: el log del trigger mostraba que no llegaba `email`, solo `name`, `cognito:email_alias` y `cognito:phone_number_alias`. Causa: el cliente de la app solo podía escribir `name`, y el mapeo de atributos de Google solo escribe lo que el cliente puede escribir. Arreglo: `write_attributes = ["name", "email"]`, como Fenora (`email_verified` no se admite: `InvalidParameterException`), y el cambio de email exige verificar el nuevo.
+
+```
+terraform apply (cliente y pool)                    -> Resources: 0 added, 1 changed (dos veces)
+log jano-dev-pre-signup                             -> {"msg":"enlazado","proveedor":"Google","destino":"c2c5…"}
+aws cognito-idp list-users                          -> 2 usuarios; ramejiafernandez@ con identities Google y tenant-rumbonorte
+```

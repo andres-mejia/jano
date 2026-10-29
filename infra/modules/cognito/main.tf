@@ -221,6 +221,12 @@ resource "aws_cognito_user_pool" "main" {
     require_uppercase = true
   }
 
+  # Con `email` escribible por el cliente, un cambio de email no surte efecto hasta
+  # verificar el nuevo: nadie se apropia de otro email ni pierde el suyo por error.
+  user_attribute_update_settings {
+    attributes_require_verification_before_update = ["email"]
+  }
+
   account_recovery_setting {
     recovery_mechanism {
       name     = "verified_email"
@@ -280,7 +286,9 @@ resource "aws_cognito_user_pool_client" "app" {
   id_token_validity                    = 1
   refresh_token_validity               = 30
   read_attributes                      = ["email", "email_verified", "name", "custom:tenant_id", "custom:role"]
-  write_attributes                     = ["name"]
+  # El mapeo de atributos de Google solo escribe lo que el cliente puede escribir: sin
+  # `email` aquí, el trigger PreSignUp no lo recibe (Cognito no deja escribir `email_verified`).
+  write_attributes = ["name", "email"]
 
   token_validity_units {
     access_token  = "hours"
