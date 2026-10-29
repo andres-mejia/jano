@@ -23,7 +23,7 @@ const endpoint = import.meta.env.PUBLIC_WAITLIST_ENDPOINT ?? "";
       required
       autocomplete="email"
       placeholder="tu@empresa.com"
-      class="min-h-12 min-w-0 flex-1 rounded-xl border border-jano-linea bg-white px-4 text-[15px] outline-none placeholder:text-jano-muted focus:border-jano-cobalto focus:ring-2 focus:ring-jano-cobalto/25"
+      class={`min-h-12 min-w-0 flex-1 rounded-xl ${compact ? "basis-full sm:basis-auto" : ""} border border-jano-linea bg-white px-4 text-[15px] outline-none placeholder:text-jano-muted focus:border-jano-cobalto focus:ring-2 focus:ring-jano-cobalto/25`}
     />
     <input type="text" name="empresa" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true" />
     <button

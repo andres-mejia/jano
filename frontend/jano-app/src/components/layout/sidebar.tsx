@@ -61,7 +61,7 @@ export function Sidebar({ user }: { user: SessionUser }) {
     .toUpperCase();
 
   return (
-    <aside className="flex w-[236px] shrink-0 flex-col rounded-[22px] bg-jano-tinta p-3.5 pt-5 text-jano-nav-texto">
+    <aside className="sticky top-3.5 flex h-[calc(100dvh-28px)] w-[236px] shrink-0 flex-col overflow-y-auto rounded-[22px] bg-jano-tinta p-3.5 pt-5 text-jano-nav-texto">
       <Link href="/" className="font-display mb-2 flex items-center gap-2.5 px-2 text-[25px] font-bold text-white">
         <Logo size={30} />
         Jano
@@ -124,7 +124,7 @@ export function Sidebar({ user }: { user: SessionUser }) {
         <div className="min-w-0">
           <div className="truncate text-[13.5px] font-semibold text-white">{user.name}</div>
           <div className="truncate text-xs">
-            {tenant.data?.name ?? "…"} · {user.role === "owner" ? "Responsable" : "Equipo"}
+            {tenant.data?.name ?? (user.role === "owner" ? "Dirección comercial" : "Equipo comercial")}
           </div>
         </div>
       </div>

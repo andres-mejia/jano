@@ -3,6 +3,19 @@ import { DEFAULT_GUARDRAILS } from "@jano/domain";
 
 import { IDS } from "./ids";
 
+/** Hace `min` minutos, para que «Agentes en vivo» diga «hace 2 min» y no «hace 23 h». */
+const haceMin = (min: number): string => new Date(Date.now() - min * 60_000).toISOString();
+
+/** Se calcula en cada petición: en una Lambda que lleva horas viva, la hora no se queda vieja. */
+export function agentesEnVivo(): DashboardSummary["agents"] {
+  return [
+    { agent: "account_finder", status: "working", summary: "Leyendo 14 webs corporativas", at: haceMin(1) },
+    { agent: "contact_finder", status: "working", summary: "Verificando 6 emails", at: haceMin(1) },
+    { agent: "outreach", status: "deciding", summary: "Cambia Rumbo Norte a secuencia por trigger", at: haceMin(5) },
+    { agent: "response", status: "waiting_human", summary: "2 borradores esperan tu aprobación", at: haceMin(13) },
+  ];
+}
+
 export const DASHBOARD: DashboardSummary = {
   campaignId: IDS.campaign,
   campaignName: "Agencias de viajes · España · facturación superior a 1 M€",
@@ -20,12 +33,7 @@ export const DASHBOARD: DashboardSummary = {
     { key: "replied", label: "Respondieron", value: 23 },
     { key: "meetings", label: "Reuniones", value: 7 },
   ],
-  agents: [
-    { agent: "account_finder", status: "working", summary: "Leyendo 14 webs corporativas", at: "2026-10-28T10:46:00.000Z" },
-    { agent: "contact_finder", status: "working", summary: "Verificando 6 emails", at: "2026-10-28T10:46:00.000Z" },
-    { agent: "outreach", status: "deciding", summary: "Cambia Rumbo Norte a secuencia por trigger", at: "2026-10-28T10:42:00.000Z" },
-    { agent: "response", status: "waiting_human", summary: "2 borradores esperan tu aprobación", at: "2026-10-28T10:34:00.000Z" },
-  ],
+  agents: agentesEnVivo(),
   guardrailNotice: "Límite diario del buzón alcanzado: 12 envíos pasan a mañana.",
   insight: {
     text: "Las cuentas con vacante comercial responden tres veces más. Propongo priorizarlas esta semana.",
