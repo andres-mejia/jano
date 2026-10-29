@@ -1,7 +1,7 @@
 import { CompanyDomainSchema } from "@jano/domain";
 import { z } from "zod";
 
-import type { CompanySource, EmpresaCandidata } from "../../ports/web";
+import type { CompanySource, EmpresaCandidata, FuenteManual } from "../../ports/web";
 import { normalizar } from "../deterministas/texto";
 
 /**
@@ -155,7 +155,7 @@ export class OsmCompanySource implements CompanySource {
 }
 
 /** Dominios pegados a mano: sin búsqueda, con origen `manual` y el nombre deducido del dominio. */
-export class ManualCompanySource {
+export class ManualCompanySource implements FuenteManual {
   candidatas(dominios: readonly string[]): EmpresaCandidata[] {
     return dominios.map((d) => ({ nombre: nombreDeDominio(d), dominio: d, ciudad: null, origen: "manual" }));
   }

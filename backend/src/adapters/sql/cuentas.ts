@@ -1,6 +1,7 @@
 import type { Account, AccountStatus, Contact, DataSource, Evidence, LegalBasisStatus, Trigger } from "@jano/domain";
 
 import type { RepositorioCuentas } from "../../ports/repositorios";
+import type { EmpresaCandidata } from "../../ports/web";
 import { EN_LISTA, entero, iso, json, listaJson, ms } from "./comun";
 import type { Tx } from "./tx";
 
@@ -89,6 +90,7 @@ export function repositorioCuentas(tx: Tx, tenantId: string): RepositorioCuentas
       const [f] = await tx.query<Fila>(
         `insert into accounts (tenant_id, campaign_id, name, domain, city, fit_score, fit_reasoning, fit_evidence, trigger, status, source, discard_reason)
          values (:t, cast(:c as uuid), :name, :domain, :city, :fit, :reasoning, cast(:evidence as jsonb), cast(:trigger as jsonb), :status, :source, :reason)
+         on conflict (tenant_id, campaign_id, domain) do nothing
          returning ${COLUMNAS}`,
         {
           ...t,
@@ -105,8 +107,23 @@ export function repositorioCuentas(tx: Tx, tenantId: string): RepositorioCuentas
           reason: c.discardReason,
         },
       );
-      if (!f) throw new Error("insert sin returning");
-      return aCuenta(f);
+      return f ? aCuenta(f) : null;
+    },
+
+    async candidatasEnCache(clave, desde) {
+      const [f] = await tx.query<{ companies: string }>(
+        "select companies::text as companies from candidate_cache where tenant_id = :t and cache_key = :k and fetched_at >= cast(:desde as timestamptz)",
+        { ...t, k: clave, desde: desde.toISOString() },
+      );
+      return f ? json<EmpresaCandidata[]>(f.companies) : null;
+    },
+
+    async guardarCandidatas(clave, empresas, en) {
+      await tx.query(
+        `insert into candidate_cache (tenant_id, cache_key, companies, fetched_at) values (:t, :k, cast(:e as jsonb), cast(:en as timestamptz))
+         on conflict (tenant_id, cache_key) do update set companies = excluded.companies, fetched_at = excluded.fetched_at`,
+        { ...t, k: clave, e: JSON.stringify(empresas), en: en.toISOString() },
+      );
     },
 
     async obtener(id) {

@@ -105,11 +105,19 @@ export const CandidateRequestSchema = z.union([
 ]);
 export type CandidateRequest = z.infer<typeof CandidateRequestSchema>;
 
-/** Resultado de buscar candidatas: las nuevas (puntuadas o descartadas con su motivo) y las que ya estaban. */
-export const CandidateResultSchema = z.object({
-  added: z.number().int().nonnegative(),
-  discarded: z.number().int().nonnegative(),
+/**
+ * Búsqueda de candidatas encolada (202): leer webs y puntuar va en segundo plano.
+ * Con una región, `queued` es 0 porque las encola el trabajador al encontrarlas
+ * en OpenStreetMap; `attribution` es la que exige la licencia de la fuente.
+ */
+export const CandidateJobSchema = z.object({
+  jobId: z.string().uuid(),
+  campaignId: z.string().uuid(),
+  mode: z.enum(["region", "domains"]),
+  region: z.string().nullable(),
+  queued: z.number().int().nonnegative(),
   skipped: z.number().int().nonnegative(),
-  accounts: z.array(AccountSchema),
+  attribution: z.string().nullable(),
+  acceptedAt: z.string().datetime(),
 });
-export type CandidateResult = z.infer<typeof CandidateResultSchema>;
+export type CandidateJob = z.infer<typeof CandidateJobSchema>;

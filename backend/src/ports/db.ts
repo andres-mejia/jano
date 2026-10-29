@@ -5,6 +5,7 @@ import type {
   RegistroDeEventos,
   RepositorioBandeja,
   RepositorioCampanas,
+  RepositorioConsumo,
   RepositorioCuentas,
   RepositorioCumplimiento,
   RepositorioProspects,
@@ -34,6 +35,7 @@ export interface UnidadDeTrabajo {
   readonly eventos: RegistroDeEventos;
   readonly bandeja: RepositorioBandeja;
   readonly cumplimiento: RepositorioCumplimiento;
+  readonly consumo: RepositorioConsumo;
   readonly vistas: Proyecciones;
   /**
    * Efecto fuera de la base de datos que solo debe ocurrir si la transacción se

@@ -1,6 +1,7 @@
 import type { UnidadDeTrabajo } from "../../ports/db";
 import { repositorioBandeja } from "./bandeja";
 import { repositorioCampanas } from "./campanas";
+import { repositorioConsumo } from "./consumo";
 import { repositorioCuentas } from "./cuentas";
 import { repositorioCumplimiento } from "./cumplimiento";
 import { registroDeEventos } from "./eventos";
@@ -23,6 +24,7 @@ export function crearUnidad(tx: Tx, tenantId: string): { uow: UnidadDeTrabajo; e
     eventos: registroDeEventos(tx, tenantId),
     bandeja: repositorioBandeja(tx, tenantId),
     cumplimiento: repositorioCumplimiento(tx, tenantId),
+    consumo: repositorioConsumo(tx, tenantId),
     vistas: proyecciones(tx, tenantId),
     alConfirmar: (fn) => efectos.push(fn),
   };

@@ -5,7 +5,9 @@ import { CorreoSinConfigurar } from "../adapters/correo-sin-configurar";
 import { agentesDeterministas } from "../adapters/deterministas/ia";
 import { relojDelSistema } from "../adapters/deterministas/reloj";
 import { DeterministicCompanySource, DeterministicWebReader } from "../adapters/deterministas/web";
+import { SqsColaDeCuentas } from "../adapters/sqs-cola";
 import { SsmDespertador } from "../adapters/ssm-despertador";
+import { ManualCompanySource } from "../adapters/web/osm";
 import { crearListaBlanca } from "../domain/motor/lista-blanca";
 
 /**
@@ -35,6 +37,8 @@ export function serviciosDesdeEntorno(env: Readonly<Record<string, string | unde
     correo: new CorreoSinConfigurar(),
     web: new DeterministicWebReader(relojDelSistema),
     empresas: new DeterministicCompanySource(),
+    manual: new ManualCompanySource(),
+    cola: new SqsColaDeCuentas(requerida(env, "CUENTAS_QUEUE_URL")),
     reloj: relojDelSistema,
     despertador: new SsmDespertador(requerida(env, "MOTOR_PARAMETER")),
     config: leerConfig(env, crearListaBlanca, CONEXIONES),

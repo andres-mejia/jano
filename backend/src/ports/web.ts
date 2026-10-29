@@ -42,3 +42,8 @@ export interface CompanySource {
   /** Atribución que exige la licencia de los datos (ODbL en OpenStreetMap), para mostrarla en la app. */
   readonly atribucion: string | null;
 }
+
+/** Dominios que pega la persona: sin búsqueda, con origen `manual`. */
+export interface FuenteManual {
+  candidatas(dominios: readonly string[]): EmpresaCandidata[];
+}

@@ -38,8 +38,10 @@ test("todas las tablas de negocio tienen RLS forzado", async () => {
     filas.map((f) => f.relname),
     [
       "accounts",
+      "ai_usage",
       "campaign_reviews",
       "campaigns",
+      "candidate_cache",
       "contacts",
       "guardrails",
       "icp_turns",
