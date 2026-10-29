@@ -16,8 +16,8 @@ Terraform plano en `infra/environments/dev` (sin Terragrunt), módulos propios e
 | Principio | Cumple | Nota |
 |---|---|---|
 | I · IA decide, motor ejecuta | n/a | Sin lógica de agentes en esta feature |
-| II · Contract-first | Sí | La API Gateway solo publica rutas del contrato; aquí se crea vacía con el autorizador |
-| III · Misma plataforma que Fenora | Sí | Mismo estado, mismos patrones de módulo, misma cuenta; sin VPC para Lambda, sin Quarkus |
+| II · Contract-first | Sí | La API Gateway solo publica rutas del contrato (`GET /v1/dashboard/summary` como placeholder con autorizador); ninguna ruta fuera de `contracts/openapi/jano-api.yaml` |
+| III · Misma plataforma que Fenora | Sí | Mismo estado, mismos patrones de módulo, misma cuenta; sin Quarkus. La «VPC privada» que excluye III es la de Lambda con NAT (ADR-001 §3); la VPC mínima de la decisión 2 solo alberga el subnet group que exige Aurora y ninguna Lambda entra en ella |
 | IV · Cumplimiento | Sí | Sin datos reales; SES solo confirma altas; retención de logs 30 d |
 | V · Verificación con evidencia | Sí | `fmt`, `validate`, `plan` idempotente y los SC medidos con comandos |
 

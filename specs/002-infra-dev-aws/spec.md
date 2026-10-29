@@ -34,9 +34,9 @@ Que `main` se publique solo: la landing y la app en Amplify, auth en Cognito, el
 ## Requisitos funcionales
 
 - **FR-001** Estado remoto en el bucket `fenora-terraform-state-<ACCOUNT_ID>` con clave `jano/dev/terraform.tfstate` y la tabla de locks `fenora-terraform-locks` (ya existen). *(Alternativa descartada: bucket propio; exige bootstrap y no aporta aislamiento real dentro de la misma cuenta.)*
-- **FR-002** Módulos propios en `infra/modules/`, uno por componente, con la forma de `fintrack/infra/modules`: `cognito`, `landing` (Amplify WEB), `app-hosting` (Amplify WEB_COMPUTE), `waitlist` (DynamoDB + Lambda Node 22 + HTTP API + SES), `email` (regla de recepción en el rule set de `tekhos.com`, configuration set; la identidad del dominio ya existe), `aurora` (Serverless v2, min ACU 0, auto-pause 300 s, Data API activada, sin RDS Proxy), `assets` (S3 con cifrado, versionado y bloqueo público), `api-gateway` (HTTP API con autorizador JWT de Cognito, CORS para app y localhost), `github-oidc` (rol de apply con política de arranque y rol de plan de solo lectura), `dns` (registros en la zona de `tekhos.com`, certificados global y regional).
+- **FR-002** Módulos propios en `infra/modules/`, uno por componente, con la forma de `fintrack/infra/modules`: `cognito`, `landing` (Amplify WEB), `app-hosting` (Amplify WEB_COMPUTE), `waitlist` (DynamoDB + Lambda Node 22 + HTTP API + SES), `email` (regla de recepción en el rule set de `tekhos.com`, configuration set; la identidad del dominio ya existe), `aurora` (Serverless v2, min ACU 0, auto-pause 300 s, Data API activada, sin RDS Proxy), `assets` (S3 con cifrado, versionado y bloqueo público), `api-gateway` (HTTP API con autorizador JWT de Cognito, CORS para app y localhost), `github-oidc` (rol de apply con política de arranque y rol de plan de solo lectura), `vpc` (mínima, solo para Aurora), `dns` (registros en la zona de `tekhos.com`, certificados global y regional).
 - **FR-003** Naming `jano-<env>-<componente>`; tags `Project=jano`, `Environment`, `ManagedBy=terraform` por `default_tags`.
-- **FR-004** Lambdas fuera de VPC. Aurora en subnets privadas de una VPC propia de Jano con Data API como única vía desde Lambda. *(Si el coste de VPC+NAT no se justifica en dev, se evalúa reutilizar la VPC de Fenora; se decide en el plan con el coste medido.)*
+- **FR-004** Lambdas fuera de VPC. Aurora en subnets privadas de una VPC propia de Jano con Data API como única vía desde Lambda. *(Decidido en el plan, decisión 2: VPC mínima sin NAT ni IGW; la de Fenora es la alternativa si Andrés la prefiere.)*
 - **FR-005** Secrets en Secrets Manager: credenciales de Aurora (gestionadas por RDS), futura credencial de Microsoft Graph y de proveedores. Ninguna en variables de entorno.
 - **FR-006** La landing recibe `PUBLIC_WAITLIST_ENDPOINT`, `PUBLIC_APP_URL` y `PUBLIC_SITE_URL`; la app recibe `NEXT_PUBLIC_*` del pool, del cliente, del dominio Hosted UI y de la URL de la API. Ambas con `AMPLIFY_MONOREPO_APP_ROOT`.
 - **FR-007** Amplify instala con `pnpm install --frozen-lockfile` desde la raíz del workspace (`amplify.yml` ya lo hace); el `build_spec` del módulo replica el `amplify.yml` de la raíz.
@@ -51,7 +51,7 @@ Ninguna de dominio; recursos AWS descritos arriba. La tabla de waitlist: `email`
 - **SC-002** `https://jano.tekhos.com` y `https://jano-app.tekhos.com` responden; un push de prueba a `main` publica en menos de 10 minutos.
 - **SC-003** Un alta en el formulario aparece en DynamoDB y llega el correo de confirmación.
 - **SC-004** Un usuario creado a mano en el pool entra en la app y el ID token lleva `custom:tenant_id`.
-- **SC-005** Coste estimado con cero tráfico por debajo de 15 €/mes (Aurora en pausa; sin NAT si FR-004 lo permite).
+- **SC-005** Coste estimado con cero tráfico por debajo de 15 €/mes (Aurora en pausa; sin NAT).
 
 ## Fuera de alcance
 Lambdas del backend (003), colas y scheduler (003), WAF (se valora en producción), entorno de producción.
