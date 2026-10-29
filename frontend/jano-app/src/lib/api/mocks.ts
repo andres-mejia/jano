@@ -5,13 +5,14 @@
  * con 404 para que el hueco se vea.
  */
 
-import type { Campaign, IcpTurn, InboxItem, Prospect, ProspectEvent } from "@jano/domain";
-import { ApproveDraftSchema, CreateCampaignSchema, GuardrailsSchema, RegenerateDraftSchema } from "@jano/domain";
+import type { Campaign, IcpTurn, InboxItem, Prospect, ProspectEvent, TenantUser } from "@jano/domain";
+import { ApproveDraftSchema, CreateCampaignSchema, GuardrailsSchema, InviteTenantUserSchema, RegenerateDraftSchema } from "@jano/domain";
 
 import { ACCOUNTS, CAMPAIGN, CONTACTS, ICP_TURNS } from "./fixtures/campaign";
 import { IDS, nextMockId } from "./fixtures/ids";
 import { INBOX } from "./fixtures/inbox";
 import { EVENTS, PROSPECTS, STAGE_EVENTS } from "./fixtures/prospects";
+import { TEAM, TENANT } from "./fixtures/team";
 import { AUDIT, COMPLIANCE, CONNECTIONS, DASHBOARD, FLOW, GUARDRAILS } from "./fixtures/views";
 
 class MockNotFound extends Error {
@@ -26,6 +27,7 @@ const state = {
   events: structuredClone(EVENTS) as ProspectEvent[],
   inbox: structuredClone(INBOX) as InboxItem[],
   guardrails: structuredClone(GUARDRAILS),
+  team: structuredClone(TEAM) as TenantUser[],
 };
 
 const now = (): string => new Date().toISOString();
@@ -232,7 +234,37 @@ const routes: Array<[method: string, pattern: string, handler: Handler]> = [
     },
   ],
   ["GET", "/connections", () => CONNECTIONS],
+
+  ["GET", "/tenant", () => TENANT],
+  ["GET", "/tenant/users", () => state.team],
+  [
+    "POST",
+    "/tenant/users",
+    (_p, body) => {
+      const input = InviteTenantUserSchema.parse(body);
+      const user: TenantUser = {
+        userId: nextMockId(),
+        email: input.email,
+        name: input.name ?? null,
+        role: "member",
+        status: "invited",
+        invitedBy: "mock-owner",
+        createdAt: now(),
+      };
+      state.team.push(user);
+      return user;
+    },
+  ],
+  ["POST", "/tenant/users/:id/disable", (p) => cambiarMiembro(p["id"], "disabled")],
+  ["POST", "/tenant/users/:id/enable", (p) => cambiarMiembro(p["id"], "active")],
+  ["POST", "/tenant/users/:id/resend-invitation", (p) => state.team.find((u) => u.userId === p["id"]) ?? notFound()],
 ];
+
+function cambiarMiembro(id: string | undefined, status: TenantUser["status"]): TenantUser {
+  const u = state.team.find((x) => x.userId === id) ?? notFound();
+  u.status = status;
+  return u;
+}
 
 function rank(i: InboxItem): number {
   if (i.draft?.status === "pending_approval") return 0;

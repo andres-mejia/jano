@@ -24,3 +24,27 @@
 ## 6. Tests contra Postgres
 - **Decisión**: Docker `postgres:16` efímero por ejecución de tests (`backend/test/pg.ts`), las mismas migraciones y el mismo rol `jano_api`; en CI, servicio `postgres` del job.
 - **Alternativas**: PGlite (corre como superusuario y RLS no aplica sin más juego de roles); mocks de la base de datos (no prueban RLS).
+
+## Evidencia (2026-10-29)
+
+```
+pnpm --filter @jano/backend test                 -> tests 29, pass 29, fail 0 (Postgres 16 en Docker, rol jano_api)
+  aislamiento.test.ts                            -> sin filtro, filtrando por el otro tenant, update sin where, insert en otro tenant
+                                                    (row-level security), sin app.tenant_id: 0 filas; delete/update de actividad: permission denied
+  api.test.ts                                    -> GET /tenant, equipo, invitar (409 sin revelar tenant, deshacer en Cognito), desactivar
+                                                    con sesión abierta -> 403, reactivar, reenviar, owner de A sobre usuarios de B -> 404, tenant suspendido -> 403
+  operaciones.test.ts                            -> alta, alta con email existente sin rastro, importar idempotente, suspender/reactivar
+node --test infra/modules/cognito/lambda/pre-token/index.test.mjs -> pass 4 (claims en ID y access token)
+pnpm type-check && pnpm --filter @jano/app build && pnpm --filter @jano/app test -> verde; ruta /equipo
+terraform apply                                  -> Resources: 13 added, 2 changed, 0 destroyed (backend-api; pre-token V1_0 -> V2_0)
+pnpm --filter @jano/backend migrar               -> migraciones aplicadas: 001_tenants.sql; secreto de jano_api generado;
+                                                    rol jano_api listo: sin BYPASSRLS y sin tablas propias
+pnpm --filter @jano/backend importar-tenant --tenant tenant-rumbonorte --nombre "Rumbo Norte"
+                                                 -> importados 2 usuarios; segunda vez: ya estaba al día
+aws lambda invoke jano-dev-api (GET /v1/tenant, sub del piloto)
+                                                 -> 200 {"id":"tenant-rumbonorte","name":"Rumbo Norte","plan":"piloto","status":"active","role":"owner"}
+aws lambda invoke jano-dev-api (GET /v1/tenant/users)
+                                                 -> 200, 2 usuarios owner/active
+```
+
+Pendiente (Andrés, navegador): T034 invitar a una cuenta de prueba y entrar; T042 desactivarla con la sesión abierta.

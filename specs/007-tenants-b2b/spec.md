@@ -1,6 +1,6 @@
 # Feature 007 · Tenants y alta B2B
 
-**Rama**: `feat/tenants-b2b` · **Estado**: especificada · **Fecha**: 2026-10-29 · **Depende de**: 002, 006
+**Rama**: `feat/tenants-b2b` · **Estado**: implementada en dev; falta la prueba en navegador (T034, T042) · **Fecha**: 2026-10-29 · **Depende de**: 002, 006
 
 ## Objetivo
 Que cada empresa cliente exista en Jano como tenant con sus datos y sus usuarios, y que su responsable pueda gestionar quién de su equipo entra, sin registro abierto y sin que un tenant pueda ver nunca los datos de otro. Hoy el tenant es solo una etiqueta que el administrador escribe a mano en cada usuario; tras esta feature es un registro con nombre, plan y estado, el alta de usuarios se hace desde la app y el aislamiento entre tenants lo garantiza también la base de datos.
@@ -80,6 +80,13 @@ Jano sigue siendo B2B (decisión de Andrés, 2026-10-29): un tenant es una empre
 - **SC-003** Un member desactivado no completa ninguna acción después de la desactivación (0 peticiones aceptadas).
 - **SC-004** En la batería de aislamiento con dos tenants, el 100 % de las lecturas y escrituras cruzadas devuelve cero filas del otro tenant, incluidas las consultas sin filtro.
 - **SC-005** Los dos usuarios actuales siguen entrando (contraseña y Google) con el mismo tenant tras la migración.
+
+## Estado de los criterios (2026-10-29)
+- **SC-001** Cumplido: `alta-tenant` es un comando; probado en tests, sin uso real todavía.
+- **SC-002** Pendiente de la prueba de Andrés (T034).
+- **SC-003** Cumplido en tests (403 en la siguiente petición); falta la prueba en navegador (T042).
+- **SC-004** Cumplido: batería de aislamiento en verde con el rol de la API.
+- **SC-005** Cumplido en la API (Lambda en dev con el piloto); falta confirmar en el navegador tras el despliegue.
 
 ## Supuestos y dependencias
 - Es el primer trozo del backend de la spec 003 (FR-001 y FR-003 de 003: monolito en `backend/`, migraciones versionadas aplicadas fuera del arranque de las Lambdas). La 003 parte de lo que deje esta feature y añade el resto de tablas sobre el mismo esquema multi-tenant.

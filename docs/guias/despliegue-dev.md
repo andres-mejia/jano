@@ -24,14 +24,14 @@ infra/scripts/deploy-dev.sh --plan-only          # init + validate + plan
 infra/scripts/deploy-dev.sh                      # lo mismo y, tras escribir «si», apply del plan guardado
 ```
 
-El script resuelve la cuenta con `sts`, pasa el bucket de estado por `-backend-config` y aplica exactamente el plan que se ha revisado (`tfplan`). Nada se aplica sin plan revisado (AGENTS.md §8).
+El script construye el backend (Terraform empaqueta `backend/dist/api`), resuelve la cuenta con `sts`, pasa el bucket de estado por `-backend-config` y aplica exactamente el plan que se ha revisado (`tfplan`) y después las migraciones de Aurora (`pnpm --filter @jano/backend migrar`). Nada se aplica sin plan revisado (AGENTS.md §8).
 
 Variables: los valores por defecto de `infra/environments/dev/variables.tf` son los de dev; `terraform.tfvars.example` muestra cuáles se pueden cambiar. El token de GitHub nunca va en un fichero.
 
 ## Desplegar desde CI
 
 - **PR que toca `infra/**`**: `infra-plan.yml` asume `jano-dev-github-actions-plan` (solo lectura), hace `plan`, pasa la guardia en modo informativo y comenta el plan en el PR.
-- **Push a `main` que toca `infra/**`**: `infra-apply.yml` asume `jano-dev-github-actions`, hace `plan`, la guardia lo para si destruye datos (Aurora, Cognito, S3, DynamoDB…) y aplica ese mismo plan. Para autorizar un borrado legítimo: `workflow_dispatch` con `permitir_destruccion` y las direcciones exactas.
+- **Push a `main` que toca `infra/**`**: `infra-apply.yml` asume `jano-dev-github-actions`, construye el backend, hace `plan`, la guardia lo para si destruye datos (Aurora, Cognito, S3, DynamoDB…), aplica ese mismo plan y migra Aurora. Para autorizar un borrado legítimo: `workflow_dispatch` con `permitir_destruccion` y las direcciones exactas.
 - Secretos del repo: `AWS_GITHUB_OIDC_ROLE_ARN` y `AWS_GITHUB_OIDC_PLAN_ROLE_ARN` (outputs `github_actions_role_arn` y `github_actions_plan_role_arn`).
 
 ## Pasos manuales (una vez)
@@ -45,17 +45,13 @@ Variables: los valores por defecto de `infra/environments/dev/variables.tf` son 
    ```
    Por variable de entorno y no con `-var`, para que el token no quede en la línea de comandos. Si llega vacío o con texto que no es un token, Amplify responde `There was an issue setting up your repository` con `Bad credentials` dentro.
    Si las apps ya existían sin conexión, se recrean añadiendo `-replace=module.landing.aws_amplify_app.this -replace=module.app_hosting.aws_amplify_app.this`.
-2. **Usuario piloto.** Alta solo por administrador, con tenant y rol:
+2. **Empresas y usuarios (spec 007).** No hay registro abierto: el equipo de Jano da de alta cada empresa y su primer owner, que recibe un correo de Cognito; después el owner invita a su equipo desde **Equipo** en la app. Con `AWS_PROFILE=fintrack-dev` y el entorno ya inicializado (los scripts leen las salidas de Terraform):
    ```bash
-   POOL=$(terraform -chdir=infra/environments/dev output -raw cognito_user_pool_id)
-   aws cognito-idp admin-create-user --user-pool-id "$POOL" --username piloto@empresa.example \
-     --user-attributes Name=email,Value=piloto@empresa.example Name=email_verified,Value=true \
-       Name=custom:tenant_id,Value=tenant-piloto Name=custom:role,Value=owner \
-     --message-action SUPPRESS --profile fintrack-dev
-   aws cognito-idp admin-set-user-password --user-pool-id "$POOL" --username piloto@empresa.example \
-     --password '<contraseña de 12+ con los cuatro tipos>' --permanent --profile fintrack-dev
+   pnpm --filter @jano/backend alta-tenant --tenant tenant-faro --nombre "Faro Ingeniería" --owner ana@faro.example
+   pnpm --filter @jano/backend suspender-tenant --tenant tenant-faro            # --reactivar para deshacer
+   pnpm --filter @jano/backend importar-tenant --tenant tenant-rumbonorte --nombre "Rumbo Norte"   # usuarios que solo estaban en Cognito
    ```
-   Un usuario sin `custom:tenant_id` o con un rol distinto de `owner`/`member` no recibe token: el trigger pre-token lo rechaza.
+   El id del tenant es `tenant-` más minúsculas, números y guiones; es el `custom:tenant_id` de sus usuarios. Si el email del owner ya existe, el alta no crea nada. Un usuario sin `custom:tenant_id` o con un rol distinto de `owner`/`member` no recibe token (trigger pre-token), y uno desactivado o de una empresa suspendida recibe 403 en la API.
 3. **Política de arranque del rol de CI**: `infra/bootstrap/README.md`.
 4. **Google (spec 006).** En Google Cloud Console, proyecto «Jano» → Google Auth Platform:
    - **Clients**: client «Web application» sin orígenes JavaScript y con la URI de redirección `https://jano-dev.auth.eu-west-1.amazoncognito.com/oauth2/idpresponse`. Se descarga el JSON a `.credentials/` (ignorado por git).
