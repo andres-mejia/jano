@@ -37,6 +37,7 @@ export interface Dict {
     readonly login: string;
     readonly cta: string;
     readonly language: string;
+    readonly backToTop: string;
   };
   readonly hero: {
     readonly title: string;

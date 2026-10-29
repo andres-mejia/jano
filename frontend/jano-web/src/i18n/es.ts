@@ -24,6 +24,7 @@ export const es: Dict = {
     login: "Entrar",
     cta: "Pedir acceso",
     language: "Idioma",
+    backToTop: "Volver arriba",
   },
   hero: {
     title: "Abre la puerta correcta.",
