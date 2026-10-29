@@ -9,12 +9,12 @@ Equipo comercial de IA para pymes B2B españolas: encuentra cuentas, localiza al
 Un solo repo, una sola rama viva (`main`), un solo desarrollador (Andrés Mejía) y un socio (Paco) que revisa producto.
 
 ```
-frontend/jano-web        Astro 5 + Tailwind 4 — landing, apex jano.* (estático)
-frontend/jano-app        Next.js 16 · React 19 · Tailwind 4 — la app, app.jano.*
+frontend/jano-web        Astro 5 + Tailwind 4 — landing, jano.tekhos.com (estático)
+frontend/jano-app        Next.js 16 · React 19 · Tailwind 4 — la app, jano-app.tekhos.com
 packages/domain          tipos y esquemas del dominio compartidos (TypeScript + zod)
 contracts/openapi        contrato de la API (contract-first)
 infra/environments/dev   Terraform plano, backend S3, eu-west-1
-infra/modules/*          módulos propios (cognito, hosting, waitlist, aurora, assets, api)
+infra/modules/*          módulos propios (vpc, dns, cognito, landing, app-hosting, email, waitlist, aurora, assets, api-gateway, github-oidc)
 docs/ADR                 decisiones; docs/producto: pitch y pantallas; docs/guias: runbooks
 ```
 
