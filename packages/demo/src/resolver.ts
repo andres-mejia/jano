@@ -15,7 +15,7 @@ import { IDS, nextMockId } from "./fixtures/ids";
 import { INBOX } from "./fixtures/inbox";
 import { EVENTS, PROSPECTS, STAGE_EVENTS } from "./fixtures/prospects";
 import { TEAM, TENANT } from "./fixtures/team";
-import { agentesEnVivo, AUDIT, COMPLIANCE, CONNECTIONS, DASHBOARD, FLOW, GUARDRAILS } from "./fixtures/views";
+import { AUDIT, COMPLIANCE, CONNECTIONS, DASHBOARD, FLOW, GUARDRAILS } from "./fixtures/views";
 
 export class DemoNoEncontrado extends Error {
   readonly status = 404;
@@ -52,7 +52,7 @@ function matchPath(pattern: string, path: string): Record<string, string> | null
 type Handler = (params: Record<string, string>, body: unknown, query: URLSearchParams) => unknown;
 
 const routes: Array<[method: string, pattern: string, handler: Handler]> = [
-  ["GET", "/dashboard/summary", () => ({ ...DASHBOARD, agents: agentesEnVivo() })],
+  ["GET", "/dashboard/summary", () => DASHBOARD],
 
   ["GET", "/campaigns", () => state.campaigns],
   [
@@ -284,6 +284,35 @@ function evento(prospectId: string, agent: ProspectEvent["agent"], type: Prospec
   return e;
 }
 
+/**
+ * Los datos de ejemplo están escritos como si «ahora» fuera el 28 de octubre a las
+ * 10:47 UTC. Al responder se trasladan a la hora real: lo pasado queda igual de
+ * reciente (el último evento, hace un minuto) y las reuniones futuras se mueven por
+ * días enteros, sin perder su hora redonda. Así ninguna pantalla dice «hace 2 d»
+ * junto a un registro de hoy.
+ */
+const ANCLA = Date.parse("2026-10-28T10:47:00.000Z");
+const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+const DIA = 86_400_000;
+
+function aHoy<T>(valor: T, ahora = Date.now()): T {
+  const desfase = ahora - ANCLA;
+  const dias = Math.round(desfase / DIA) * DIA;
+  const mover = (v: unknown): unknown => {
+    if (typeof v === "string" && ISO.test(v)) {
+      const t = Date.parse(v);
+      if (t <= ANCLA) return new Date(t + desfase).toISOString();
+      // Solo las fechas futuras de los datos (horas en punto o y media); lo creado en la sesión no se toca.
+      if (/T\d{2}:(00|30):00\.000Z$/.test(v)) return new Date(t + dias).toISOString();
+      return v;
+    }
+    if (Array.isArray(v)) return v.map(mover);
+    if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, mover(x)]));
+    return v;
+  };
+  return mover(valor) as T;
+}
+
 export async function resolverDemo<T>(method: string, path: string, body?: unknown, latenciaMs = 120): Promise<T> {
   const [cleanPath = "", qs = ""] = path.split("?");
   const query = new URLSearchParams(qs);
@@ -292,7 +321,7 @@ export async function resolverDemo<T>(method: string, path: string, body?: unkno
     const params = matchPath(pattern, cleanPath);
     if (!params) continue;
     if (latenciaMs > 0) await new Promise((r) => setTimeout(r, latenciaMs));
-    return structuredClone(handler(params, body, query)) as T;
+    return aHoy(structuredClone(handler(params, body, query))) as T;
   }
   throw new DemoNoEncontrado(`Sin mock para ${method} ${cleanPath}`);
 }

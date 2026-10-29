@@ -3,18 +3,12 @@ import { DEFAULT_GUARDRAILS } from "@jano/domain";
 
 import { IDS } from "./ids";
 
-/** Hace `min` minutos, para que «Agentes en vivo» diga «hace 2 min» y no «hace 23 h». */
-const haceMin = (min: number): string => new Date(Date.now() - min * 60_000).toISOString();
-
-/** Se calcula en cada petición: en una Lambda que lleva horas viva, la hora no se queda vieja. */
-export function agentesEnVivo(): DashboardSummary["agents"] {
-  return [
-    { agent: "account_finder", status: "working", summary: "Leyendo 14 webs corporativas", at: haceMin(1) },
-    { agent: "contact_finder", status: "working", summary: "Verificando 6 emails", at: haceMin(1) },
-    { agent: "outreach", status: "deciding", summary: "Cambia Rumbo Norte a secuencia por trigger", at: haceMin(5) },
-    { agent: "response", status: "waiting_human", summary: "2 borradores esperan tu aprobación", at: haceMin(13) },
-  ];
-}
+const AGENTES: DashboardSummary["agents"] = [
+  { agent: "account_finder", status: "working", summary: "Leyendo 14 webs corporativas", at: "2026-10-28T10:46:00.000Z" },
+  { agent: "contact_finder", status: "working", summary: "Verificando 6 emails", at: "2026-10-28T10:46:00.000Z" },
+  { agent: "outreach", status: "deciding", summary: "Cambia Rumbo Norte a secuencia por señal de compra", at: "2026-10-28T10:42:00.000Z" },
+  { agent: "response", status: "waiting_human", summary: "2 borradores esperan tu aprobación", at: "2026-10-28T10:34:00.000Z" },
+];
 
 export const DASHBOARD: DashboardSummary = {
   campaignId: IDS.campaign,
@@ -33,8 +27,8 @@ export const DASHBOARD: DashboardSummary = {
     { key: "replied", label: "Respondieron", value: 23 },
     { key: "meetings", label: "Reuniones", value: 7 },
   ],
-  agents: agentesEnVivo(),
-  guardrailNotice: "Límite diario del buzón alcanzado: 12 envíos pasan a mañana.",
+  agents: AGENTES,
+  guardrailNotice: "Límite diario del buzón alcanzado (50 de 50): 12 envíos pasan a mañana.",
   insight: {
     text: "Las cuentas con vacante comercial responden tres veces más. Propongo priorizarlas esta semana.",
     action: "Aplicar",
@@ -84,7 +78,7 @@ export const FLOW: FlowMap = {
 };
 
 export const COMPLIANCE: ComplianceSummary = {
-  sendsToday: 38,
+  sendsToday: 50,
   sendsLimit: 50,
   contactsWithSource: 187,
   contactsTotal: 187,
@@ -101,12 +95,12 @@ export const GUARDRAILS: Guardrails = { ...DEFAULT_GUARDRAILS };
 
 export const AUDIT: AuditEntry[] = [
   { id: "f0000000-0000-4000-8000-000000000001", at: "2026-10-28T10:44:00.000Z", agent: "response", type: "opt_out", prospectId: IDS.prospects.horizonte, accountName: "Horizonte Grupos", summary: "Pide la baja: pasa a la lista de supresión", ruleApplied: "Bajas al instante" },
-  { id: "f0000000-0000-4000-8000-000000000002", at: "2026-10-28T10:42:00.000Z", agent: "outreach", type: "decision", prospectId: IDS.prospects.rumboNorte, accountName: "Rumbo Norte Viajes", summary: "Cambio de secuencia por trigger", ruleApplied: null },
+  { id: "f0000000-0000-4000-8000-000000000002", at: "2026-10-28T10:42:00.000Z", agent: "outreach", type: "decision", prospectId: IDS.prospects.rumboNorte, accountName: "Rumbo Norte Viajes", summary: "Cambio de secuencia por señal de compra", ruleApplied: null },
   { id: "f0000000-0000-4000-8000-000000000003", at: "2026-10-28T10:31:00.000Z", agent: "guardrail", type: "deferred", prospectId: IDS.prospects.brisa, accountName: "Brisa Eventos y Viajes", summary: "Envío aplazado, buzón al límite", ruleApplied: "Máximo 50 envíos por buzón y día" },
   { id: "f0000000-0000-4000-8000-000000000004", at: "2026-10-28T10:05:00.000Z", agent: "guardrail", type: "blocked", prospectId: IDS.prospects.costaAzahar, accountName: "Costa Azahar Tours", summary: "Email sin verificar, no se envía", ruleApplied: "No enviar a emails sin verificar" },
   { id: "f0000000-0000-4000-8000-000000000005", at: "2026-10-28T09:42:00.000Z", agent: "response", type: "replied", prospectId: IDS.prospects.albufera, accountName: "Viajes Albufera", summary: "Clasificada como interés", ruleApplied: null },
   { id: "f0000000-0000-4000-8000-000000000006", at: "2026-10-28T09:30:00.000Z", agent: "contact_finder", type: "decision", prospectId: IDS.prospects.travesia, accountName: "Travesía Viajes", summary: "Contacto guardado con su origen", ruleApplied: "Origen y base legal por dato" },
-  { id: "f0000000-0000-4000-8000-000000000007", at: "2026-10-28T09:14:00.000Z", agent: "outreach", type: "sent", prospectId: IDS.prospects.rumboNorte, accountName: "Rumbo Norte Viajes", summary: "Email por trigger enviado", ruleApplied: null },
+  { id: "f0000000-0000-4000-8000-000000000007", at: "2026-10-28T09:14:00.000Z", agent: "outreach", type: "sent", prospectId: IDS.prospects.rumboNorte, accountName: "Rumbo Norte Viajes", summary: "Email por señal de compra enviado", ruleApplied: null },
 ];
 
 export const CONNECTIONS: Connection[] = [

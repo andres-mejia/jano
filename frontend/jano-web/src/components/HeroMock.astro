@@ -12,7 +12,7 @@ const stages = [
 ];
 const agents = [
   { name: "Account Finder", text: "Leyendo 14 webs corporativas", dot: "bg-jano-verde" },
-  { name: "Outreach", text: "Cambia Rumbo Norte a secuencia por trigger", dot: "bg-jano-cobalto-claro" },
+  { name: "Outreach", text: "Cambia Rumbo Norte a secuencia por señal de compra", dot: "bg-jano-cobalto-claro" },
   { name: "Response", text: "2 borradores esperan tu aprobación", dot: "bg-jano-bronce" },
 ];
 ---
@@ -42,12 +42,12 @@ const agents = [
           </li>
         ))}
       </ul>
-      <div class="mt-3 rounded-xl bg-jano-cobalto-tinte p-2.5 text-xs leading-relaxed text-jano-cobalto-oscuro">
+      <div class="ai-border mt-3 rounded-xl p-2.5 text-xs leading-relaxed">
         <b>Lectura de Jano:</b> las cuentas con vacante comercial responden tres veces más. Propongo priorizarlas.
       </div>
     </div>
 
-    <div class="ai-border rounded-2xl p-4">
+    <div class="rounded-2xl border border-jano-linea bg-white p-4">
       <div class="mb-3 text-sm font-semibold">Agentes en vivo</div>
       <ul class="space-y-3">
         {agents.map((a) => (
@@ -60,8 +60,8 @@ const agents = [
           </li>
         ))}
       </ul>
-      <div class="mt-4 rounded-xl bg-jano-rojo-tinte p-2.5 text-xs text-jano-rojo-texto">
-        <b>Guardarraíl:</b> límite diario del buzón alcanzado. 12 envíos pasan a mañana.
+      <div class="mt-4 rounded-xl bg-jano-bronce-tinte p-2.5 text-xs text-jano-bronce-texto">
+        <b>Regla aplicada:</b> límite diario del buzón alcanzado. 12 envíos pasan a mañana.
       </div>
     </div>
   </div>
@@ -69,7 +69,7 @@ const agents = [
   <div class="mt-3 flex items-center justify-between rounded-2xl bg-jano-tinta p-3.5 text-white">
     <div>
       <div class="text-xs text-jano-sobre-tinta">Reuniones agendadas</div>
-      <div class="mt-1 font-mono text-3xl font-medium leading-none tabular">7<span class="text-base text-jano-sobre-tinta"> / 12</span></div>
+      <div class="font-display mt-1 text-3xl font-bold leading-none tabular">7<span class="text-base font-semibold text-jano-sobre-tinta"> de 12</span></div>
     </div>
     <span class="rounded-full bg-jano-tinta-2 px-3 py-1.5 text-xs font-semibold">
       <span class="mr-1.5 inline-block h-2 w-2 rounded-full bg-jano-bronce"></span>Tú apruebas

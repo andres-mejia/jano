@@ -65,7 +65,8 @@ export default function LoginPage() {
           <h1 className="font-display text-4xl font-semibold leading-tight">Abre la puerta correcta.</h1>
           <p className="mt-4 max-w-md text-jano-nav-texto">La IA elige a quién escribir, cuándo y por qué canal. Tú apruebas lo que sale con tu nombre.</p>
         </div>
-        <p className="hidden text-sm text-jano-nav-muted lg:block">Entorno {ENV.entorno}{isMockMode() ? " · modo de ejemplo, sin Cognito" : ""}</p>
+        {/* Solo en modo de ejemplo: en un entorno real, la pantalla de entrada no habla de infraestructura. */}
+        {isMockMode() ? <p className="hidden text-sm text-jano-nav-muted lg:block">Modo de ejemplo, sin Cognito</p> : <span aria-hidden="true" />}
       </section>
 
       <section className="flex items-center justify-center p-5 lg:p-8">

@@ -39,7 +39,7 @@ export const INBOX: InboxItem[] = [
     draft: {
       channel: "email",
       subject: "Re: Prospección sin equipo comercial",
-      body: "Hola, Marta:\n\nEntendido. Más que presupuesto, lo que suele frenar es no tener a alguien que prospecte con constancia; por eso el piloto se paga por reunión conseguida, no por licencia. Si te parece, te cuento cómo funciona en 15 minutos sin compromiso.\n\nUn saludo.",
+      body: "Hola, Marta:\n\nEntendido. Más que presupuesto, lo que suele frenar es no tener a alguien que prospecte con constancia; por eso Jano prospecta cada día por una cuota mensual, sin que tengas que contratar a nadie. Si te parece, te cuento cómo funciona en 15 minutos sin compromiso.\n\nUn saludo.",
       slots: [],
       confidence: "media",
       status: "pending_approval",

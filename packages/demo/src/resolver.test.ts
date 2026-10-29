@@ -38,3 +38,16 @@ for (const ruta of rutasGet) {
 test("una ruta fuera del contrato da DemoNoEncontrado", async () => {
   await assert.rejects(resolverDemo("GET", "/no-existe", undefined, 0), DemoNoEncontrado);
 });
+
+test("las horas de la demo se trasladan a ahora: los agentes «en vivo» actuaron hace minutos", async () => {
+  const d = await resolverDemo<{ agents: { at: string }[]; upcomingMeetings: { start: string }[] }>("GET", "/dashboard/summary", undefined, 0);
+  for (const a of d.agents) {
+    const hace = Date.now() - Date.parse(a.at);
+    assert.ok(hace >= 0 && hace < 20 * 60_000, `agente hace ${Math.round(hace / 60_000)} min`);
+  }
+  // Las reuniones futuras siguen en el futuro y en hora redonda.
+  for (const m of d.upcomingMeetings) {
+    assert.ok(Date.parse(m.start) > Date.now());
+    assert.match(m.start, /T\d{2}:(00|30):00\.000Z$/);
+  }
+});

@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { Topbar } from "@/components/layout/topbar";
-import { AiTag, Button, Card, DemoPill, Pill, Spark } from "@/components/ui/primitives";
+import { AiTag, Button, Card, DemoPill, Pill } from "@/components/ui/primitives";
 import { jano } from "@/lib/api/jano";
 import { formatRevenue } from "@/lib/format";
 import type { Account, Icp } from "@jano/domain";
@@ -128,14 +128,14 @@ export default function CampaignPage() {
       />
 
       <div className="flex flex-col gap-3.5 xl:flex-row xl:items-start">
-        <Card ai className="flex w-full shrink-0 flex-col gap-3 xl:w-[380px]" title={<><Spark />Define tu cliente ideal</>}>
+        <Card className="flex w-full shrink-0 flex-col gap-3 xl:w-[380px]" title="Define tu cliente ideal">
           {(turns.data ?? []).map((t, i) =>
             t.role === "user" ? (
               <div key={i} className="max-w-[88%] self-end rounded-[16px_16px_4px_16px] bg-jano-tinta px-3.5 py-2.5 text-base text-white">
                 {t.text}
               </div>
             ) : (
-              <div key={i} className="rounded-[16px_16px_16px_4px] bg-jano-cobalto-tinte px-3.5 py-3 text-base">
+              <div key={i} className="ai-border rounded-[16px_16px_16px_4px] px-3.5 py-3 text-base">
                 <div className={t.icp ? "mb-2" : ""}>{t.text}</div>
                 {t.icp && <IcpChips icp={t.icp} />}
               </div>
@@ -184,7 +184,7 @@ export default function CampaignPage() {
                   <th className="pb-2 pr-2.5">Empresa</th>
                   <th className="pb-2 pr-2.5">Facturación</th>
                   <th className="pb-2 pr-2.5">Fit</th>
-                  <th className="pb-2 pr-2.5">Trigger detectado</th>
+                  <th className="pb-2 pr-2.5">Señal de compra</th>
                   <th className="pb-2 pr-2.5">Fuente</th>
                   <th className="pb-2">Estado</th>
                 </tr>

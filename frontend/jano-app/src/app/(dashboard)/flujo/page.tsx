@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { Topbar } from "@/components/layout/topbar";
-import { AiTag, Button, Card, Dot, Pill, Skeleton, Spark } from "@/components/ui/primitives";
+import { AiTag, Button, Card, Dot, Pill, Skeleton } from "@/components/ui/primitives";
 import { jano } from "@/lib/api/jano";
 import { DEMO_IDS } from "@jano/demo";
 import { AGENT_LABEL, formatTime } from "@/lib/format";
@@ -151,7 +151,7 @@ export default function FlowPage() {
         </Card>
 
         {!sugerenciaOculta && (
-        <Card ai className="w-full shrink-0 lg:w-[290px]" title={<><Spark />Qué ve Jano</>}>
+        <Card ai className="w-full shrink-0 lg:w-[290px]" title="Qué ve Jano">
           {f?.bottleneck ? (
             <>
               <p className="text-sm leading-relaxed">{f.bottleneck.text}</p>

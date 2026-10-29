@@ -14,11 +14,11 @@ const problems = [
 
 const lead = {
   name: "Orquestador",
-  text: "Convierte una frase en ICP, planifica la campaña y elige el siguiente paso de cada prospect.",
+  text: "Convierte una frase en tu perfil de cliente ideal, planifica la campaña y elige el siguiente paso con cada empresa.",
 };
 
 const crew = [
-  { name: "Account Finder", text: "Lee registros, webs y prensa; puntúa el fit y cita la evidencia y el trigger." },
+  { name: "Account Finder", text: "Lee registros, webs y prensa; puntúa el encaje y cita la evidencia y la señal de compra." },
   { name: "Contact Finder", text: "Elige al interlocutor, cruza fuentes y verifica el email con un proveedor externo." },
   { name: "Outreach", text: "Elige la secuencia, redacta cada mensaje con contexto y cambia de rama según la reacción." },
   { name: "Response", text: "Clasifica la respuesta, contesta, propone huecos y crea la oportunidad." },
@@ -27,14 +27,14 @@ const crew = [
 const rules = [
   { title: "Máximo de envíos por buzón y día", text: "Protege la reputación del dominio. El motor aplaza lo que sobra; la IA no puede subirlo." },
   { title: "Nada a emails sin verificar", text: "Si el verificador no lo confirma, no se envía. Sin excepciones por urgencia." },
-  { title: "WhatsApp solo tras una respuesta", text: "Nunca en frío. La API oficial exige consentimiento y lo respetamos." },
+  { title: "Cada dato con su origen", text: "Cada empresa y cada email guardan de dónde salieron y con qué base legal se usan." },
   { title: "Una respuesta detiene la secuencia", text: "Nadie recibe un seguimiento automático después de contestar." },
   { title: "Bajas al instante", text: "Un «no me escribáis más» pasa a la lista de supresión antes de que lo leas." },
   { title: "Tú apruebas por defecto", text: "El piloto automático existe, pero lo activas tú, por tipo de respuesta y cuando confíes." },
 ];
 
 const flow = [
-  { label: "ICP", value: "1 frase" },
+  { label: "Tu cliente ideal", value: "1 frase" },
   { label: "Cuentas", value: "312" },
   { label: "Contactos", value: "187" },
   { label: "En secuencia", value: "96" },
@@ -76,9 +76,6 @@ const faqs = [
     <!-- Hero -->
     <section class="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-20 pt-14 lg:grid-cols-[1fr_1.05fr] lg:pt-20">
       <div>
-        <p class="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-jano-cobalto-oscuro ring-1 ring-jano-cobalto-linea">
-          <span class="h-2 w-2 rounded-full bg-jano-cobalto"></span>Acceso anticipado · pymes B2B en España
-        </p>
         <h1 class="font-display text-5xl font-bold leading-[1.02] text-jano-tinta sm:text-6xl">
           Abre la puerta correcta.
         </h1>
@@ -88,20 +85,6 @@ const faqs = [
         <div class="mt-8 max-w-lg">
           <WaitlistForm id="hero" />
         </div>
-        <dl class="mt-10 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-jano-linea pt-6 sm:grid-cols-3">
-          <div>
-            <dt class="text-xs font-semibold uppercase tracking-wide text-jano-muted">Métrica única</dt>
-            <dd class="font-display mt-1 text-xl font-bold sm:text-2xl">Reuniones</dd>
-          </div>
-          <div>
-            <dt class="text-xs font-semibold uppercase tracking-wide text-jano-muted">Canal del MVP</dt>
-            <dd class="font-display mt-1 text-xl font-bold sm:text-2xl">Email</dd>
-          </div>
-          <div>
-            <dt class="text-xs font-semibold uppercase tracking-wide text-jano-muted">Por defecto</dt>
-            <dd class="font-display mt-1 text-xl font-bold sm:text-2xl">Tú apruebas</dd>
-          </div>
-        </dl>
       </div>
       <HeroMock />
     </section>
@@ -111,14 +94,13 @@ const faqs = [
       <div class="mx-auto grid max-w-6xl gap-10 px-5 py-20 sm:py-24 lg:grid-cols-[5fr_7fr] lg:gap-16">
         <div>
           <h2 class="font-display text-balance text-3xl font-bold sm:text-4xl">Cuatro tareas de prospección y nadie con tiempo para hacerlas</h2>
-          <p class="mt-4 text-pretty leading-relaxed text-jano-muted">Una pyme B2B no tiene SDR. Prospectar bien son quince horas a la semana que nadie hace con constancia, y las herramientas que lo resuelven están pensadas para Estados Unidos: datos pobres de empresas españolas, inglés por defecto y precios de equipo de ventas.</p>
+          <p class="mt-4 text-pretty leading-relaxed text-jano-muted">Una pyme B2B no tiene a nadie dedicado a prospectar. Prospectar bien son quince horas a la semana que nadie hace con constancia, y las herramientas que lo resuelven están pensadas para Estados Unidos: datos pobres de empresas españolas, inglés por defecto y precios de equipo de ventas.</p>
         </div>
         <ol class="divide-y divide-jano-linea border-y border-jano-linea">
           {problems.map((p, i) => (
-            <li class="grid grid-cols-[2.5rem_1fr] gap-x-4 py-6 sm:grid-cols-[3rem_14rem_1fr] sm:gap-x-6">
-              <span class="font-mono pt-1 text-sm text-jano-muted tabular">{String(i + 1).padStart(2, "0")}</span>
+            <li class="grid gap-x-6 gap-y-1 py-6 sm:grid-cols-[14rem_1fr]">
               <h3 class="font-display text-lg font-bold">{p.title}</h3>
-              <p class="col-start-2 mt-1 text-pretty leading-relaxed text-jano-muted sm:col-start-3 sm:mt-0">{p.text}</p>
+              <p class="text-pretty leading-relaxed text-jano-muted">{p.text}</p>
             </li>
           ))}
         </ol>
@@ -128,7 +110,6 @@ const faqs = [
     <!-- Cómo funciona -->
     <section id="como-funciona" class="mx-auto max-w-6xl px-5 py-20 sm:py-28">
       <div class="max-w-4xl">
-        <p class="text-sm font-semibold uppercase tracking-wide text-jano-cobalto">Cómo funciona</p>
         <h2 class="font-display mt-3 text-balance text-4xl font-bold leading-[1.05] sm:text-5xl">Un orquestador y cuatro agentes. La IA decide, un motor con límites ejecuta.</h2>
         <p class="mt-5 max-w-2xl text-pretty text-lg leading-relaxed text-jano-muted">Describes tu cliente ideal en una frase. Lo demás lo hace el equipo, y cada decisión queda registrada con el razonamiento, la evidencia leída y las reglas comprobadas.</p>
       </div>
@@ -138,7 +119,7 @@ const faqs = [
         <div class="relative rounded-2xl bg-jano-cobalto p-6 text-white">
           <div class="flex items-center justify-between">
             <span class="font-mono text-sm text-jano-sobre-cobalto tabular">01</span>
-            <span class="text-xs font-semibold uppercase tracking-wide text-jano-sobre-cobalto">Coordina</span>
+            <span class="text-xs font-semibold text-jano-sobre-cobalto">Coordina</span>
           </div>
           <h3 class="font-display mt-6 text-2xl font-bold">{lead.name}</h3>
           <p class="mt-2 text-pretty leading-relaxed text-jano-sobre-cobalto">{lead.text}</p>
@@ -185,14 +166,13 @@ const faqs = [
             );
           })}
         </ol>
-        <p class="mt-8 max-w-3xl text-pretty text-sm leading-relaxed text-jano-muted">Dónde está cada prospect, dónde se atasca el embudo y qué decidió la IA en cada etapa. No hay cajas negras: si un correo salió, puedes ver por qué y qué reglas se comprobaron antes.</p>
+        <p class="mt-8 max-w-3xl text-pretty text-sm leading-relaxed text-jano-muted">Dónde está cada empresa, dónde se atasca el embudo y qué decidió la IA en cada etapa. No hay cajas negras: si un correo salió, puedes ver por qué y qué reglas se comprobaron antes.</p>
       </div>
     </section>
 
     <!-- Reglas -->
     <section id="reglas" class="bg-jano-tinta text-white">
       <div class="mx-auto max-w-6xl px-5 py-20 sm:py-24">
-        <p class="text-sm font-semibold uppercase tracking-wide text-jano-bronce">Reglas</p>
         <h2 class="font-display mt-3 text-balance text-3xl font-bold sm:text-4xl">Lo que la IA no puede saltarse</h2>
         <p class="mt-4 max-w-2xl text-pretty leading-relaxed text-jano-sobre-tinta">Competimos en precisión, no en volumen. Estas reglas viven en el motor de ejecución, no en el modelo, y la autonomía se gradúa por cliente.</p>
         <ul class="mt-12 grid gap-x-16 sm:grid-cols-2">
@@ -210,9 +190,8 @@ const faqs = [
     <section id="precio" class="mx-auto max-w-6xl px-5 py-20 sm:py-24">
       <div class="grid gap-10 lg:grid-cols-2 lg:gap-16">
         <div>
-          <p class="text-sm font-semibold uppercase tracking-wide text-jano-cobalto">Precio</p>
           <h2 class="font-display mt-3 text-balance text-3xl font-bold sm:text-4xl">Una cuota mensual. Sin contrato anual.</h2>
-          <p class="mt-4 text-pretty leading-relaxed text-jano-muted">Precio de pyme, por volumen de cuentas trabajadas al mes. Lo cerraremos con los primeros clientes piloto; esta es la hipótesis con la que arrancamos.</p>
+          <p class="mt-4 text-pretty leading-relaxed text-jano-muted">Precio de pyme, por volumen de cuentas trabajadas al mes. Es el precio de lanzamiento para los primeros clientes piloto.</p>
           <ul class="mt-8 space-y-3">
             {included.map((item) => (
               <li class="flex gap-3 text-jano-tinta">
@@ -225,18 +204,14 @@ const faqs = [
           </ul>
         </div>
         <div class="rounded-3xl border border-jano-linea bg-jano-papel p-6 sm:p-8">
-          <div class="flex items-center justify-between">
-            <span class="font-display text-xl font-bold">Piloto</span>
-            <span class="rounded-full bg-jano-bronce-tinte px-2.5 py-1 text-xs font-semibold text-jano-bronce-texto">Hipótesis</span>
-          </div>
+          <span class="font-display text-xl font-bold">Piloto</span>
           <div class="mt-6 flex flex-wrap items-baseline gap-x-2">
-            <span class="font-mono text-4xl font-medium tracking-tight tabular sm:text-5xl">300–900 €</span>
-            <span class="text-lg font-semibold text-jano-muted">/ mes</span>
+            <span class="text-lg font-semibold text-jano-muted">Desde</span>
+            <span class="font-display text-5xl font-bold tabular">300 €</span>
+            <span class="text-lg font-semibold text-jano-muted">al mes</span>
           </div>
-          <p class="mt-3 text-pretty text-sm leading-relaxed text-jano-muted">Según cuentas trabajadas. Por debajo de las herramientas de SDR autónomo del mercado.</p>
-          <div class="mt-6">
-            <WaitlistForm id="precio-form" compact />
-          </div>
+          <p class="mt-3 text-pretty text-sm leading-relaxed text-jano-muted">Según las cuentas que trabaje Jano cada mes. Sin permanencia: si no te trae reuniones, lo dejas.</p>
+          <a href="#lista" class="mt-6 inline-flex rounded-xl bg-jano-cobalto px-5 py-3 text-[15px] font-semibold text-white hover:bg-jano-cobalto-oscuro">Pedir acceso al piloto</a>
         </div>
       </div>
     </section>
