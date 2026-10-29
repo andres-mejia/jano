@@ -1,8 +1,10 @@
 /**
- * Resolución de la API en modo mock. Mantiene estado en memoria para que las
- * acciones (aprobar, descartar, detener) se reflejen en la sesión. Las rutas
- * replican `contracts/openapi/jano-api.yaml`; una ruta que no está aquí falla
- * con 404 para que el hueco se vea.
+ * Resolución de las rutas del contrato con datos de ejemplo. La usan la app en
+ * modo mock y la API (`backend/`) para las rutas que la spec 003 aún no sirve.
+ * Mantiene estado en memoria para que las acciones (aprobar, descartar,
+ * detener) se reflejen mientras dure el proceso. Las rutas replican
+ * `contracts/openapi/jano-api.yaml`; una ruta que no está aquí falla con 404
+ * para que el hueco se vea.
  */
 
 import type { Campaign, IcpTurn, InboxItem, Prospect, ProspectEvent, TenantUser } from "@jano/domain";
@@ -15,7 +17,7 @@ import { EVENTS, PROSPECTS, STAGE_EVENTS } from "./fixtures/prospects";
 import { TEAM, TENANT } from "./fixtures/team";
 import { AUDIT, COMPLIANCE, CONNECTIONS, DASHBOARD, FLOW, GUARDRAILS } from "./fixtures/views";
 
-class MockNotFound extends Error {
+export class DemoNoEncontrado extends Error {
   readonly status = 404;
 }
 
@@ -273,7 +275,7 @@ function rank(i: InboxItem): number {
 }
 
 function notFound(): never {
-  throw new MockNotFound("No existe (mock)");
+  throw new DemoNoEncontrado("No existe (mock)");
 }
 
 function evento(prospectId: string, agent: ProspectEvent["agent"], type: ProspectEvent["type"], summary: string): ProspectEvent {
@@ -282,17 +284,17 @@ function evento(prospectId: string, agent: ProspectEvent["agent"], type: Prospec
   return e;
 }
 
-export async function resolveMock<T>(method: string, path: string, body?: unknown): Promise<T> {
+export async function resolverDemo<T>(method: string, path: string, body?: unknown, latenciaMs = 120): Promise<T> {
   const [cleanPath = "", qs = ""] = path.split("?");
   const query = new URLSearchParams(qs);
   for (const [m, pattern, handler] of routes) {
     if (m !== method) continue;
     const params = matchPath(pattern, cleanPath);
     if (!params) continue;
-    await new Promise((r) => setTimeout(r, 120));
+    if (latenciaMs > 0) await new Promise((r) => setTimeout(r, latenciaMs));
     return structuredClone(handler(params, body, query)) as T;
   }
-  throw new MockNotFound(`Sin mock para ${method} ${cleanPath}`);
+  throw new DemoNoEncontrado(`Sin mock para ${method} ${cleanPath}`);
 }
 
-export const MOCK_IDS = IDS;
+export { IDS };

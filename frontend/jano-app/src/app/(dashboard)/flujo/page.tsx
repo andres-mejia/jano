@@ -8,7 +8,7 @@ import { useState } from "react";
 import { Topbar } from "@/components/layout/topbar";
 import { Button, Card, Dot, Pill, Skeleton, Spark } from "@/components/ui/primitives";
 import { jano } from "@/lib/api/jano";
-import { MOCK_IDS } from "@/lib/api/mocks";
+import { DEMO_IDS } from "@jano/demo";
 import { AGENT_LABEL, formatTime } from "@/lib/format";
 import type { EventType, ProspectStage } from "@jano/domain";
 
@@ -30,7 +30,7 @@ const GAP = 38;
 const X0 = 12;
 
 export default function FlowPage() {
-  const campaignId = MOCK_IDS.campaign;
+  const campaignId = DEMO_IDS.campaign;
   const flow = useQuery({ queryKey: ["flow", campaignId], queryFn: () => jano.getFlowMap(campaignId) });
   const [stage, setStage] = useState<ProspectStage>("in_sequence");
   const events = useQuery({ queryKey: ["stage-events", campaignId, stage], queryFn: () => jano.listStageEvents(campaignId, stage) });

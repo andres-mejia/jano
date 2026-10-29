@@ -1,0 +1,27 @@
+{
+  "name": "@jano/demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Datos de ejemplo de Jano (empresas y personas inventadas, dominios .example) y su resolución por ruta del contrato. Los usan la app en modo mock y la API mientras la spec 003 no sirve datos reales.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "type-check": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts",
+    "lint": "echo 'sin lint propio: lo cubre tsc'"
+  },
+  "dependencies": {
+    "@jano/domain": "workspace:*",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.0"
+  }
+}

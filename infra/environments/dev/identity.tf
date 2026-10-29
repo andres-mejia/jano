@@ -36,6 +36,8 @@ module "api_gateway" {
   allowed_origins   = [local.app_url, "http://localhost:3000"]
   cognito_issuer    = module.cognito.issuer
   cognito_client_id = module.cognito.app_client_id
+  # Sin placeholder 501: el resto del contrato lo sirve backend-api con datos de demo.
+  placeholder_routes = []
 }
 
 # Backend de la API (spec 007): tenant y equipo. Antes del plan hay que construirlo
@@ -51,4 +53,6 @@ module "backend_api" {
   authorizer_id     = module.api_gateway.authorizer_id
   api_execution_arn = module.api_gateway.execution_arn
   codigo_dir        = "${path.root}/../../../backend/dist/api"
+  # Demo con datos inventados hasta que la spec 003 sirva datos reales.
+  demo_data = true
 }
