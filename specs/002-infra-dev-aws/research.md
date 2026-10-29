@@ -49,3 +49,17 @@ Consecuencias:
 
 - **SES**: FR-002, la decisión 5 del plan y T030 cambian: no hay regla de recepción de Jano. Se comprueba la redirección enviando a `jano@tekhos.com`.
 - **Budgets**: la etiqueta `Project` no está activa como etiqueta de asignación de costes. Se activa una vez por CLI (`aws ce update-cost-allocation-tags-status`) para que el presupuesto de Jano filtre por `Project=jano`; los importes por etiqueta tardan hasta 24 h en aparecer. La moneda de Budgets en la cuenta es USD.
+
+## Evidencia por fase
+
+### Fase 1 · Datos y almacenamiento (2026-10-29)
+
+```
+terraform apply tfplan                 -> Apply complete! Resources: 19 added, 0 changed, 0 destroyed.
+aws rds-data execute-statement --sql "select 1 as uno, version()"
+                                       -> [1, 'PostgreSQL 16.15 on aarch64-linux, compiled by gcc-10.5.0, 64-bit']
+aws budgets describe-budget --budget-name jano-dev-monthly
+                                       -> 50.0 USD, TagKeyValue user:Project$jano
+```
+
+T015 (coste en reposo a las 24 h) queda pendiente: se mide el 2026-10-30 en Cost Explorer.

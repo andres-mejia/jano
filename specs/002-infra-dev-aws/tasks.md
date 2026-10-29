@@ -8,13 +8,13 @@ Convención: `[Tn] [P?] descripción · verificación`. `[P]` = paralelizable. C
 - [X] T003 `aws sts get-caller-identity`, `aws s3 ls s3://fenora-terraform-state-$ACCOUNT_ID/`, `aws route53 list-hosted-zones-by-name --dns-name tekhos.com` y `aws ses describe-active-receipt-rule-set --region eu-west-1` · cuenta, bucket, zona y rule set activo identificados.
 
 ## Fase 1 · Datos y almacenamiento
-- [ ] T010 [P] `infra/modules/vpc`: VPC `jano-dev`, 2 subnets privadas, sin NAT ni IGW · `validate` OK.
-- [ ] T011 [P] `infra/modules/assets`: bucket `jano-dev-assets-<account>`, SSE-S3, versionado, bloqueo público, lifecycle de versiones a 90 d · `validate` OK.
-- [ ] T012 `infra/modules/aurora`: cluster Serverless v2 con Data API, min ACU 0, auto-pause 300 s, SG sin ingress · `validate` OK.
-- [ ] T013 `infra/environments/dev/main.tf`: componer vpc + assets + aurora; `infra/scripts/deploy-dev.sh` con `init -backend-config` · `plan` muestra solo creaciones.
-- [ ] T014 `apply` con OK · `aws rds-data execute-statement --sql "select 1"` responde (tras el resume).
+- [X] T010 [P] `infra/modules/vpc`: VPC `jano-dev`, 2 subnets privadas, sin NAT ni IGW · `validate` OK.
+- [X] T011 [P] `infra/modules/assets`: bucket `jano-dev-assets-<account>`, SSE-S3, versionado, bloqueo público, lifecycle de versiones a 90 d · `validate` OK.
+- [X] T012 `infra/modules/aurora`: cluster Serverless v2 con Data API, min ACU 0, auto-pause 300 s, SG sin ingress · `validate` OK.
+- [X] T013 `infra/environments/dev/main.tf`: componer vpc + assets + aurora; `infra/scripts/deploy-dev.sh` con `init -backend-config` · `plan` muestra solo creaciones.
+- [X] T014 `apply` con OK · `aws rds-data execute-statement --sql "select 1"` responde (tras el resume).
 - [ ] T015 Medir coste en reposo 24 h después en Cost Explorer y anotarlo en `research.md` · cifra anotada.
-- [ ] T016 Presupuesto AWS Budgets `jano-dev-monthly` de 50 USD al mes (la moneda de Budgets en la cuenta), tras activar la etiqueta `Project` como etiqueta de costes filtrado por `Project=jano`, aviso por email a `ses_notify_address` al 80 % y al 100 % (FR-009) · `aws budgets describe-budget` lo devuelve tras el `apply`.
+- [X] T016 Presupuesto AWS Budgets `jano-dev-monthly` de 50 USD al mes (la moneda de Budgets en la cuenta), tras activar la etiqueta `Project` como etiqueta de costes filtrado por `Project=jano`, aviso por email a `ses_notify_address` al 80 % y al 100 % (FR-009) · `aws budgets describe-budget` lo devuelve tras el `apply`.
 
 ## Fase 2 · Identidad
 - [ ] T020 `infra/modules/cognito`: pool, cliente público (USER_AUTH, sin secret), dominio Hosted UI, atributos custom, misma política de contraseña que Cardea; log group del trigger con retención de 30 d · `validate` OK.
