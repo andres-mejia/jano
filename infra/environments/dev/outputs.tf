@@ -18,6 +18,7 @@ output "ses_configuration_set" { value = module.email.configuration_set_name }
 
 output "api_base_url" { value = module.api_gateway.api_base_url }
 output "api_id" { value = module.api_gateway.api_id }
+output "aurora_api_secret_arn" { value = module.backend_api.api_secret_arn }
 
 output "landing_url" { value = local.landing_url }
 output "app_url" { value = local.app_url }

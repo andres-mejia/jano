@@ -5,7 +5,8 @@
 #   - Tier ESSENTIALS: la app inicia sesión con USER_AUTH (`authFlowType` en
 #     frontend/jano-app/src/lib/auth/session.ts), que solo existe a partir de ese
 #     tier; primer factor solo contraseña (sin passkeys ni OTP en el MVP).
-#   - Atributos `tenant_id` y `role` y el trigger pre-token que los copia al ID token.
+#   - Atributos `tenant_id` y `role` y el trigger pre-token V2 que los copia al ID
+#     token y al access token.
 #   - Google como IdP (spec 006) solo para usuarios ya dados de alta: el trigger
 #     PreSignUp enlaza la identidad de Google con el usuario del mismo email o la
 #     rechaza. Sin passkeys ni otros IdP (ADR-001 §3).
@@ -258,8 +259,13 @@ resource "aws_cognito_user_pool" "main" {
   }
 
   lambda_config {
-    pre_token_generation = aws_lambda_function.pre_token.arn
-    pre_sign_up          = aws_lambda_function.pre_signup.arn
+    pre_sign_up = aws_lambda_function.pre_signup.arn
+
+    # V2 (spec 007): claims también en el access token. Exige tier ESSENTIALS o superior.
+    pre_token_generation_config {
+      lambda_arn     = aws_lambda_function.pre_token.arn
+      lambda_version = "V2_0"
+    }
   }
 
   verification_message_template {

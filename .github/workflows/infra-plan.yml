@@ -44,6 +44,17 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_GITHUB_OIDC_PLAN_ROLE_ARN }}
           aws-region: eu-west-1
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Construir el backend (Terraform empaqueta backend/dist/api)
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm --filter @jano/backend build
       - name: terraform init
         working-directory: infra/environments/dev
         run: |

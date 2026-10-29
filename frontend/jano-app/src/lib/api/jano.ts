@@ -15,15 +15,18 @@ import type {
   Connection,
   Contact,
   CreateCampaign,
+  CurrentTenant,
   DashboardSummary,
   FlowMap,
   Guardrails,
+  InviteTenantUser,
   IcpTurn,
   InboxItem,
   Prospect,
   ProspectEvent,
   ProspectStage,
   RegenerateDraft,
+  TenantUser,
 } from "@jano/domain";
 
 import { apiFetch } from "./client";
@@ -72,4 +75,11 @@ export const jano = {
   setGuardrails: (g: Guardrails) => apiFetch<Guardrails>("PUT", "/compliance/guardrails", g),
 
   listConnections: () => apiFetch<Connection[]>("GET", "/connections"),
+
+  getCurrentTenant: () => apiFetch<CurrentTenant>("GET", "/tenant"),
+  listTenantUsers: () => apiFetch<TenantUser[]>("GET", "/tenant/users"),
+  inviteTenantUser: (input: InviteTenantUser) => apiFetch<TenantUser>("POST", "/tenant/users", input),
+  disableTenantUser: (userId: string) => apiFetch<TenantUser>("POST", `/tenant/users/${encodeURIComponent(userId)}/disable`),
+  enableTenantUser: (userId: string) => apiFetch<TenantUser>("POST", `/tenant/users/${encodeURIComponent(userId)}/enable`),
+  resendTenantInvitation: (userId: string) => apiFetch<TenantUser>("POST", `/tenant/users/${encodeURIComponent(userId)}/resend-invitation`),
 } as const;

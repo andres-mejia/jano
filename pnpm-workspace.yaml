@@ -1,4 +1,5 @@
 packages:
   - "packages/*"
   - "frontend/*"
+  - "backend"
   - "infra/modules/*/lambda/handler"

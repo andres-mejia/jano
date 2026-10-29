@@ -37,3 +37,18 @@ module "api_gateway" {
   cognito_issuer    = module.cognito.issuer
   cognito_client_id = module.cognito.app_client_id
 }
+
+# Backend de la API (spec 007): tenant y equipo. Antes del plan hay que construirlo
+# (`pnpm --filter @jano/backend build`); deploy-dev.sh y CI lo hacen.
+module "backend_api" {
+  source            = "../../modules/backend-api"
+  environment       = var.environment
+  cluster_arn       = module.aurora.cluster_arn
+  database_name     = module.aurora.database_name
+  user_pool_id      = module.cognito.user_pool_id
+  user_pool_arn     = module.cognito.user_pool_arn
+  api_id            = module.api_gateway.api_id
+  authorizer_id     = module.api_gateway.authorizer_id
+  api_execution_arn = module.api_gateway.execution_arn
+  codigo_dir        = "${path.root}/../../../backend/dist/api"
+}

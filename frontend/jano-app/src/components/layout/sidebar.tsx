@@ -2,14 +2,16 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { Activity, Inbox, LayoutGrid, Plug, ShieldCheck, Target, Users, Workflow } from "lucide-react";
+import { Activity, Inbox, LayoutGrid, Plug, ShieldCheck, Target, UserCog, Users, Workflow } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 
 import { Logo } from "@/components/ui/logo";
 import { Dot } from "@/components/ui/primitives";
+import { ApiError } from "@/lib/api/client";
 import { jano } from "@/lib/api/jano";
-import type { SessionUser } from "@/lib/auth/session";
+import { signOutAndRedirect, type SessionUser } from "@/lib/auth/session";
 import { AGENT_LABEL } from "@/lib/format";
 
 const NAV = [
@@ -33,6 +35,7 @@ const NAV = [
     items: [
       { href: "/cumplimiento", label: "Cumplimiento", icon: ShieldCheck },
       { href: "/conexiones", label: "Conexiones", icon: Plug },
+      { href: "/equipo", label: "Equipo", icon: UserCog, soloOwner: true },
     ],
   },
 ] as const;
@@ -43,6 +46,12 @@ export function Sidebar({ user }: { user: SessionUser }) {
   const pathname = usePathname();
   const dashboard = useQuery({ queryKey: ["dashboard"], queryFn: jano.getDashboardSummary });
   const inbox = useQuery({ queryKey: ["inbox"], queryFn: jano.listInbox });
+  const tenant = useQuery({ queryKey: ["tenant"], queryFn: jano.getCurrentTenant, staleTime: 5 * 60_000, retry: false });
+  // Usuario desactivado o empresa suspendida (spec 007, FR-006): la API responde 403 y se cierra la sesión.
+  const sinAcceso = tenant.error instanceof ApiError && tenant.error.status === 403;
+  useEffect(() => {
+    if (sinAcceso) void signOutAndRedirect();
+  }, [sinAcceso]);
   const pendientes = inbox.data?.filter((i) => i.draft?.status === "pending_approval").length ?? 0;
   const initials = user.name
     .split(" ")
@@ -63,6 +72,7 @@ export function Sidebar({ user }: { user: SessionUser }) {
           <div key={group.section}>
             <div className="px-2.5 pb-1.5 pt-3.5 text-[11.5px] uppercase tracking-wider text-jano-nav-muted">{group.section}</div>
             {group.items.map((item) => {
+              if ("soloOwner" in item && user.role !== "owner") return null;
               const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
               const Icon = item.icon;
               return (
@@ -107,7 +117,9 @@ export function Sidebar({ user }: { user: SessionUser }) {
         </div>
         <div className="min-w-0">
           <div className="truncate text-[13.5px] font-semibold text-white">{user.name}</div>
-          <div className="truncate text-xs">{user.role === "owner" ? "Dirección comercial" : "Equipo"}</div>
+          <div className="truncate text-xs">
+            {tenant.data?.name ?? "…"} · {user.role === "owner" ? "Responsable" : "Equipo"}
+          </div>
         </div>
       </div>
     </aside>

@@ -15,6 +15,7 @@ frontend/jano-web/.astro/
 
 # Paquetes compilados
 packages/*/dist/
+backend/dist/
 
 # Lambdas empaquetadas por Terraform
 infra/modules/*/lambda/*.zip
@@ -57,3 +58,4 @@ __pycache__/
 
 # Credenciales locales (OAuth de Google, etc.): nunca al repo
 .credentials/
+infra/modules/backend-api/api.zip

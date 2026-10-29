@@ -12,9 +12,10 @@ Un solo repo, una sola rama viva (`main`), un solo desarrollador (Andrés Mejía
 frontend/jano-web        Astro 5 + Tailwind 4 — landing, jano.tekhos.com (estático)
 frontend/jano-app        Next.js 16 · React 19 · Tailwind 4 — la app, jano-app.tekhos.com
 packages/domain          tipos y esquemas del dominio compartidos (TypeScript + zod)
+backend                  API y motor (Node 22, hexagonal, Aurora Data API); migraciones en backend/migrations
 contracts/openapi        contrato de la API (contract-first)
 infra/environments/dev   Terraform plano, backend S3, eu-west-1
-infra/modules/*          módulos propios (vpc, dns, cognito, landing, app-hosting, email, waitlist, aurora, assets, api-gateway, github-oidc)
+infra/modules/*          módulos propios (vpc, dns, cognito, landing, app-hosting, email, waitlist, aurora, assets, api-gateway, backend-api, github-oidc)
 docs/ADR                 decisiones; docs/producto: pitch y pantallas; docs/guias: runbooks
 ```
 

@@ -3,6 +3,8 @@
 **Rama**: `feat/api-motor` · **Estado**: especificada · **Depende de**: 002
 
 ## Objetivo
+*Nota (2026-10-29)*: la spec 007 ya creó el paquete `backend/` (hexagonal, adaptadores Data API y pg), las migraciones numeradas con `migrar.ts`, el rol `jano_api` con RLS forzado por `tenant_id`, la Lambda `jano-dev-api` (módulo `backend-api`) y las tablas `tenants`, `tenant_users` y `user_activity`. Esta spec parte de ahí: FR-001 añade la Lambda del motor, FR-002 sigue el mismo patrón de RLS y FR-003 añade migraciones a partir de la 002.
+
 Un backend que sirva el contrato `jano-api.yaml` sobre Aurora, con el motor de ejecución como núcleo: máquina de estados por prospect, registro de eventos append-only, reglas fijas, planificación de pasos y aprobaciones humanas. Sin agentes todavía: donde la IA decide, el motor expone un puerto que 004 implementa; mientras tanto, un adaptador determinista de pruebas.
 
 ## Escenarios de usuario
