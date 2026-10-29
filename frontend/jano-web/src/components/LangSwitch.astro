@@ -1,0 +1,36 @@
+---
+/** Selector de idioma: enlaza con la misma página en el otro idioma. */
+import { hreflang, locales, pathFor, t, type Lang, type RouteKey } from "../i18n";
+
+interface Props {
+  lang: Lang;
+  routeKey: RouteKey;
+  class?: string;
+}
+
+const { lang, routeKey, class: className = "" } = Astro.props;
+const names: Record<Lang, string> = { es: "Español", en: "English" };
+---
+
+<nav aria-label={t(lang).nav.language} class:list={["flex items-center rounded-lg border border-jano-linea p-0.5", className]}>
+  {
+    locales.map((l) => {
+      const current = l === lang;
+      return (
+        <a
+          href={pathFor(routeKey, l)}
+          hreflang={hreflang[l]}
+          lang={l}
+          aria-label={names[l]}
+          aria-current={current ? "page" : undefined}
+          class:list={[
+            "rounded-md px-2 py-1 font-mono text-xs font-medium uppercase transition-colors",
+            current ? "bg-jano-tinta text-jano-papel" : "text-jano-muted hover:bg-jano-papel hover:text-jano-tinta",
+          ]}
+        >
+          {l}
+        </a>
+      );
+    })
+  }
+</nav>

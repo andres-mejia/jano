@@ -1,79 +1,220 @@
 ---
 /**
- * Formulario de acceso anticipado. El endpoint lo inyecta Amplify en
- * build-time vía PUBLIC_WAITLIST_ENDPOINT (output del módulo waitlist). Sin
- * endpoint, el formulario simula el éxito para que la landing se pueda
- * revisar sin red.
+ * Captura de email para el acceso anticipado. El endpoint lo inyecta Amplify
+ * en build-time vía PUBLIC_WAITLIST_ENDPOINT (output del módulo waitlist).
+ * Sin endpoint, el formulario simula el éxito para que la landing se pueda
+ * revisar sin red. El campo `empresa` es un honeypot: si llega relleno, se
+ * descarta en silencio.
  */
+import { t, type Lang } from "../i18n";
+
 interface Props {
-  id?: string;
-  compact?: boolean;
+  lang: Lang;
+  id: string;
+  /** "light" sobre niebla o papel; "dark" sobre cobalto. */
+  tone?: "light" | "dark";
 }
-const { id = "waitlist", compact = false } = Astro.props;
+
+const { lang, id, tone = "light" } = Astro.props;
+const f = t(lang).form;
 const endpoint = import.meta.env.PUBLIC_WAITLIST_ENDPOINT ?? "";
+const dark = tone === "dark";
 ---
 
-<form class="w-full" novalidate data-waitlist data-endpoint={endpoint} id={id}>
-  <div class={`flex flex-wrap gap-2 ${compact ? "" : "sm:flex-nowrap"}`}>
-    <label class="sr-only" for={`${id}-email`}>Tu email de empresa</label>
-    <input
-      id={`${id}-email`}
-      type="email"
-      name="email"
-      required
-      autocomplete="email"
-      placeholder="tu@empresa.com"
-      class={`min-h-12 min-w-0 flex-1 rounded-xl ${compact ? "basis-full sm:basis-auto" : ""} border border-jano-linea bg-white px-4 text-[15px] outline-none placeholder:text-jano-muted focus:border-jano-cobalto focus:ring-2 focus:ring-jano-cobalto/25`}
-    />
-    <input type="text" name="empresa" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true" />
-    <button
-      type="submit"
-      class="min-h-12 shrink-0 rounded-xl bg-jano-cobalto px-5 text-[15px] font-semibold text-white hover:bg-jano-cobalto-oscuro disabled:opacity-60"
-      data-submit
+<form
+  class="waitlist w-full"
+  novalidate
+  data-waitlist
+  data-endpoint={endpoint}
+  data-lang={lang}
+  data-msg-empty={f.errorEmpty}
+  data-msg-invalid={f.errorInvalid}
+  data-msg-network={f.errorNetwork}
+  data-msg-sending={f.sending}
+  data-msg-submit={f.submit}
+  id={id}
+>
+  <div data-fields>
+    <div
+      class:list={[
+        "field flex items-center gap-1.5 rounded-2xl border bg-jano-papel p-1.5 transition-[border-color,box-shadow] duration-300",
+        dark ? "border-transparent shadow-jano-elevado" : "border-jano-linea shadow-jano-suave",
+      ]}
     >
-      Pedir acceso
-    </button>
+      <label class="sr-only" for={`${id}-email`}>{f.label}</label>
+      <input
+        id={`${id}-email`}
+        type="email"
+        name="email"
+        required
+        autocomplete="email"
+        inputmode="email"
+        spellcheck="false"
+        placeholder={f.placeholder}
+        aria-describedby={`${id}-error ${id}-note`}
+        class="min-h-11 min-w-0 flex-1 bg-transparent px-3 text-base text-jano-tinta outline-none placeholder:text-jano-muted"
+      />
+      <input type="text" name="empresa" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true" />
+      <button
+        type="submit"
+        class="min-h-11 shrink-0 rounded-xl bg-jano-cobalto px-4 text-[15px] font-semibold text-jano-papel transition-colors hover:bg-jano-cobalto-oscuro disabled:cursor-progress disabled:opacity-70 sm:px-5"
+        data-submit
+      >
+        {f.submit}
+      </button>
+    </div>
+    <p
+      id={`${id}-error`}
+      class:list={["error mt-1.5 flex min-h-5 items-start gap-1.5 text-sm font-medium", dark ? "text-jano-papel" : "text-jano-rojo-texto"]}
+      aria-live="polite"
+      data-error
+    >
+    </p>
+    <p id={`${id}-note`} class:list={["text-pretty text-sm", dark ? "text-jano-sobre-cobalto" : "text-jano-muted"]}>
+      {f.note}
+    </p>
   </div>
-  <p class="mt-2 min-h-5 text-sm text-jano-muted" role="status" aria-live="polite" data-status></p>
-  <p class="mt-1 text-pretty text-sm text-jano-muted">
-    Solo te escribimos cuando abramos plazas. Sin secuencias ni newsletters.
-  </p>
+
+  <div
+    class:list={["success hidden items-center gap-3.5 rounded-2xl p-4", dark ? "bg-jano-papel text-jano-tinta" : "bg-jano-verde-tinte text-jano-verde-texto"]}
+    data-success
+    tabindex="-1"
+    role="status"
+  >
+    <svg viewBox="0 0 40 40" width="40" height="40" aria-hidden="true" class="shrink-0">
+      <circle class="success__ring" cx="20" cy="20" r="18" fill="none" stroke="var(--color-jano-verde)" stroke-width="2.5"></circle>
+      <path
+        class="success__tick"
+        d="M12.5 20.5 17.5 25.5 28 15"
+        fill="none"
+        stroke="var(--color-jano-verde)"
+        stroke-width="2.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"></path>
+    </svg>
+    <div>
+      <p class="font-display text-lg font-bold leading-tight text-jano-tinta">{f.success}</p>
+      <p class="mt-0.5 text-sm">{f.successDetail}</p>
+    </div>
+  </div>
 </form>
 
+<style>
+  .field:focus-within {
+    border-color: var(--color-jano-cobalto);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-jano-cobalto) 18%, transparent);
+  }
+  .waitlist[data-state="error"] .field {
+    border-color: var(--color-jano-rojo-texto);
+  }
+  .waitlist[data-state="done"] [data-fields] {
+    display: none;
+  }
+  .waitlist[data-state="done"] [data-success] {
+    display: flex;
+  }
+  .success__ring {
+    stroke-dasharray: 114;
+    stroke-dashoffset: 0;
+    transform: rotate(-90deg);
+    transform-origin: center;
+  }
+  .success__tick {
+    stroke-dasharray: 24;
+    stroke-dashoffset: 0;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .waitlist[data-state="done"] .success {
+      animation: success-in 0.6s var(--ease-jano) both;
+    }
+    .waitlist[data-state="done"] .success__ring {
+      animation: draw-ring 0.7s var(--ease-jano) both;
+    }
+    .waitlist[data-state="done"] .success__tick {
+      animation: draw-tick 0.45s var(--ease-jano) 0.35s both;
+    }
+  }
+  @keyframes success-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.98);
+    }
+  }
+  @keyframes draw-ring {
+    from {
+      stroke-dashoffset: 114;
+    }
+  }
+  @keyframes draw-tick {
+    from {
+      stroke-dashoffset: 24;
+    }
+  }
+</style>
+
 <script>
-  const forms = document.querySelectorAll<HTMLFormElement>("form[data-waitlist]");
-  forms.forEach((form) => {
-    const endpoint = form.dataset.endpoint ?? "";
-    const status = form.querySelector<HTMLElement>("[data-status]")!;
+  const ERROR_ICON =
+    '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" style="flex-shrink:0;margin-top:2px"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.5v4.25M8 11.1v.15" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>';
+
+  document.querySelectorAll<HTMLFormElement>("form[data-waitlist]").forEach((form) => {
+    const msg = form.dataset;
+    const endpoint = msg.endpoint ?? "";
+    const error = form.querySelector<HTMLElement>("[data-error]")!;
+    const success = form.querySelector<HTMLElement>("[data-success]")!;
     const button = form.querySelector<HTMLButtonElement>("[data-submit]")!;
     const email = form.querySelector<HTMLInputElement>('input[name="email"]')!;
     const honeypot = form.querySelector<HTMLInputElement>('input[name="empresa"]')!;
 
+    const showError = (text: string) => {
+      form.dataset.state = "error";
+      email.setAttribute("aria-invalid", "true");
+      const span = document.createElement("span");
+      span.textContent = text;
+      error.innerHTML = ERROR_ICON;
+      error.append(span);
+    };
+    const clearError = () => {
+      if (form.dataset.state !== "error") return;
+      delete form.dataset.state;
+      email.removeAttribute("aria-invalid");
+      error.textContent = "";
+    };
+    email.addEventListener("input", clearError);
+
     form.addEventListener("submit", async (ev) => {
       ev.preventDefault();
       if (honeypot.value) return;
-      if (!email.checkValidity()) {
-        status.textContent = "Revisa el email: no parece válido.";
+      const value = email.value.trim();
+      if (!value) {
+        showError(msg.msgEmpty ?? "");
+        email.focus();
         return;
       }
+      if (!email.checkValidity() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value)) {
+        showError(msg.msgInvalid ?? "");
+        email.focus();
+        return;
+      }
+      clearError();
       button.disabled = true;
-      status.textContent = "Enviando…";
+      button.textContent = msg.msgSending ?? "";
       try {
         if (!endpoint) {
-          await new Promise((r) => setTimeout(r, 400));
+          await new Promise((r) => setTimeout(r, 500));
         } else {
           const res = await fetch(endpoint, {
             method: "POST",
             headers: { "content-type": "application/json", "x-jano-source": "landing" },
-            body: JSON.stringify({ email: email.value.trim().toLowerCase(), locale: "es" }),
+            body: JSON.stringify({ email: value.toLowerCase(), locale: msg.lang ?? "es" }),
           });
           if (!res.ok && res.status !== 409) throw new Error(`HTTP ${res.status}`);
         }
-        form.querySelectorAll("input, button").forEach((el) => ((el as HTMLInputElement).disabled = true));
-        status.textContent = "Hecho. Te escribimos cuando tengamos plaza.";
+        form.dataset.state = "done";
+        success.focus({ preventScroll: true });
       } catch {
         button.disabled = false;
-        status.textContent = "No se ha podido enviar. Prueba otra vez en un momento.";
+        button.textContent = msg.msgSubmit ?? "";
+        showError(msg.msgNetwork ?? "");
       }
     });
   });

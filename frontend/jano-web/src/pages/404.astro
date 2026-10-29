@@ -1,13 +1,23 @@
 ---
+/** Única 404 para los dos idiomas: el servidor no sabe en cuál se pidió. */
+import Logo from "../components/Logo.astro";
+import { pathFor, t } from "../i18n";
 import Base from "../layouts/Base.astro";
-import Header from "../components/Header.astro";
+
+const es = t("es").notFound;
+const en = t("en").notFound;
 ---
 
-<Base title="No encontrado · Jano" noindex>
-  <Header />
-  <main class="mx-auto max-w-3xl px-5 py-24 text-center">
-    <h1 class="font-display text-4xl font-bold">Esta puerta no existe</h1>
-    <p class="mt-3 text-jano-muted">La página que buscas no está aquí.</p>
-    <a href="/" class="mt-8 inline-block rounded-lg bg-jano-cobalto px-5 py-2.5 font-semibold text-white">Volver al inicio</a>
+<Base lang="es" title={`${es.title} · Jano`} description={es.text} noindex>
+  <main id="contenido" class="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center px-4 py-24 text-center">
+    <Logo size={56} animated />
+    <h1 class="font-display mt-8 text-4xl font-bold sm:text-5xl">{es.title}</h1>
+    <p class="mt-3 text-jano-muted">{es.text}</p>
+    <a href={pathFor("home", "es")} class="mt-8 inline-flex rounded-xl bg-jano-cobalto px-5 py-3 font-semibold text-jano-papel hover:bg-jano-cobalto-oscuro">{es.back}</a>
+    <div lang="en" class="mt-14 border-t border-jano-linea pt-8">
+      <p class="font-display text-xl font-bold">{en.title}</p>
+      <p class="mt-1 text-jano-muted">{en.text}</p>
+      <a href={pathFor("home", "en")} class="mt-4 inline-block font-semibold text-jano-cobalto underline underline-offset-4">{en.back}</a>
+    </div>
   </main>
 </Base>

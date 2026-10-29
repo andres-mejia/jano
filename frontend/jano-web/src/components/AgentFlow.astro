@@ -1,0 +1,207 @@
+---
+/**
+ * Flujo de agentes animado: el Orquestador reparte trabajo a los cuatro
+ * agentes y todo desemboca en reuniones. Partículas SVG (SMIL) recorren los
+ * tramos; con movimiento reducido se ocultan y queda el diagrama quieto.
+ * Dos composiciones del mismo grafo: horizontal desde lg, vertical debajo.
+ */
+import { t, type Lang } from "../i18n";
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const f = t(lang).flow;
+const agents = f.agents.map((a) => a.title);
+
+// Horizontal (lg): 1000 × 360.
+const H = {
+  orq: { x: 16, y: 145, w: 210, h: 70 },
+  agent: { x: 395, w: 214, h: 56, ys: [16, 106, 196, 286] },
+  meet: { x: 778, y: 145, w: 206, h: 70 },
+};
+const hAgents = agents.map((name, i) => {
+  const y = H.agent.ys[i] ?? 0;
+  const cy = y + H.agent.h / 2;
+  const mid = H.orq.y + H.orq.h / 2;
+  const x0 = H.orq.x + H.orq.w;
+  const x1 = H.agent.x;
+  const x2 = H.agent.x + H.agent.w;
+  const x3 = H.meet.x;
+  return {
+    name,
+    y,
+    cy,
+    inD: `M${x0} ${mid} C ${x0 + 90} ${mid}, ${x1 - 90} ${cy}, ${x1} ${cy}`,
+    outD: `M${x2} ${cy} C ${x2 + 90} ${cy}, ${x3 - 90} ${mid}, ${x3} ${mid}`,
+  };
+});
+
+// Vertical (< lg): 360 × 392. Nombres de agente en dos líneas.
+const V = {
+  orq: { x: 70, y: 8, w: 220, h: 56 },
+  agent: { y: 160, w: 82, h: 66, xs: [2, 94, 186, 278] },
+  meet: { x: 70, y: 326, w: 220, h: 56 },
+};
+const vAgents = agents.map((name, i) => {
+  const x = V.agent.xs[i] ?? 0;
+  const cx = x + V.agent.w / 2;
+  const mx = V.orq.x + V.orq.w / 2;
+  const y0 = V.orq.y + V.orq.h;
+  const y1 = V.agent.y;
+  const y2 = V.agent.y + V.agent.h;
+  const y3 = V.meet.y;
+  return {
+    lines: name.split(" "),
+    x,
+    cx,
+    inD: `M${mx} ${y0} C ${mx} ${y0 + 50}, ${cx} ${y1 - 50}, ${cx} ${y1}`,
+    outD: `M${cx} ${y2} C ${cx} ${y2 + 50}, ${mx} ${y3 - 50}, ${mx} ${y3}`,
+  };
+});
+const DUR = 3.2;
+---
+
+<div class="flow" data-reveal>
+  <!-- Horizontal -->
+  <svg viewBox="0 0 1000 360" class="hidden w-full lg:block" role="img" aria-label={f.diagramLabel}>
+    {
+      hAgents.map((a, i) => (
+        <g>
+          <path id={`fh-in-${i}`} d={a.inD} class="flow__path" />
+          <path id={`fh-out-${i}`} d={a.outD} class="flow__path flow__path--out" />
+          <circle r="4.5" class="flow__dot">
+            <animateMotion dur={`${DUR}s`} begin={`${i * 0.8}s`} repeatCount="indefinite">
+              <mpath href={`#fh-in-${i}`} />
+            </animateMotion>
+          </circle>
+          <circle r="4.5" class="flow__dot flow__dot--out">
+            <animateMotion dur={`${DUR}s`} begin={`${i * 0.8 + DUR / 2}s`} repeatCount="indefinite">
+              <mpath href={`#fh-out-${i}`} />
+            </animateMotion>
+          </circle>
+        </g>
+      ))
+    }
+    <g>
+      <rect x={H.orq.x} y={H.orq.y} width={H.orq.w} height={H.orq.h} rx="18" class="flow__orq" />
+      <text x={H.orq.x + H.orq.w / 2} y={H.orq.y + H.orq.h / 2} class="flow__label flow__label--lg flow__label--light">{f.orchestrator.title}</text>
+    </g>
+    {
+      hAgents.map((a) => (
+        <g>
+          <rect x={H.agent.x} y={a.y} width={H.agent.w} height={H.agent.h} rx="14" class="flow__agent" />
+          <text x={H.agent.x + H.agent.w / 2} y={a.cy} class="flow__label">{a.name}</text>
+        </g>
+      ))
+    }
+    <g>
+      <rect x={H.meet.x} y={H.meet.y} width={H.meet.w} height={H.meet.h} rx="18" class="flow__meet" />
+      <circle cx={H.meet.x + 30} cy={H.meet.y + H.meet.h / 2} r="6" class="flow__meet-dot" />
+      <text x={H.meet.x + H.meet.w / 2 + 12} y={H.meet.y + H.meet.h / 2} class="flow__label flow__label--lg flow__label--light">{f.meetings}</text>
+    </g>
+  </svg>
+
+  <!-- Vertical -->
+  <svg viewBox="0 0 360 392" class="mx-auto block w-full max-w-md lg:hidden" role="img" aria-label={f.diagramLabel}>
+    {
+      vAgents.map((a, i) => (
+        <g>
+          <path id={`fv-in-${i}`} d={a.inD} class="flow__path" />
+          <path id={`fv-out-${i}`} d={a.outD} class="flow__path flow__path--out" />
+          <circle r="3.5" class="flow__dot">
+            <animateMotion dur={`${DUR}s`} begin={`${i * 0.8}s`} repeatCount="indefinite">
+              <mpath href={`#fv-in-${i}`} />
+            </animateMotion>
+          </circle>
+          <circle r="3.5" class="flow__dot flow__dot--out">
+            <animateMotion dur={`${DUR}s`} begin={`${i * 0.8 + DUR / 2}s`} repeatCount="indefinite">
+              <mpath href={`#fv-out-${i}`} />
+            </animateMotion>
+          </circle>
+        </g>
+      ))
+    }
+    <rect x={V.orq.x} y={V.orq.y} width={V.orq.w} height={V.orq.h} rx="16" class="flow__orq" />
+    <text x={V.orq.x + V.orq.w / 2} y={V.orq.y + V.orq.h / 2} class="flow__label flow__label--md flow__label--light">{f.orchestrator.title}</text>
+    {
+      vAgents.map((a) => (
+        <g>
+          <rect x={a.x} y={V.agent.y} width={V.agent.w} height={V.agent.h} rx="12" class="flow__agent" />
+          <text x={a.cx} y={V.agent.y + V.agent.h / 2} class="flow__label flow__label--sm">
+            {a.lines.length > 1 ? (
+              a.lines.map((line, j) => (
+                <tspan x={a.cx} dy={j === 0 ? "-0.6em" : "1.2em"}>
+                  {line}
+                </tspan>
+              ))
+            ) : (
+              a.lines[0]
+            )}
+          </text>
+        </g>
+      ))
+    }
+    <rect x={V.meet.x} y={V.meet.y} width={V.meet.w} height={V.meet.h} rx="16" class="flow__meet" />
+    <circle cx={V.meet.x + 28} cy={V.meet.y + V.meet.h / 2} r="5" class="flow__meet-dot" />
+    <text x={V.meet.x + V.meet.w / 2 + 10} y={V.meet.y + V.meet.h / 2} class="flow__label flow__label--md flow__label--light">{f.meetings}</text>
+  </svg>
+</div>
+
+<style>
+  .flow__path {
+    fill: none;
+    stroke: var(--color-jano-cobalto-linea);
+    stroke-width: 2;
+  }
+  .flow__path--out {
+    stroke: color-mix(in srgb, var(--color-jano-bronce) 45%, var(--color-jano-linea));
+  }
+  .flow__dot {
+    fill: var(--color-jano-cobalto);
+  }
+  .flow__dot--out {
+    fill: var(--color-jano-bronce);
+  }
+  .flow__orq {
+    fill: var(--color-jano-cobalto);
+  }
+  .flow__agent {
+    fill: var(--color-jano-papel);
+    stroke: var(--color-jano-linea);
+    stroke-width: 1.5;
+  }
+  .flow__meet {
+    fill: var(--color-jano-tinta);
+  }
+  .flow__meet-dot {
+    fill: var(--color-jano-bronce);
+  }
+  .flow__label {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 19px;
+    letter-spacing: -0.01em;
+    fill: var(--color-jano-tinta);
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+  .flow__label--lg {
+    font-size: 22px;
+  }
+  .flow__label--md {
+    font-size: 17px;
+  }
+  .flow__label--sm {
+    font-size: 13px;
+  }
+  .flow__label--light {
+    fill: var(--color-jano-papel);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .flow__dot {
+      display: none;
+    }
+  }
+</style>

@@ -1,49 +1,137 @@
 ---
+import "@fontsource-variable/bricolage-grotesque/opsz.css";
+import "@fontsource-variable/figtree";
+import "@fontsource-variable/jetbrains-mono";
 import "../styles/global.css";
+import bricolageLatin from "@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-opsz-normal.woff2?url";
+import figtreeLatin from "@fontsource-variable/figtree/files/figtree-latin-wght-normal.woff2?url";
+import { hreflang, locales, ogLocale, pathFor, t, type Lang, type RouteKey } from "../i18n";
 
 interface Props {
+  lang: Lang;
+  /** Ruta lógica de la página; sin ella no hay alternativas de idioma (404). */
+  routeKey?: RouteKey;
   title: string;
-  description?: string;
+  description: string;
   noindex?: boolean;
+  /** Nodos JSON-LD propios de la página; se suman a los comunes en un @graph. */
+  jsonLd?: Record<string, unknown>[];
 }
 
-const {
-  title,
-  description = "Jano es un equipo comercial de IA para pymes B2B españolas: encuentra cuentas, localiza al contacto, escribe en el momento oportuno y agenda la reunión. Tú apruebas lo que sale con tu nombre.",
-  noindex = false,
-} = Astro.props;
+const { lang, routeKey, title, description, noindex = false, jsonLd = [] } = Astro.props;
+const d = t(lang);
 
-const site = Astro.site ?? new URL("https://jano.example");
-const canonical = new URL(Astro.url.pathname, site).toString();
-const appUrl = import.meta.env.PUBLIC_APP_URL ?? "http://localhost:3000";
+const site = Astro.site ?? new URL("https://jano.tekhos.com");
+const abs = (path: string) => new URL(path, site).toString();
+const canonical = routeKey ? abs(pathFor(routeKey, lang)) : abs(Astro.url.pathname);
+const ogImage = abs(`/og/jano-${lang}.png`);
+const otherLocales = locales.filter((l) => l !== lang);
+
+const orgId = "https://tekhos.com/#organization";
+const siteId = `${abs("/")}#website`;
+const graph = [
+  {
+    "@type": "Organization",
+    "@id": orgId,
+    name: "Tekhos",
+    url: "https://tekhos.com",
+    email: "jano@tekhos.com",
+    brand: { "@type": "Brand", name: "Jano", logo: abs("/marca/jano-logo-512.png") },
+  },
+  {
+    "@type": "WebSite",
+    "@id": siteId,
+    url: abs("/"),
+    name: "Jano",
+    description: d.meta.description,
+    inLanguage: ["es-ES", "en"],
+    publisher: { "@id": orgId },
+  },
+  ...jsonLd,
+];
+const structured = JSON.stringify({ "@context": "https://schema.org", "@graph": graph }).replace(/</g, "\\u003c");
 ---
 
 <!doctype html>
-<html lang="es">
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
-    {noindex && <meta name="robots" content="noindex" />}
+    {noindex ? <meta name="robots" content="noindex" /> : <meta name="robots" content="index, follow, max-image-preview:large" />}
+    {
+      routeKey && (
+        <>
+          {locales.map((l) => (
+            <link rel="alternate" hreflang={hreflang[l]} href={abs(pathFor(routeKey, l))} />
+          ))}
+          <link rel="alternate" hreflang="x-default" href={abs(pathFor(routeKey, "es"))} />
+        </>
+      )
+    }
+
+    <link rel="preload" href={figtreeLatin} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={bricolageLatin} as="font" type="font/woff2" crossorigin />
+
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#f4f5f8" />
+    <meta name="color-scheme" content="light" />
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
+
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Jano" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <meta name="theme-color" content="#14162b" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
-    <script is:inline define:vars={{ appUrl }}>
-      window.__JANO_APP_URL__ = appUrl;
+    <meta property="og:locale" content={ogLocale[lang]} />
+    {otherLocales.map((l) => <meta property="og:locale:alternate" content={ogLocale[l]} />)}
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={d.meta.ogAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={d.meta.ogAlt} />
+
+    <script is:inline type="application/ld+json" set:html={structured} />
+
+    <script is:inline>
+      // Las entradas al hacer scroll solo se preparan si hay JS y movimiento permitido.
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) {
+        document.documentElement.classList.add("js-reveal");
+      }
     </script>
   </head>
   <body class="min-h-screen antialiased">
+    <a
+      href="#contenido"
+      class="sr-only z-50 rounded-lg bg-jano-tinta px-4 py-2 font-semibold text-jano-papel focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+      >{d.skip}</a
+    >
     <slot />
+    <script>
+      const targets = document.querySelectorAll<HTMLElement>("[data-reveal]");
+      if (document.documentElement.classList.contains("js-reveal")) {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("is-in");
+                io.unobserve(entry.target);
+              }
+            }
+          },
+          { rootMargin: "0px 0px -8% 0px", threshold: 0.12 },
+        );
+        targets.forEach((el) => io.observe(el));
+      }
+    </script>
   </body>
 </html>

@@ -1,0 +1,192 @@
+---
+import AgentFlow from "../components/AgentFlow.astro";
+import Footer from "../components/Footer.astro";
+import Header from "../components/Header.astro";
+import HeroStage from "../components/HeroStage.astro";
+import ScreenCarousel from "../components/ScreenCarousel.astro";
+import WaitlistForm from "../components/WaitlistForm.astro";
+import { pathFor, t, type Lang } from "../i18n";
+import Base from "../layouts/Base.astro";
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const d = t(lang);
+const site = Astro.site ?? new URL("https://jano.tekhos.com");
+const url = new URL(pathFor("home", lang), site).toString();
+
+const jsonLd = [
+  {
+    "@type": "SoftwareApplication",
+    "@id": `${url}#app`,
+    name: "Jano",
+    url,
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web",
+    description: d.meta.description,
+    inLanguage: lang === "es" ? "es-ES" : "en",
+    image: new URL(`/media/pantallas/centro-de-mando.webp`, site).toString(),
+    publisher: { "@id": "https://tekhos.com/#organization" },
+  },
+  {
+    "@type": "FAQPage",
+    "@id": `${url}#faq`,
+    inLanguage: lang === "es" ? "es-ES" : "en",
+    mainEntity: d.faq.items.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  },
+];
+const agents = [d.flow.orchestrator, ...d.flow.agents];
+---
+
+<Base lang={lang} routeKey="home" title={d.meta.title} description={d.meta.description} jsonLd={jsonLd}>
+  <Header lang={lang} routeKey="home" />
+
+  <main id="contenido">
+    <!-- Hero -->
+    <section class="mx-auto max-w-6xl px-4 pt-12 sm:px-5 sm:pt-16 lg:pt-20">
+      <h1 class="font-display text-balance text-[3.4rem] font-bold leading-[0.95] text-jano-tinta sm:text-7xl lg:text-[6rem]">
+        {d.hero.title}
+      </h1>
+      <div class="mt-6 grid gap-7 sm:mt-8 lg:grid-cols-[1.1fr_1fr] lg:items-start lg:gap-16">
+        <p class="max-w-xl text-pretty text-lg leading-relaxed text-jano-muted sm:text-xl">{d.hero.lead}</p>
+        <div class="max-w-lg lg:pt-1">
+          <WaitlistForm lang={lang} id="hero" />
+        </div>
+      </div>
+      <div class="mt-10 sm:mt-14">
+        <HeroStage lang={lang} />
+      </div>
+    </section>
+
+    <!-- Problema -->
+    <section id={d.problems.id} class="mt-20 border-y border-jano-linea bg-jano-papel sm:mt-28">
+      <div class="mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-5 sm:py-24 lg:grid-cols-[5fr_7fr] lg:gap-16">
+        <div data-reveal>
+          <h2 class="font-display text-balance text-3xl font-bold leading-tight sm:text-4xl">{d.problems.title}</h2>
+          <p class="mt-4 max-w-[60ch] text-pretty leading-relaxed text-jano-muted">{d.problems.lead}</p>
+        </div>
+        <ol class="divide-y divide-jano-linea border-y border-jano-linea">
+          {
+            d.problems.items.map((p, i) => (
+              <li class="grid gap-x-6 gap-y-1 py-6 sm:grid-cols-[14rem_1fr]" data-reveal style={`--reveal-i:${i}`}>
+                <h3 class="font-display text-lg font-bold">{p.title}</h3>
+                <p class="text-pretty leading-relaxed text-jano-muted">{p.text}</p>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </section>
+
+    <!-- Cómo funciona -->
+    <section id={d.flow.id} class="mx-auto max-w-6xl px-4 py-20 sm:px-5 sm:py-28">
+      <div class="max-w-4xl" data-reveal>
+        <h2 class="font-display text-balance text-4xl font-bold leading-[1.05] sm:text-5xl">{d.flow.title}</h2>
+        <p class="mt-5 max-w-2xl text-pretty text-lg leading-relaxed text-jano-muted">{d.flow.lead}</p>
+      </div>
+
+      <div class="mt-12 rounded-[1.75rem] border border-jano-linea bg-jano-papel px-3 py-6 sm:mt-14 sm:px-8 sm:py-10">
+        <AgentFlow lang={lang} />
+      </div>
+
+      <dl class="mt-12 grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-5">
+        {
+          agents.map((a, i) => (
+            <div class="border-t-2 border-jano-linea pt-4 first:border-jano-cobalto" data-reveal style={`--reveal-i:${i}`}>
+              <dt class="font-display text-lg font-bold">{a.title}</dt>
+              <dd class="mt-1.5 text-pretty text-[15px] leading-relaxed text-jano-muted">{a.text}</dd>
+            </div>
+          ))
+        }
+      </dl>
+      <p class="mt-10 flex items-center gap-2 text-sm font-medium text-jano-muted">
+        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" class="text-jano-cobalto">
+          <rect x="2.5" y="4.5" width="15" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"></rect>
+          <path d="m3 5.5 7 5.5 7-5.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+        </svg>
+        {d.flow.note}
+      </p>
+    </section>
+
+    <!-- Producto -->
+    <section id={d.screens.id} class="overflow-hidden border-t border-jano-linea bg-jano-papel">
+      <div class="mx-auto max-w-6xl px-4 py-20 sm:px-5 sm:py-28">
+        <div class="grid gap-5 lg:grid-cols-[1.1fr_1fr] lg:items-end lg:gap-16" data-reveal>
+          <h2 class="font-display text-balance text-4xl font-bold leading-[1.05] sm:text-5xl">{d.screens.title}</h2>
+          <p class="max-w-xl text-pretty text-lg leading-relaxed text-jano-muted">{d.screens.lead}</p>
+        </div>
+        <div class="mt-12 sm:mt-14">
+          <ScreenCarousel lang={lang} />
+        </div>
+      </div>
+    </section>
+
+    <!-- Reglas -->
+    <section id={d.rules.id} class="bg-jano-tinta text-jano-papel">
+      <div class="mx-auto max-w-6xl px-4 py-20 sm:px-5 sm:py-28">
+        <div data-reveal>
+          <h2 class="font-display text-balance text-4xl font-bold leading-[1.05] sm:text-5xl">{d.rules.title}</h2>
+          <p class="mt-5 max-w-2xl text-pretty text-lg leading-relaxed text-jano-sobre-tinta">{d.rules.lead}</p>
+        </div>
+        <ul class="mt-14 grid gap-x-16 sm:grid-cols-2">
+          {
+            d.rules.items.map((r, i) => (
+              <li class="border-t border-jano-tinta-3 py-6" data-reveal style={`--reveal-i:${i % 2}`}>
+                <h3 class="font-display text-lg font-bold">{r.title}</h3>
+                <p class="mt-1.5 text-pretty leading-relaxed text-jano-sobre-tinta">{r.text}</p>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </section>
+
+    <!-- Preguntas -->
+    <section id={d.faq.id} class="border-b border-jano-linea bg-jano-papel">
+      <div class="mx-auto grid max-w-6xl gap-8 px-4 py-20 sm:px-5 sm:py-24 lg:grid-cols-[5fr_7fr] lg:gap-16">
+        <h2 class="font-display text-balance text-3xl font-bold sm:text-4xl" data-reveal>{d.faq.title}</h2>
+        <div class="divide-y divide-jano-linea border-y border-jano-linea">
+          {
+            d.faq.items.map((f) => (
+              <details class="group">
+                <summary class="flex list-none items-center justify-between gap-6 py-5 text-lg font-semibold transition-colors hover:text-jano-cobalto-oscuro [&::-webkit-details-marker]:hidden">
+                  {f.q}
+                  <span
+                    aria-hidden="true"
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-jano-linea text-jano-muted transition duration-300 group-open:rotate-45 group-open:border-jano-cobalto group-open:text-jano-cobalto group-hover:border-jano-cobalto group-hover:text-jano-cobalto"
+                  >
+                    <svg viewBox="0 0 16 16" width="14" height="14">
+                      <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+                    </svg>
+                  </span>
+                </summary>
+                <p class="max-w-[65ch] pb-6 pr-12 text-pretty leading-relaxed text-jano-muted">{f.a}</p>
+              </details>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- Acceso anticipado -->
+    <section id={d.cta.id} class="mx-auto max-w-6xl px-4 py-20 sm:px-5 sm:py-24">
+      <div class="cta relative overflow-hidden rounded-[1.75rem] bg-jano-cobalto px-5 py-10 text-jano-papel sm:rounded-[2rem] sm:p-14" data-reveal>
+        <div class="relative grid items-center gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-14">
+          <div>
+            <h2 class="font-display text-balance text-4xl font-bold leading-[1.02] sm:text-5xl">{d.cta.title}</h2>
+            <p class="mt-4 max-w-lg text-pretty text-lg leading-relaxed text-jano-sobre-cobalto">{d.cta.lead}</p>
+          </div>
+          <WaitlistForm lang={lang} id="cta" tone="dark" />
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer lang={lang} routeKey="home" />
+</Base>
