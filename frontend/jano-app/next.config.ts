@@ -8,7 +8,7 @@ assertEnvValido();
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  transpilePackages: ["@jano/domain"],
+  transpilePackages: ["@jano/domain", "@jano/demo"],
   typedRoutes: true,
 };
 

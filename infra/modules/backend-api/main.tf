@@ -8,6 +8,8 @@
 #     `backend/scripts/migrar.ts`, que fija esa misma contraseña en el rol. Terraform
 #     no lee su valor, así que el rol de plan de CI sigue sin GetSecretValue.
 #   - El código lo construye `pnpm --filter @jano/backend build` antes del plan.
+#   - Con `demo_data`, rutas comodín sirven el resto del contrato con @jano/demo
+#     (datos inventados) tras la misma autorización y comprobación de acceso.
 
 terraform {
   required_providers {
@@ -43,6 +45,12 @@ variable "routes" {
   ]
 }
 
+variable "demo_data" {
+  type        = bool
+  default     = false
+  description = "Sirve el resto del contrato con datos de ejemplo (@jano/demo) por rutas comodín. Solo dev, hasta la spec 003."
+}
+
 variable "log_retention_days" {
   type    = number
   default = 30
@@ -50,6 +58,8 @@ variable "log_retention_days" {
 
 locals {
   function_name = "jano-${var.environment}-api"
+  # Las rutas concretas ganan a las comodín: el equipo va a sus casos de uso y el resto, a la demo.
+  rutas_demo = var.demo_data ? ["GET /v1/{proxy+}", "POST /v1/{proxy+}", "PUT /v1/{proxy+}", "DELETE /v1/{proxy+}"] : []
 }
 
 resource "aws_secretsmanager_secret" "api_db" {
@@ -123,7 +133,7 @@ resource "aws_lambda_function" "api" {
   role             = aws_iam_role.api.arn
   handler          = "index.handler"
   runtime          = "nodejs22.x"
-  timeout          = 15
+  timeout          = 29 # tope de la integración de HTTP API (30 s): da tiempo a que Aurora despierte
   memory_size      = 256
   filename         = data.archive_file.api.output_path
   source_code_hash = data.archive_file.api.output_base64sha256
@@ -135,6 +145,7 @@ resource "aws_lambda_function" "api" {
       DB_SECRET_ARN = aws_secretsmanager_secret.api_db.arn
       DB_NAME       = var.database_name
       USER_POOL_ID  = var.user_pool_id
+      DEMO_DATA     = var.demo_data ? "on" : "off"
     }
   }
 
@@ -149,7 +160,7 @@ resource "aws_apigatewayv2_integration" "api" {
 }
 
 resource "aws_apigatewayv2_route" "api" {
-  for_each           = toset(var.routes)
+  for_each           = toset(concat(var.routes, local.rutas_demo))
   api_id             = var.api_id
   route_key          = each.value
   authorization_type = "JWT"

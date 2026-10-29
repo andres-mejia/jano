@@ -163,3 +163,28 @@ test("un tenant suspendido no entra (US5)", async () => {
   await base.admin.enTenant(B.id, ({ equipo }) => equipo.cambiarEstadoTenant("active"));
   assert.equal((await pedir(idsB["bruno@brisa.example"] ?? "", B.id, "GET /v1/tenant")).status, 200);
 });
+
+test("demo: el resto del contrato sale de @jano/demo, con la misma comprobación de acceso", async () => {
+  const { resolverDemo } = await import("@jano/demo");
+  const conDemo = crearManejador({ db: base.db, directorio, demo: (m, p, b) => resolverDemo(m, p, b, 0) });
+  const pedirDemo = async (quien: string, routeKey: string, rawPath: string, extra: Partial<EventoHttp> = {}) => {
+    const r = await conDemo({
+      routeKey,
+      rawPath,
+      requestContext: { requestId: "r", authorizer: { jwt: { claims: { sub: quien, "custom:tenant_id": A.id } } } },
+      ...extra,
+    });
+    return { status: r.statusCode, body: JSON.parse(r.body) as Record<string, unknown> };
+  };
+  const d = await pedirDemo(ana(), "GET /v1/{proxy+}", "/v1/dashboard/summary");
+  assert.equal(d.status, 200);
+  assert.ok(d.body["kpis"]);
+  assert.equal((await pedirDemo(ana(), "GET /v1/{proxy+}", "/v1/nada")).status, 404);
+  assert.equal((await pedirDemo(ana(), "POST /v1/{proxy+}", "/v1/campaigns", { body: "{}" })).status, 400);
+  const c = await pedirDemo(ana(), "POST /v1/{proxy+}", "/v1/campaigns", { body: JSON.stringify({ prompt: "Clínicas dentales en Valencia", meetingsGoal: 5 }) });
+  assert.equal(c.status, 201);
+  // Un usuario sin acceso tampoco ve la demo; y sin `demo`, esas rutas no existen.
+  assert.equal((await pedirDemo("sub-desconocido", "GET /v1/{proxy+}", "/v1/dashboard/summary")).status, 403);
+  const sinDemo = await manejar({ routeKey: "GET /v1/{proxy+}", rawPath: "/v1/dashboard/summary", requestContext: { requestId: "r", authorizer: { jwt: { claims: { sub: ana(), "custom:tenant_id": A.id } } } } });
+  assert.equal(sinDemo.statusCode, 404);
+});

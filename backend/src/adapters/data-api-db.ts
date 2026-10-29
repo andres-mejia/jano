@@ -34,7 +34,7 @@ export class DataApiDb implements Db {
   constructor(
     private readonly config: ConfigDataApi,
     private readonly cliente = new RDSDataClient({}),
-    private readonly esperasMs: readonly number[] = [1000, 2000, 4000],
+    private readonly esperasMs: readonly number[] = [1000, 2000, 4000, 8000, 8000],
   ) {}
 
   private async conReintento<T>(fn: () => Promise<T>): Promise<T> {

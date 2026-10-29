@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Topbar } from "@/components/layout/topbar";
 import { Card, ListItem, Pill } from "@/components/ui/primitives";
 import { jano } from "@/lib/api/jano";
-import { MOCK_IDS } from "@/lib/api/mocks";
+import { DEMO_IDS } from "@jano/demo";
 import { AGENT_LABEL, formatShortDate } from "@/lib/format";
 import type { ProspectStage } from "@jano/domain";
 
@@ -17,7 +17,7 @@ import type { ProspectStage } from "@jano/domain";
  * antes y esta página lo consume (AGENTS.md §4).
  */
 export default function ProspectsPage() {
-  const campaignId = MOCK_IDS.campaign;
+  const campaignId = DEMO_IDS.campaign;
   const flow = useQuery({ queryKey: ["flow", campaignId], queryFn: () => jano.getFlowMap(campaignId) });
   const stages: ProspectStage[] = (flow.data?.nodes ?? []).flatMap((n) => (n.stage === "icp" ? [] : [n.stage]));
   const events = useQuery({

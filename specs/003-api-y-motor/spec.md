@@ -5,6 +5,8 @@
 ## Objetivo
 *Nota (2026-10-29)*: la spec 007 ya creó el paquete `backend/` (hexagonal, adaptadores Data API y pg), las migraciones numeradas con `migrar.ts`, el rol `jano_api` con RLS forzado por `tenant_id`, la Lambda `jano-dev-api` (módulo `backend-api`) y las tablas `tenants`, `tenant_users` y `user_activity`. Esta spec parte de ahí: FR-001 añade la Lambda del motor, FR-002 sigue el mismo patrón de RLS y FR-003 añade migraciones a partir de la 002.
 
+*Demo (2026-10-29)*: mientras esta spec no sirva datos reales, la Lambda de la API resuelve el resto del contrato con `@jano/demo` (datos inventados, los mismos del modo mock de la app) por rutas comodín (`demo_data = true` en dev), tras la misma autorización y comprobación de acceso. Cada ruta que esta spec implemente gana a la comodín; al terminarla, `demo_data` pasa a `false`.
+
 Un backend que sirva el contrato `jano-api.yaml` sobre Aurora, con el motor de ejecución como núcleo: máquina de estados por prospect, registro de eventos append-only, reglas fijas, planificación de pasos y aprobaciones humanas. Sin agentes todavía: donde la IA decide, el motor expone un puerto que 004 implementa; mientras tanto, un adaptador determinista de pruebas.
 
 ## Escenarios de usuario

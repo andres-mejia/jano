@@ -15,6 +15,7 @@
     "suspender-tenant": "tsx scripts/suspender-tenant.ts"
   },
   "dependencies": {
+    "@jano/demo": "workspace:*",
     "@jano/domain": "workspace:*",
     "zod": "^3.24.0"
   },

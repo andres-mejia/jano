@@ -4,13 +4,15 @@ import { cargarActor, type Sesion } from "../application/acceso";
 import { desactivar, invitar, listarEquipo, reactivar, reenviarInvitacion } from "../application/equipo";
 import { tenantActual } from "../application/tenant-actual";
 import type { Actor } from "../domain/equipo";
-import { ErrorDeNegocio, invalido, type TipoDeError } from "../domain/errores";
+import { ErrorDeNegocio, invalido, noEncontrado, type TipoDeError } from "../domain/errores";
 import type { Db, UnidadDeTrabajo } from "../ports/db";
 import type { Directorio } from "../ports/directorio";
 
 /** Lo que usamos del evento de API Gateway HTTP API (payload 2.0). */
 export interface EventoHttp {
   readonly routeKey: string;
+  readonly rawPath?: string;
+  readonly rawQueryString?: string;
   readonly pathParameters?: Readonly<Record<string, string | undefined>>;
   readonly body?: string | null;
   readonly isBase64Encoded?: boolean;
@@ -37,6 +39,11 @@ type Ruta = (ctx: Contexto, deps: Dependencias) => Promise<{ status: number; bod
 export interface Dependencias {
   readonly db: Db;
   readonly directorio: Directorio;
+  /**
+   * Datos de ejemplo para las rutas del contrato que el backend aún no sirve
+   * (spec 003). Solo en dev y para demos; sin esto, esas rutas dan 404.
+   */
+  readonly demo?: (method: string, path: string, body: unknown) => Promise<unknown>;
 }
 
 const ESTADO: Record<TipoDeError, number> = { prohibido: 403, no_encontrado: 404, conflicto: 409, invalido: 400 };
@@ -82,6 +89,27 @@ export const RUTAS: Readonly<Record<string, Ruta>> = {
     ok(await reenviarInvitacion(uow, directorio, actor, userId(evento))),
 };
 
+/**
+ * Ruta de demo: el resto del contrato, resuelto con `@jano/demo`. Pasa por la
+ * misma sesión y comprobación de acceso que las rutas reales.
+ */
+function rutaDemo(evento: EventoHttp, deps: Dependencias): Ruta | null {
+  const demo = deps.demo;
+  const [metodo] = evento.routeKey.split(" ");
+  if (!demo || !metodo || !evento.rawPath?.startsWith("/v1/")) return null;
+  const path = evento.rawPath.slice(3) + (evento.rawQueryString ? `?${evento.rawQueryString}` : "");
+  return async ({ evento: e }) => {
+    try {
+      const body = await demo(metodo, path, metodo === "GET" ? undefined : cuerpo(e));
+      return { status: metodo === "POST" && path === "/campaigns" ? 201 : 200, body };
+    } catch (err) {
+      if ((err as { status?: unknown }).status === 404) throw noEncontrado();
+      if ((err as { name?: unknown }).name === "ZodError") throw invalido("Revisa los datos enviados.");
+      throw err;
+    }
+  };
+}
+
 function sesionDe(e: EventoHttp): Sesion | null {
   const claims = e.requestContext.authorizer?.jwt?.claims ?? {};
   const sub = claims["sub"];
@@ -97,7 +125,7 @@ function sesionDe(e: EventoHttp): Sesion | null {
  */
 export function crearManejador(deps: Dependencias) {
   return async (evento: EventoHttp): Promise<RespuestaHttp> => {
-    const ruta = RUTAS[evento.routeKey];
+    const ruta = RUTAS[evento.routeKey] ?? rutaDemo(evento, deps);
     if (!ruta) return json(404, { title: "No encontrado", status: 404 });
 
     const sesion = sesionDe(evento);

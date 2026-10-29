@@ -1,7 +1,7 @@
 import { getIdToken, signOutAndRedirect } from "@/lib/auth/session";
 import { getApiBaseUrl, isMockMode } from "@/lib/config/env";
 
-import { resolveMock } from "./mocks";
+import { resolverDemo } from "@jano/demo";
 
 export class ApiError extends Error {
   constructor(
@@ -19,13 +19,13 @@ export type Method = "GET" | "POST" | "PUT" | "DELETE";
 /**
  * apiFetch: el único punto por el que la app habla con la API.
  *
- *  - Modo mock: resuelve contra los fixtures de `./fixtures` (GET y acciones).
+ *  - Modo mock: resuelve contra los datos de `@jano/demo` (GET y acciones).
  *  - Modo cognito: inyecta el ID token; ante un 401 fuerza refresh y
  *    reintenta una vez; si vuelve a fallar, cierra sesión.
  */
 export async function apiFetch<T>(method: Method, path: string, body?: unknown): Promise<T> {
   if (isMockMode()) {
-    return resolveMock<T>(method, path, body);
+    return resolverDemo<T>(method, path, body);
   }
 
   const base = getApiBaseUrl();
