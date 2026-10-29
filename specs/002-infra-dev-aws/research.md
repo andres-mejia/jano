@@ -130,4 +130,17 @@ aws iam list-role-policies --role-name jano-dev-github-actions
 infra/scripts/deploy-dev.sh --plan-only          -> No changes. Your infrastructure matches the configuration.
 ```
 
-Pendiente para T061: los secretos `AWS_GITHUB_OIDC_ROLE_ARN` y `AWS_GITHUB_OIDC_PLAN_ROLE_ARN` del repo (la sesión no tuvo permiso para `gh secret set`).
+Los secretos `AWS_GITHUB_OIDC_ROLE_ARN` y `AWS_GITHUB_OIDC_PLAN_ROLE_ARN` los puso Andrés con `gh secret set`.
+
+### T061 y T070 · CI (2026-10-29)
+
+```
+infra-plan.yml en el PR #3 (1er intento)  -> Could not assume role with OIDC: Not authorized to perform sts:AssumeRoleWithWebIdentity
+gh api repos/andres-mejia/jano/actions/oidc/customization/sub
+                                          -> use_immutable_subject: true, sub_claim_prefix: repo:andres-mejia@49398769/jano@1437715854
+fix: prefijo del sub configurable (github_oidc_sub_prefix); apply local -> 0 added, 2 changed, 0 destroyed
+infra-plan.yml en el PR #3                -> pass; comentario «No changes» y guardia sin bloqueos
+infra-apply.yml tras el merge del PR #3   -> success; No changes. Your infrastructure matches the configuration.
+```
+
+El repo de Cardea tiene el mismo formato inmutable (`repo:andres-mejia@49398769/cardea@1437713522`) y su trust usa `repo:andres-mejia/cardea:...`: sus workflows tampoco podrán asumir los roles hasta que se ajuste igual.
