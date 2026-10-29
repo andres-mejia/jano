@@ -65,3 +65,9 @@ variable "monthly_budget_usd" {
   default     = "50"
   description = "Límite mensual del presupuesto de Jano (FR-009)."
 }
+
+variable "pnpm_version" {
+  type        = string
+  default     = "10.4.0"
+  description = "Igual que packageManager en package.json."
+}

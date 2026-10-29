@@ -18,3 +18,8 @@ output "ses_configuration_set" { value = module.email.configuration_set_name }
 
 output "api_base_url" { value = module.api_gateway.api_base_url }
 output "api_id" { value = module.api_gateway.api_id }
+
+output "landing_url" { value = local.landing_url }
+output "app_url" { value = local.app_url }
+output "landing_app_id" { value = module.landing.app_id }
+output "app_app_id" { value = module.app_hosting.app_id }
