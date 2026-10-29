@@ -1,0 +1,135 @@
+# Rutas y esquemas que la feature 007 añade a contracts/openapi/jano-api.yaml (tag `team`).
+# Todas con el autorizador JWT; el tenant sale del claim `custom:tenant_id`.
+# Las de /tenant/users exigen `custom:role = owner` (403 si no), salvo que se diga otra cosa.
+
+paths:
+  /tenant:
+    get:
+      tags: [team]
+      summary: Tenant del usuario
+      description: Cualquier usuario activo. 403 si el usuario está desactivado o el tenant suspendido.
+      operationId: getCurrentTenant
+      responses:
+        "200":
+          description: Tenant actual y rol del usuario en él
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CurrentTenant" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /tenant/users:
+    get:
+      tags: [team]
+      summary: Usuarios del tenant
+      operationId: listTenantUsers
+      responses:
+        "200":
+          description: Usuarios del tenant, owners primero y luego por email
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TenantUser" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [team]
+      summary: Invitar a un usuario como member
+      operationId: inviteTenantUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InviteTenantUser" }
+      responses:
+        "201":
+          description: Invitación enviada; el usuario queda en estado invited
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TenantUser" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: El email ya es usuario de Jano (no dice de qué tenant)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /tenant/users/{userId}/disable:
+    parameters: [{ $ref: "#/components/parameters/userId" }]
+    post:
+      tags: [team]
+      summary: Desactivar un member
+      operationId: disableTenantUser
+      responses:
+        "200": { description: Usuario desactivado, content: { application/json: { schema: { $ref: "#/components/schemas/TenantUser" } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "Es un owner o es uno mismo", content: { application/json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+
+  /tenant/users/{userId}/enable:
+    parameters: [{ $ref: "#/components/parameters/userId" }]
+    post:
+      tags: [team]
+      summary: Reactivar un usuario desactivado
+      operationId: enableTenantUser
+      responses:
+        "200": { description: Usuario reactivado, content: { application/json: { schema: { $ref: "#/components/schemas/TenantUser" } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /tenant/users/{userId}/resend-invitation:
+    parameters: [{ $ref: "#/components/parameters/userId" }]
+    post:
+      tags: [team]
+      summary: Reenviar la invitación
+      operationId: resendTenantInvitation
+      responses:
+        "200": { description: Invitación reenviada, content: { application/json: { schema: { $ref: "#/components/schemas/TenantUser" } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "El usuario ya no está en estado invited", content: { application/json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+
+components:
+  parameters:
+    userId:
+      name: userId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 64 }
+
+  responses:
+    Forbidden:
+      description: Sin permiso (rol, usuario desactivado o tenant suspendido)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    TenantRole: { type: string, enum: [owner, member] }
+    TenantUserStatus: { type: string, enum: [invited, active, disabled] }
+    CurrentTenant:
+      type: object
+      required: [id, name, plan, status, role]
+      properties:
+        id: { type: string, pattern: "^tenant-[a-z0-9-]{2,48}$" }
+        name: { type: string }
+        plan: { type: string }
+        status: { type: string, enum: [active, suspended] }
+        role: { $ref: "#/components/schemas/TenantRole" }
+    TenantUser:
+      type: object
+      required: [userId, email, role, status, createdAt]
+      properties:
+        userId: { type: string }
+        email: { type: string, format: email }
+        name: { type: [string, "null"] }
+        role: { $ref: "#/components/schemas/TenantRole" }
+        status: { $ref: "#/components/schemas/TenantUserStatus" }
+        invitedBy: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+    InviteTenantUser:
+      type: object
+      required: [email]
+      additionalProperties: false
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        name: { type: string, minLength: 1, maxLength: 120 }
