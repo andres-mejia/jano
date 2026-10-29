@@ -42,7 +42,8 @@ const NAV = [
 
 const STATUS_DOT = { working: "g", deciding: "c", waiting_human: "w", idle: "n" } as const;
 
-export function Sidebar({ user }: { user: SessionUser }) {
+/** `rail`: columna fija en escritorio. `drawer`: el mismo menú dentro del panel móvil. */
+export function Sidebar({ user, variant = "rail" }: { user: SessionUser; variant?: "rail" | "drawer" }) {
   const pathname = usePathname();
   const dashboard = useQuery({ queryKey: ["dashboard"], queryFn: jano.getDashboardSummary });
   const inbox = useQuery({ queryKey: ["inbox"], queryFn: jano.listInbox });
@@ -61,8 +62,13 @@ export function Sidebar({ user }: { user: SessionUser }) {
     .toUpperCase();
 
   return (
-    <aside className="sticky top-3.5 flex h-[calc(100dvh-28px)] w-[236px] shrink-0 flex-col overflow-y-auto rounded-[22px] bg-jano-tinta p-3.5 pt-5 text-jano-nav-texto">
-      <Link href="/" className="font-display mb-2 flex items-center gap-2.5 px-2 text-[25px] font-bold text-white">
+    <aside
+      className={clsx(
+        "flex w-[236px] shrink-0 flex-col overflow-y-auto bg-jano-tinta p-3.5 pt-5 text-jano-nav-texto",
+        variant === "rail" ? "sticky top-3.5 hidden h-[calc(100dvh-28px)] rounded-3xl lg:flex" : "h-full",
+      )}
+    >
+      <Link href="/" className="font-display mb-2 flex items-center gap-2.5 px-2 text-xl font-bold text-white">
         <Logo size={30} />
         Jano
       </Link>
@@ -70,7 +76,7 @@ export function Sidebar({ user }: { user: SessionUser }) {
       <nav aria-label="Principal" className="flex flex-col">
         {NAV.map((group) => (
           <div key={group.section}>
-            <div className="px-2.5 pb-1.5 pt-3.5 text-[11.5px] uppercase tracking-wider text-jano-nav-muted">{group.section}</div>
+            <div className="px-2.5 pb-1.5 pt-3.5 text-xs uppercase tracking-wider text-jano-nav-muted">{group.section}</div>
             {group.items.map((item) => {
               if ("soloOwner" in item && user.role !== "owner") return null;
               const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -80,14 +86,14 @@ export function Sidebar({ user }: { user: SessionUser }) {
                   key={item.href}
                   href={item.href}
                   className={clsx(
-                    "flex items-center gap-2.5 rounded-[11px] px-2.5 py-2 text-[14.5px] font-medium",
+                    "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-base font-medium",
                     active ? "bg-jano-tinta-2 text-white shadow-[inset_0_0_0_1px_var(--color-jano-tinta-3)]" : "hover:bg-jano-tinta-2/60",
                   )}
                 >
                   <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
                   {item.label}
                   {"badge" in item && pendientes > 0 && (
-                    <span className="ml-auto rounded-full bg-jano-bronce px-2 py-px text-[11.5px] font-bold text-jano-tinta tabular">{pendientes}</span>
+                    <span className="ml-auto rounded-full bg-jano-bronce px-2 py-px text-xs font-bold text-jano-tinta tabular">{pendientes}</span>
                   )}
                 </Link>
               );
@@ -96,10 +102,10 @@ export function Sidebar({ user }: { user: SessionUser }) {
         ))}
       </nav>
 
-      <div className="mt-auto rounded-[14px] bg-jano-tinta-2 p-3 text-[12.5px]">
+      <div className="mt-auto rounded-xl bg-jano-tinta-2 p-3 text-sm">
         <div className="mb-2 flex justify-between font-semibold text-white">
           Agentes
-          <span className="text-[#5EE0A8] tabular">{dashboard.data ? `${dashboard.data.agents.length} activos` : "…"}</span>
+          <span className="text-jano-nav-verde tabular">{dashboard.data ? `${dashboard.data.agents.length} activos` : "…"}</span>
         </div>
         {(dashboard.data?.agents ?? []).map((a) => (
           <div key={a.agent} className="flex items-center gap-2 py-[3px]">
@@ -117,12 +123,12 @@ export function Sidebar({ user }: { user: SessionUser }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={user.picture} alt="" referrerPolicy="no-referrer" className="h-[34px] w-[34px] shrink-0 rounded-full object-cover" />
         ) : (
-          <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--color-jano-cobalto-claro),var(--color-jano-bronce))] text-[13px] font-bold text-white">
+          <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--color-jano-cobalto-claro),var(--color-jano-bronce))] text-sm font-bold text-white">
             {initials}
           </div>
         )}
         <div className="min-w-0">
-          <div className="truncate text-[13.5px] font-semibold text-white">{user.name}</div>
+          <div className="truncate text-sm font-semibold text-white">{user.name}</div>
           <div className="truncate text-xs">
             {tenant.data?.name ?? (user.role === "owner" ? "Dirección comercial" : "Equipo comercial")}
           </div>

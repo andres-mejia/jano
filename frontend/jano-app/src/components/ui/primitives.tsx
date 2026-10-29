@@ -6,7 +6,7 @@ export function Card({ children, className, ai = false, title, action }: { child
     <section className={clsx("min-w-0 rounded-2xl border border-jano-linea bg-jano-papel p-5", ai && "ai-border", className)}>
       {(title || action) && (
         <header className="mb-3 flex items-center gap-2">
-          {title && <h2 className="font-display flex items-center gap-2 text-[17px] font-bold">{title}</h2>}
+          {title && <h2 className="font-display flex items-center gap-2 text-lg font-bold">{title}</h2>}
           {action && <div className="ml-auto flex items-center gap-2">{action}</div>}
         </header>
       )}
@@ -36,13 +36,14 @@ export function Button({
   className,
   ...rest
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "outline" | "ghost"; size?: "sm" | "md" | "lg" }) {
-  const base = "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-[10px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-60";
+  // Deshabilitado = gris plano, no el mismo botón desvaído: así no parece roto.
+  const base = "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg font-semibold transition disabled:cursor-not-allowed disabled:bg-jano-gris disabled:text-jano-muted disabled:shadow-none";
   const variants = {
     primary: "bg-jano-cobalto text-white hover:bg-jano-cobalto-oscuro",
     outline: "bg-jano-papel text-jano-tinta shadow-[inset_0_0_0_1px_var(--color-jano-linea)] hover:bg-jano-niebla",
     ghost: "text-jano-tinta hover:bg-jano-niebla",
   };
-  const sizes = { sm: "px-3 py-1.5 text-[13px]", md: "px-3.5 py-2 text-[13.5px]", lg: "px-4.5 py-2.5 text-[15px]" };
+  const sizes = { sm: "px-3 py-1.5 text-sm", md: "px-3.5 py-2 text-sm", lg: "px-4.5 py-2.5 text-base" };
   return (
     <button className={clsx(base, variants[variant], sizes[size], className)} {...rest}>
       {children}
@@ -52,9 +53,9 @@ export function Button({
 
 export function Dot({ tone = "g", className }: { tone?: "g" | "w" | "c" | "n"; className?: string }) {
   const map = {
-    g: "bg-jano-verde shadow-[0_0_0_3px_rgba(27,127,92,0.18)]",
-    w: "bg-jano-bronce shadow-[0_0_0_3px_rgba(227,154,46,0.2)]",
-    c: "bg-jano-cobalto-claro shadow-[0_0_0_3px_rgba(123,115,240,0.25)]",
+    g: "bg-jano-verde shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-jano-verde)_18%,transparent)]",
+    w: "bg-jano-bronce shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-jano-bronce)_20%,transparent)]",
+    c: "bg-jano-cobalto-claro shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-jano-cobalto-claro)_25%,transparent)]",
     n: "bg-jano-nav-muted",
   };
   return <span className={clsx("inline-block h-2 w-2 shrink-0 rounded-full", map[tone], className)} />;
@@ -93,4 +94,63 @@ export function DemoPill() {
 
 export function Skeleton({ className }: { className?: string }) {
   return <div className={clsx("animate-pulse rounded-xl bg-jano-gris", className)} aria-hidden="true" />;
+}
+
+/**
+ * Marca de «lo decidió la IA» (AGENTS.md §5): borde `ai` y, si hay razonamiento,
+ * se abre para enseñar por qué. Usa <details>, así funciona con teclado sin JS propio.
+ */
+export function AiTag({ children, reason, className }: { children: ReactNode; reason?: ReactNode; className?: string }) {
+  const tag = (
+    <span className="ai-border inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-px text-xs font-semibold text-jano-cobalto-oscuro">
+      <Spark className="h-3 w-3" />
+      {children}
+    </span>
+  );
+  if (!reason) return <span className={className}>{tag}</span>;
+  return (
+    <details className={clsx("group relative inline-block", className)}>
+      <summary className="list-none rounded-full outline-offset-2 [&::-webkit-details-marker]:hidden" aria-label="Ver por qué lo decidió la IA">
+        {tag}
+      </summary>
+      <div className="ai-border absolute left-0 top-full z-30 mt-1.5 w-72 rounded-xl p-3 text-sm text-jano-tinta shadow-lg">
+        <div className="mb-1 text-xs font-semibold text-jano-cobalto-oscuro">Por qué lo decidió la IA</div>
+        {reason}
+      </div>
+    </details>
+  );
+}
+
+/** Pestañas subrayadas: no compiten con los botones de acción. */
+export function Tabs<T extends string>({ tabs, value, onChange, label }: { tabs: readonly { id: T; label: ReactNode }[]; value: T; onChange: (id: T) => void; label: string }) {
+  return (
+    <div role="tablist" aria-label={label} className="flex gap-5 border-b border-jano-linea">
+      {tabs.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          role="tab"
+          aria-selected={value === t.id}
+          onClick={() => onChange(t.id)}
+          className={clsx(
+            "-mb-px border-b-2 pb-2 text-sm font-semibold transition",
+            value === t.id ? "border-jano-cobalto text-jano-tinta" : "border-transparent text-jano-muted hover:text-jano-tinta",
+          )}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Barra de progreso: 0 se ve vacía, sin trampas. */
+export function Meter({ value, tone = "c", label }: { value: number; tone?: "c" | "g" | "w"; label: string }) {
+  const pct = Math.min(1, Math.max(0, value)) * 100;
+  const color = { c: "bg-jano-cobalto", g: "bg-jano-verde", w: "bg-jano-bronce" }[tone];
+  return (
+    <div className="h-1.5 w-full overflow-hidden rounded-full bg-jano-gris" role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)}>
+      <div className={clsx("h-full rounded-full", color)} style={{ width: `${pct}%` }} />
+    </div>
+  );
 }

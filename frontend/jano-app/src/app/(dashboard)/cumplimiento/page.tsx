@@ -1,36 +1,41 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Check, X } from "lucide-react";
 import Link from "next/link";
 
 import { Topbar } from "@/components/layout/topbar";
-import { Button, Card, ListItem, Pill, Skeleton } from "@/components/ui/primitives";
+import { AiTag, Card, ListItem, Meter, Pill, Skeleton } from "@/components/ui/primitives";
 import { jano } from "@/lib/api/jano";
 import { AGENT_LABEL, formatTime } from "@/lib/format";
 import type { EventType, Guardrails } from "@jano/domain";
 
-const EVENT_PILL: Record<EventType, { label: string; tone: "g" | "b" | "r" | "v" | "n" }> = {
-  decision: { label: "Decisión IA", tone: "v" },
-  sent: { label: "Enviado", tone: "n" },
-  blocked: { label: "Bloqueado", tone: "b" },
-  deferred: { label: "Límite", tone: "b" },
-  stopped: { label: "Detenido", tone: "g" },
-  replied: { label: "Decisión IA", tone: "v" },
-  approved: { label: "Aprobado", tone: "g" },
-  rejected: { label: "Descartado", tone: "n" },
-  opt_out: { label: "Baja", tone: "r" },
-  meeting_booked: { label: "Reunión", tone: "g" },
+const EVENT_LABEL: Record<EventType, string> = {
+  decision: "Decisión de la IA",
+  sent: "Enviado",
+  blocked: "Bloqueado",
+  deferred: "Aplazado por límite",
+  stopped: "Detenido",
+  replied: "Clasificada por la IA",
+  approved: "Aprobado",
+  rejected: "Descartado",
+  opt_out: "Baja",
+  meeting_booked: "Reunión",
 };
 
-function Gauge({ pct, color }: { pct: number; color: string }) {
-  const r = 30;
-  const c = 2 * Math.PI * r;
+/** Lo que decidió la IA lleva su borde; lo que frenó una regla, rojo; el resto, texto. */
+function EventoTipo({ type }: { type: EventType }) {
+  if (type === "decision" || type === "replied") return <AiTag>{EVENT_LABEL[type]}</AiTag>;
+  if (type === "blocked" || type === "opt_out" || type === "deferred") return <Pill tone="r">{EVENT_LABEL[type]}</Pill>;
+  return <span className="text-sm text-jano-muted">{EVENT_LABEL[type]}</span>;
+}
+
+function Comprobacion({ ok, children }: { ok: boolean; children: React.ReactNode }) {
   return (
-    <svg width="76" height="76" viewBox="0 0 76 76" aria-hidden="true">
-      <circle cx="38" cy="38" r={r} fill="none" stroke="#E9EAF1" strokeWidth="9" />
-      <circle cx="38" cy="38" r={r} fill="none" stroke={color} strokeWidth="9" strokeLinecap="round" strokeDasharray={`${c * pct} ${c}`} transform="rotate(-90 38 38)" />
-    </svg>
+    <span className={`inline-flex items-center gap-1 text-sm font-semibold ${ok ? "text-jano-verde-texto" : "text-jano-rojo-texto"}`}>
+      {ok ? <Check className="h-4 w-4" aria-hidden="true" /> : <X className="h-4 w-4" aria-hidden="true" />}
+      {children}
+    </span>
   );
 }
 
@@ -38,8 +43,8 @@ function Toggle({ label, help, checked, onChange, disabled }: { label: string; h
   return (
     <ListItem>
       <div>
-        <div className="text-[13.5px] font-semibold">{label}</div>
-        <div className="text-[12.5px] text-jano-muted">{help}</div>
+        <div className="text-sm font-semibold">{label}</div>
+        <div className="text-sm text-jano-muted">{help}</div>
       </div>
       <button
         type="button"
@@ -74,42 +79,54 @@ export default function CompliancePage() {
       {!s ? (
         <Skeleton className="h-28" />
       ) : (
-        <div className="grid gap-3.5 md:grid-cols-2 xl:grid-cols-4">
-          {(
-            [
-              ["Envíos de hoy", `${s.sendsToday} de ${s.sendsLimit}`, "Buzón principal", s.sendsToday / s.sendsLimit, "#4338D6"],
-              ["Contactos con origen", `${Math.round((100 * s.contactsWithSource) / Math.max(s.contactsTotal, 1))} %`, `${s.contactsWithSource} de ${s.contactsTotal}`, s.contactsWithSource / Math.max(s.contactsTotal, 1), "#1B7F5C"],
-              ["Bajas atendidas", `${s.optOutsHandled} de ${s.optOutsTotal}`, "En menos de 1 minuto", s.optOutsTotal ? s.optOutsHandled / s.optOutsTotal : 1, "#1B7F5C"],
-              ["Base legal validada", `${Math.round(s.legalBasisValidatedPct)} %`, s.legalOpinionPending ? "Pendiente de dictamen" : "Dictamen aplicado", Math.max(0.04, s.legalBasisValidatedPct / 100), "#E39A2E"],
-            ] as const
-          ).map(([label, value, note, pct, color]) => (
-            <Card key={label} className="flex items-center justify-between">
-              <div>
-                <div className="text-[13px] font-semibold text-jano-muted">{label}</div>
-                <div className="font-display my-1 text-[30px] font-bold leading-none tabular">{value}</div>
-                <div className="text-[12.5px] text-jano-muted">{note}</div>
-              </div>
-              <Gauge pct={pct} color={color} />
-            </Card>
-          ))}
-        </div>
+        <Card className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          <div>
+            <div className="text-sm font-semibold text-jano-muted">Envíos de hoy</div>
+            <div className="font-display my-1 text-2xl font-bold leading-none tabular">
+              {s.sendsToday} <span className="text-base font-semibold text-jano-muted">de {s.sendsLimit}</span>
+            </div>
+            <Meter value={s.sendsToday / Math.max(s.sendsLimit, 1)} tone={s.sendsToday >= s.sendsLimit ? "w" : "c"} label="Envíos de hoy sobre el límite" />
+            <div className="mt-1.5 text-sm text-jano-muted">Buzón principal</div>
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-jano-muted">Contactos con origen</div>
+            <div className="font-display my-1 text-2xl font-bold leading-none tabular">{Math.round((100 * s.contactsWithSource) / Math.max(s.contactsTotal, 1))} %</div>
+            <div className="text-sm text-jano-muted tabular">
+              {s.contactsWithSource} de {s.contactsTotal} con su fuente guardada
+            </div>
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-jano-muted">Bajas atendidas</div>
+            <div className="font-display my-1 text-2xl font-bold leading-none tabular">
+              {s.optOutsHandled} <span className="text-base font-semibold text-jano-muted">de {s.optOutsTotal}</span>
+            </div>
+            <div className="text-sm text-jano-muted">En menos de 1 minuto</div>
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-jano-muted">Base legal validada</div>
+            <div className="font-display my-1 text-2xl font-bold leading-none tabular">{Math.round(s.legalBasisValidatedPct)} %</div>
+            <div className={`text-sm ${s.legalOpinionPending ? "font-semibold text-jano-bronce-texto" : "text-jano-muted"}`}>
+              {s.legalOpinionPending ? "Pendiente de dictamen" : "Dictamen aplicado"}
+            </div>
+          </div>
+        </Card>
       )}
 
       {s?.legalOpinionPending && (
-        <div className="flex items-center gap-3 rounded-2xl border border-[#EFD3A0] bg-jano-bronce-tinte p-4 text-[13.5px] text-jano-bronce-texto">
+        <div className="flex items-center gap-3 rounded-2xl border border-jano-bronce-linea bg-jano-bronce-tinte p-4 text-sm text-jano-bronce-texto">
           <AlertTriangle className="h-5 w-5 shrink-0" aria-hidden="true" />
           <div>
             <b>Pendiente de validación legal.</b> La base jurídica para el primer contacto por email (LSSI art. 21) está por confirmar. Jano guarda el origen de cada dato y aplica la regla que se decida; hasta entonces, ningún entorno escribe a contactos reales.
           </div>
-          <Link href="/prospects" className="ml-auto shrink-0 rounded-[10px] bg-jano-papel px-3.5 py-2 text-[13.5px] font-semibold text-jano-tinta shadow-[inset_0_0_0_1px_var(--color-jano-linea)]">
+          <Link href="/prospects" className="ml-auto shrink-0 rounded-lg bg-jano-papel px-3.5 py-2 text-sm font-semibold text-jano-tinta shadow-[inset_0_0_0_1px_var(--color-jano-linea)]">
             Ver contactos afectados
           </Link>
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3.5 xl:flex-row">
-        <Card className="flex-1" title="Registro de auditoría" action={<><span className="text-[13px] font-normal text-jano-muted">Cada decisión, con la regla que se aplicó</span><Button variant="outline" size="sm">Exportar</Button></>}>
-          <table className="w-full border-collapse text-[14.5px]">
+      <div className="flex flex-col gap-3.5 xl:flex-row xl:items-start">
+        <Card className="w-full flex-1" title="Registro de auditoría" action={<span className="text-sm font-normal text-jano-muted">Cada decisión, con la regla que se aplicó</span>}>
+          <table className="w-full border-collapse text-base">
             <tbody>
               {(audit.data ?? []).map((e) => (
                 <tr key={e.id} className="border-t border-jano-linea">
@@ -126,7 +143,7 @@ export default function CompliancePage() {
                     {e.ruleApplied && <div className="text-xs text-jano-muted">Regla: {e.ruleApplied}</div>}
                   </td>
                   <td className="py-2.5 text-right">
-                    <Pill tone={EVENT_PILL[e.type].tone}>{EVENT_PILL[e.type].label}</Pill>
+                    <EventoTipo type={e.type} />
                   </td>
                 </tr>
               ))}
@@ -140,8 +157,8 @@ export default function CompliancePage() {
               <ul>
                 <ListItem>
                   <div>
-                    <div className="text-[13.5px] font-semibold">Máximo de envíos por buzón y día</div>
-                    <div className="text-[12.5px] text-jano-muted">Protege la reputación del dominio</div>
+                    <div className="text-sm font-semibold">Máximo de envíos por buzón y día</div>
+                    <div className="text-sm text-jano-muted">Protege la reputación del dominio</div>
                   </div>
                   <input type="number" min={1} max={200} value={g.maxSendsPerMailboxPerDay} onChange={(e) => set({ maxSendsPerMailboxPerDay: Number(e.target.value) })} className="font-mono ml-auto w-16 rounded-lg border border-jano-linea px-2 py-1 text-right text-sm tabular" aria-label="Máximo de envíos por buzón y día" />
                 </ListItem>
@@ -152,19 +169,25 @@ export default function CompliancePage() {
               </ul>
             )}
           </Card>
-          <Card title="Salud del dominio de envío" className="flex-1">
+          <Card title="Salud del dominio de envío">
             {(s?.domains ?? []).map((d) => (
               <div key={d.domain}>
                 <div className="font-mono mb-2 text-xs text-jano-muted">{d.domain}</div>
-                <div className="flex flex-wrap gap-2">
-                  <Pill tone={d.spf ? "g" : "r"}>SPF</Pill>
-                  <Pill tone={d.dkim ? "g" : "r"}>DKIM</Pill>
-                  <Pill tone={d.dmarc ? "g" : "r"}>DMARC</Pill>
-                  <Pill tone={d.warmupDay < d.warmupTotalDays ? "b" : "g"}>
-                    Calentamiento: día {d.warmupDay} de {d.warmupTotalDays}
-                  </Pill>
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  <Comprobacion ok={d.spf}>SPF</Comprobacion>
+                  <Comprobacion ok={d.dkim}>DKIM</Comprobacion>
+                  <Comprobacion ok={d.dmarc}>DMARC</Comprobacion>
                 </div>
-                <div className="mt-2.5 text-[13px] text-jano-muted tabular">
+                <div className="mt-3 flex justify-between text-sm">
+                  <span className="font-semibold">Calentamiento del dominio</span>
+                  <span className="text-jano-muted tabular">
+                    día {d.warmupDay} de {d.warmupTotalDays}
+                  </span>
+                </div>
+                <div className="mt-1.5">
+                  <Meter value={d.warmupDay / Math.max(d.warmupTotalDays, 1)} label="Calentamiento del dominio" />
+                </div>
+                <div className="mt-2.5 text-sm text-jano-muted tabular">
                   Tasa de rebote {d.bounceRatePct.toLocaleString("es-ES")} % · Quejas {d.complaints}
                 </div>
               </div>

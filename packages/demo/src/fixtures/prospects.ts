@@ -136,6 +136,11 @@ export const EVENTS: ProspectEvent[] = [
     summary: "Propone WhatsApp para fijar la reunión; espera tu aprobación",
     reasoning: "Ya hay respuesta, así que el canal está permitido. Un mensaje corto por WhatsApp suele cerrar la fecha antes que un tercer correo.",
     stepId: S.dia6,
+    message: {
+      channel: "whatsapp",
+      subject: null,
+      body: "Hola, Irene, soy Lucía, de Rumbo Norte. Gracias por tu respuesta. ¿Te viene bien el jueves a las 10:00 o el viernes a las 12:30 para esos 20 minutos? Te mando la invitación con la que elijas.",
+    },
     rulesChecked: [{ rule: "WhatsApp solo tras una respuesta", passed: true, detail: "Respuesta recibida el día 5" }],
   }),
 ];
