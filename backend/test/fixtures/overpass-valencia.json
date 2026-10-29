@@ -1,0 +1,17 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API (respuesta grabada y anonimizada: nombres y webs inventados)",
+  "osm3s": {
+    "timestamp_osm_base": "2026-10-29T20:16:00Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+    { "type": "node", "id": 1001, "lat": 39.47, "lon": -0.37, "tags": { "name": "Viajes Azahar", "shop": "travel_agency", "website": "https://www.viajes-azahar.example/", "addr:city": "València", "phone": "+34 961 234 567" } },
+    { "type": "node", "id": 1002, "lat": 39.48, "lon": -0.38, "tags": { "name": "Rutas del Turia", "shop": "travel_agency", "contact:website": "http://rutas-turia.example/inicio" } },
+    { "type": "way", "id": 2001, "tags": { "name": "Brújula Viajes", "office": "travel_agent", "website": "brujula-viajes.example", "addr:city": "Gandia" } },
+    { "type": "node", "id": 1003, "tags": { "name": "Cadena Sol", "shop": "travel_agency", "brand": "Cadena Sol", "website": "https://cadena-sol.example/oficina-valencia" } },
+    { "type": "node", "id": 1004, "tags": { "name": "Escapadas en redes", "shop": "travel_agency", "website": "https://www.facebook.com/escapadas" } },
+    { "type": "node", "id": 1005, "tags": { "name": "Viajes Azahar (segunda oficina)", "shop": "travel_agency", "website": "https://viajes-azahar.example/ruzafa" } },
+    { "type": "node", "id": 1006, "tags": { "name": "Sin web válida", "shop": "travel_agency", "website": "no es una web" } }
+  ]
+}
