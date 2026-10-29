@@ -62,3 +62,14 @@ body {
   background-image: radial-gradient(#d5d7e6 1px, transparent 1px);
   background-size: 18px 18px;
 }
+
+/* Tailwind 4 deja los botones con el cursor por defecto: se recupera la mano en todo lo pulsable. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary,
+  label[for],
+  select {
+    cursor: pointer;
+  }
+}
