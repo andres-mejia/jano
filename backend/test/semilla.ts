@@ -18,6 +18,7 @@ export const TABLAS_MOTOR = [
   "inbox_items",
   "opportunities",
   "suppression_list",
+  "campaign_reviews",
   "guardrails",
 ] as const;
 
@@ -74,6 +75,7 @@ export async function sembrarMotor(admin: PgDb, tenantId: string, dominio: strin
       { ...t, p: prospect, c: campaign, i: i?.id ?? "" },
     );
     await tx.query("insert into suppression_list (tenant_id, email, source) values (:t, :e, 'manual')", { ...t, e: `baja@${dominio}` });
+    await tx.query("insert into campaign_reviews (tenant_id, campaign_id, reading) values (:t, cast(:c as uuid), 'sin cuello')", { ...t, c: campaign });
     await tx.query("insert into guardrails (tenant_id) values (:t)", t);
     return { campaign, account, prospect, step: s?.id ?? "", token: p?.token ?? "" };
   });

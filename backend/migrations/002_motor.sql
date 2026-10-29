@@ -220,6 +220,21 @@ CREATE TABLE suppression_list (
   PRIMARY KEY (tenant_id, email)
 );
 
+-- Lectura del Orquestador sobre una campaña (cuello de botella y una sugerencia),
+-- append-only. Se muestra en el centro de mando y en el flujo; no se ejecuta.
+CREATE TABLE campaign_reviews (
+  id          bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  tenant_id   text NOT NULL REFERENCES tenants (id),
+  campaign_id uuid NOT NULL REFERENCES campaigns (id),
+  reading     text NOT NULL,
+  bottleneck  text CHECK (bottleneck IN (
+                'found', 'enriched', 'unverified', 'in_sequence', 'waiting',
+                'replied', 'meeting', 'not_now', 'opted_out', 'discarded')),
+  proposal    jsonb,
+  at          timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX campaign_reviews_campaign ON campaign_reviews (tenant_id, campaign_id, id DESC);
+
 -- Reglas del tenant; sin fila, valen DEFAULT_GUARDRAILS de @jano/domain.
 CREATE TABLE guardrails (
   tenant_id                     text PRIMARY KEY REFERENCES tenants (id),
@@ -296,6 +311,12 @@ CREATE POLICY aislamiento ON suppression_list
   USING (tenant_id = current_setting('app.tenant_id', true))
   WITH CHECK (tenant_id = current_setting('app.tenant_id', true));
 
+ALTER TABLE campaign_reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE campaign_reviews FORCE ROW LEVEL SECURITY;
+CREATE POLICY aislamiento ON campaign_reviews
+  USING (tenant_id = current_setting('app.tenant_id', true))
+  WITH CHECK (tenant_id = current_setting('app.tenant_id', true));
+
 ALTER TABLE guardrails ENABLE ROW LEVEL SECURITY;
 ALTER TABLE guardrails FORCE ROW LEVEL SECURITY;
 CREATE POLICY aislamiento ON guardrails
@@ -312,6 +333,7 @@ GRANT SELECT, INSERT ON prospect_events TO jano_api;
 GRANT SELECT, INSERT, UPDATE ON inbox_items TO jano_api;
 GRANT SELECT, INSERT, UPDATE ON opportunities TO jano_api;
 GRANT SELECT, INSERT ON suppression_list TO jano_api;
+GRANT SELECT, INSERT ON campaign_reviews TO jano_api;
 GRANT SELECT, INSERT, UPDATE ON guardrails TO jano_api;
 
 -- El motor, para descubrir qué tenants tienen trabajo: tres columnas y nada más.

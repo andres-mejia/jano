@@ -8,8 +8,8 @@ import {
 } from "@aws-sdk/client-rds-data";
 
 import type { Db, UnidadDeTrabajo } from "../ports/db";
-import { repositorioEquipo } from "./sql/repositorio-equipo";
 import { FIJAR_TENANT, type Parametros, type Tx } from "./sql/tx";
+import { agendaDelMotor, crearUnidad, ejecutarEfectos, resolverToken } from "./sql/unidad";
 
 export interface ConfigDataApi {
   readonly clusterArn: string;
@@ -50,7 +50,8 @@ export class DataApiDb implements Db {
     }
   }
 
-  async enTenantSql<T>(tenantId: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
+  /** Una transacción de Data API; `preparar` fija la sesión (tenant o token) antes que nada. */
+  private async transaccion<T>(preparar: (tx: Tx) => Promise<unknown>, fn: (tx: Tx) => Promise<T>): Promise<T> {
     const { clusterArn: resourceArn, secretArn, database } = this.config;
     const { transactionId } = await this.conReintento(() =>
       this.cliente.send(new BeginTransactionCommand({ resourceArn, secretArn, database })),
@@ -72,7 +73,7 @@ export class DataApiDb implements Db {
       },
     };
     try {
-      await tx.query(FIJAR_TENANT, { tenant_id: tenantId });
+      await preparar(tx);
       const r = await fn(tx);
       await this.cliente.send(new CommitTransactionCommand({ resourceArn, secretArn, transactionId }));
       return r;
@@ -82,7 +83,26 @@ export class DataApiDb implements Db {
     }
   }
 
-  enTenant<T>(tenantId: string, fn: (uow: UnidadDeTrabajo) => Promise<T>): Promise<T> {
-    return this.enTenantSql(tenantId, (tx) => fn({ equipo: repositorioEquipo(tx, tenantId) }));
+  enTenantSql<T>(tenantId: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
+    return this.transaccion((tx) => tx.query(FIJAR_TENANT, { tenant_id: tenantId }), fn);
+  }
+
+  async enTenant<T>(tenantId: string, fn: (uow: UnidadDeTrabajo) => Promise<T>): Promise<T> {
+    let efectos: (() => Promise<void>)[] = [];
+    const r = await this.enTenantSql(tenantId, (tx) => {
+      const u = crearUnidad(tx, tenantId);
+      efectos = u.efectos;
+      return fn(u.uow);
+    });
+    await ejecutarEfectos(efectos);
+    return r;
+  }
+
+  agendaDelMotor(ahora: Date) {
+    return this.transaccion(async () => {}, (tx) => agendaDelMotor(tx, ahora));
+  }
+
+  resolverToken(token: string) {
+    return this.transaccion(async () => {}, (tx) => resolverToken(tx, token));
   }
 }

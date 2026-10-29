@@ -133,6 +133,7 @@ test("motor: la API no borra nada y el registro, los turnos y la supresión son 
     "update prospect_events set summary = 'reescrito'",
     "update icp_turns set text = 'x'",
     "update suppression_list set email = 'x@faro.example'",
+    "update campaign_reviews set reading = 'x'",
   ]) {
     await assert.rejects(base.db.enTenantSql(A.id, (tx) => tx.query(sql)), /permission denied/, sql);
   }

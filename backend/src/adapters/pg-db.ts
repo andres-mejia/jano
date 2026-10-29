@@ -1,8 +1,8 @@
 import pg from "pg";
 
 import type { Db, UnidadDeTrabajo } from "../ports/db";
-import { repositorioEquipo } from "./sql/repositorio-equipo";
 import { FIJAR_TENANT, type Parametros, type Tx } from "./sql/tx";
+import { agendaDelMotor, crearUnidad, ejecutarEfectos, resolverToken } from "./sql/unidad";
 
 /** `:nombre` → `$n` sin tocar los `::` de los casts. */
 export function aPosicionales(sql: string, params: Parametros = {}): { text: string; values: unknown[] } {
@@ -25,7 +25,8 @@ export function aPosicionales(sql: string, params: Parametros = {}): { text: str
 export class PgDb implements Db {
   constructor(private readonly pool: pg.Pool) {}
 
-  async enTenantSql<T>(tenantId: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
+  /** Una transacción; `preparar` fija la sesión (tenant o token) antes que nada. */
+  private async transaccion<T>(preparar: (tx: Tx) => Promise<unknown>, fn: (tx: Tx) => Promise<T>): Promise<T> {
     const cliente = await this.pool.connect();
     try {
       await cliente.query("begin");
@@ -35,7 +36,7 @@ export class PgDb implements Db {
           return (await cliente.query(text, values)).rows as R[];
         },
       };
-      await tx.query(FIJAR_TENANT, { tenant_id: tenantId });
+      await preparar(tx);
       const r = await fn(tx);
       await cliente.query("commit");
       return r;
@@ -47,7 +48,26 @@ export class PgDb implements Db {
     }
   }
 
-  enTenant<T>(tenantId: string, fn: (uow: UnidadDeTrabajo) => Promise<T>): Promise<T> {
-    return this.enTenantSql(tenantId, (tx) => fn({ equipo: repositorioEquipo(tx, tenantId) }));
+  enTenantSql<T>(tenantId: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
+    return this.transaccion((tx) => tx.query(FIJAR_TENANT, { tenant_id: tenantId }), fn);
+  }
+
+  async enTenant<T>(tenantId: string, fn: (uow: UnidadDeTrabajo) => Promise<T>): Promise<T> {
+    let efectos: (() => Promise<void>)[] = [];
+    const r = await this.enTenantSql(tenantId, (tx) => {
+      const u = crearUnidad(tx, tenantId);
+      efectos = u.efectos;
+      return fn(u.uow);
+    });
+    await ejecutarEfectos(efectos);
+    return r;
+  }
+
+  agendaDelMotor(ahora: Date) {
+    return this.transaccion(async () => {}, (tx) => agendaDelMotor(tx, ahora));
+  }
+
+  resolverToken(token: string) {
+    return this.transaccion(async () => {}, (tx) => resolverToken(tx, token));
   }
 }
