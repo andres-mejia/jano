@@ -1,0 +1,87 @@
+---
+/**
+ * Botón flotante para volver arriba. Aparece al bajar más de una pantalla;
+ * sin JS no se muestra. Con movimiento reducido el salto es inmediato.
+ */
+interface Props {
+  label: string;
+}
+
+const { label } = Astro.props;
+---
+
+<button type="button" class="top" data-top aria-label={label} title={label} hidden>
+  <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 15.5v-11M4.75 9.75 10 4.5l5.25 5.25" /></svg>
+</button>
+
+<script>
+  const button = document.querySelector<HTMLButtonElement>("[data-top]");
+  if (button) {
+    button.hidden = false;
+    const update = () => button.classList.toggle("is-visible", window.scrollY > window.innerHeight * 1.2);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    button.addEventListener("click", () => {
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
+    });
+  }
+</script>
+
+<style>
+  .top {
+    position: fixed;
+    right: max(1rem, env(safe-area-inset-right));
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    z-index: 20;
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 999px;
+    background: var(--color-jano-tinta);
+    color: var(--color-jano-papel);
+    box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--color-jano-tinta) 70%, transparent);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px);
+    transition:
+      opacity 0.3s var(--ease-jano),
+      transform 0.3s var(--ease-jano),
+      visibility 0s linear 0.3s,
+      background 0.2s;
+  }
+  .top.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition-delay: 0s;
+  }
+  .top:hover {
+    background: var(--color-jano-cobalto);
+  }
+  .top:focus-visible {
+    outline: 2px solid var(--color-jano-cobalto);
+    outline-offset: 3px;
+  }
+  .top svg {
+    width: 1.15rem;
+    height: 1.15rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  @media (min-width: 40rem) {
+    .top {
+      right: 1.5rem;
+      bottom: 1.5rem;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .top {
+      transition: none;
+    }
+  }
+</style>
