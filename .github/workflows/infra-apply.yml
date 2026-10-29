@@ -1,0 +1,78 @@
+# Aplica Terraform en dev en cada push a `main` que toca la infra (forma de Cardea, portada de Fenora).
+# plan → JSON → guardia (bloqueante) → apply del mismo plan: entre la guardia y el apply
+# no puede colarse un cambio que la guardia no haya visto.
+name: Infra aplicar
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/**'
+      - '.github/workflows/infra-apply.yml'
+      - '.github/scripts/guardia_plan.py'
+  workflow_dispatch:
+    inputs:
+      permitir_destruccion:
+        description: >-
+          Direcciones EXACTAS de recursos cuyo borrado se autoriza, separadas por comas.
+          Vacío = ninguno. Sin comodines.
+        required: false
+        default: ''
+
+# Dos applies a la vez se pelearían por el lock: el segundo espera, no cancela al primero.
+concurrency:
+  group: infra-apply-dev
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # para asumir el rol OIDC
+
+jobs:
+  aplicar:
+    name: infra · aplicar
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      TF_IN_AUTOMATION: 'true'
+      TF_INPUT: '0'
+      AWS_REGION: eu-west-1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: 1.9.8
+          terraform_wrapper: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Formato
+        working-directory: infra
+        run: terraform fmt -check -recursive
+      - name: Credenciales AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        with:
+          role-to-assume: ${{ secrets.AWS_GITHUB_OIDC_ROLE_ARN }}
+          aws-region: eu-west-1
+      - name: terraform init
+        working-directory: infra/environments/dev
+        run: |
+          ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+          terraform init -input=false \
+            -backend-config="bucket=fenora-terraform-state-${ACCOUNT_ID}"
+      - name: terraform validate
+        working-directory: infra/environments/dev
+        run: terraform validate
+      - name: terraform plan
+        working-directory: infra/environments/dev
+        run: |
+          terraform plan -input=false -lock-timeout=5m -out=tfplan -var 'aws_profile='
+          terraform show -json tfplan > tfplan.json
+      - name: Guardia del plan · nada se pierde
+        working-directory: infra/environments/dev
+        env:
+          PERMITIR_DESTRUCCION: ${{ inputs.permitir_destruccion }}
+        run: python3 "${GITHUB_WORKSPACE}/.github/scripts/guardia_plan.py" tfplan.json
+      - name: Aplicar el plan verificado
+        working-directory: infra/environments/dev
+        run: terraform apply -input=false -lock-timeout=5m tfplan

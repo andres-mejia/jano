@@ -71,3 +71,9 @@ variable "pnpm_version" {
   default     = "10.4.0"
   description = "Igual que packageManager en package.json."
 }
+
+variable "github_repo" {
+  type        = string
+  default     = "andres-mejia/jano"
+  description = "owner/repo que asume los roles OIDC."
+}

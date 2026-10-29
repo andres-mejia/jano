@@ -1,0 +1,31 @@
+# Tests de los scripts de CI (guardia del plan, política de arranque) y de las Lambdas de
+# infra/modules (node --test, sin dependencias). Sin filtro `paths`
+# para que pueda ser un check requerido.
+name: Scripts tests
+
+on:
+  pull_request:
+
+concurrency:
+  group: scripts-tests-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: scripts · tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pytest==8.3.3
+      - run: python3 -m pytest .github/scripts -q
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test infra/modules/*/lambda/*/*.test.mjs

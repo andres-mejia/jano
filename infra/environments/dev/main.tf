@@ -5,6 +5,7 @@
 #   identity.tf  Cognito, trigger pre-token y HTTP API con autorizador
 #   platform.tf  bucket de assets, presupuesto y correo saliente
 #   web.tf       landing y app en Amplify y formulario de acceso anticipado
+#   ci.tf        roles OIDC de GitHub Actions
 #   outputs.tf   lo que consumen 001 y 003
 #
 # Nada de este directorio se aplica sin plan revisado (AGENTS.md §8):
