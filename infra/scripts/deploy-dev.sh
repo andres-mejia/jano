@@ -9,7 +9,8 @@
 #   aws sso login --profile fintrack-dev
 #   infra/scripts/deploy-dev.sh                 # plan + confirmación + apply
 #   infra/scripts/deploy-dev.sh --plan-only     # solo plan
-#   infra/scripts/deploy-dev.sh -- -var github_access_token="$(gh auth token)"   # args extra para plan
+#   infra/scripts/deploy-dev.sh -- -var foo=bar     # args extra para plan
+#   El token de GitHub de Amplify va por TF_VAR_github_access_token (docs/guias/despliegue-dev.md).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

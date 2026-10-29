@@ -99,3 +99,20 @@ curl $API/v1/dashboard/summary                           -> {"message":"Unauthor
 curl ... -H "authorization: Bearer abc.def.ghi"          -> {"message":"Unauthorized"} 401
 curl ... -H "authorization: Bearer <ID token del piloto>" -> {"error":"not_implemented","route":"GET /v1/dashboard/summary"} 501
 ```
+
+### Fase 5 · Hosting (2026-10-29)
+
+```
+terraform apply tfplan (con TF_VAR_github_access_token) -> Apply complete! Resources: 6 added, 0 changed, 0 destroyed.
+aws amplify start-job --job-type RELEASE (job 1)  -> landing SUCCEED; app FAILED:
+  "The 'node_modules' folder is missing the 'next' dependency" (layout aislado de pnpm en un workspace)
+PR #2 (.npmrc node-linker=hoisted) fusionado     -> Amplify lanza solo el job 2 en las dos apps
+  landing 01:47:46 -> 01:51:57 SUCCEED (4 min 10 s); app 01:47:46 -> 01:52:34 SUCCEED (4 min 48 s)
+get-domain-association tekhos.com                -> AVAILABLE, verified (las dos apps)
+curl https://jano.tekhos.com                     -> 200, data-endpoint = endpoint de la waitlist
+curl https://jano-app.tekhos.com/login           -> 200; el bundle lleva el pool, el cliente y la URL de la API
+```
+
+T053 se cubrió con el merge del PR #2 (un push a `main` que no tocaba `frontend/`) en lugar de un cambio de texto: dispara los dos builds igual y mide lo mismo.
+
+Primer intento de crear las apps: `Bad credentials`. `gh auth token` no existe en gh 2.4 (Ubuntu) y la variable recibió el texto de ayuda; la guía da el comando que vale para las dos versiones.

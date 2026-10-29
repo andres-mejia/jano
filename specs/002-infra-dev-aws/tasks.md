@@ -32,10 +32,10 @@ Convención: `[Tn] [P?] descripción · verificación`. `[P]` = paralelizable. C
 - [X] T041 Ruta `GET /v1/dashboard/summary` (la del contrato) con autorizador apuntando a una Lambda placeholder que devuelve 501, log group con retención de 30 d · `curl` sin token → 401; con token → 501.
 
 ## Fase 5 · Hosting
-- [ ] T050 `infra/modules/landing`: Amplify WEB, build_spec igual al `amplify.yml`, variables `PUBLIC_*`, `AMPLIFY_MONOREPO_APP_ROOT=frontend/jano-web`, dominio `jano.tekhos.com` sobre la zona de `tekhos.com`, auto-build solo en `main` y sin previews de PR (US1.3) · `validate` OK.
-- [ ] T051 `infra/modules/app-hosting`: Amplify WEB_COMPUTE, `NEXT_PUBLIC_*` desde outputs, `AMPLIFY_MONOREPO_APP_ROOT=frontend/jano-app`, dominio `jano-app.tekhos.com`, auto-build solo en `main` y sin previews de PR · `validate` OK.
-- [ ] T052 `apply`; autorizar la CodeStar Connection en consola; `aws amplify start-job --job-type RELEASE` en las dos apps · ambas URL responden 200 y la app muestra `/login` con Cognito.
-- [ ] T053 Push de prueba a `main` (un cambio de texto en la landing) · Amplify publica solo; anotar el tiempo.
+- [X] T050 `infra/modules/landing`: Amplify WEB, build_spec igual al `amplify.yml`, variables `PUBLIC_*`, `AMPLIFY_MONOREPO_APP_ROOT=frontend/jano-web`, dominio `jano.tekhos.com` sobre la zona de `tekhos.com`, auto-build solo en `main` y sin previews de PR (US1.3) · `validate` OK.
+- [X] T051 `infra/modules/app-hosting`: Amplify WEB_COMPUTE, `NEXT_PUBLIC_*` desde outputs, `AMPLIFY_MONOREPO_APP_ROOT=frontend/jano-app`, dominio `jano-app.tekhos.com`, auto-build solo en `main` y sin previews de PR · `validate` OK.
+- [X] T052 `apply`; autorizar la CodeStar Connection en consola; `aws amplify start-job --job-type RELEASE` en las dos apps · ambas URL responden 200 y la app muestra `/login` con Cognito.
+- [X] T053 Push de prueba a `main` (un cambio de texto en la landing) · Amplify publica solo; anotar el tiempo.
 
 ## Fase 6 · CI con OIDC
 - [ ] T060 `infra/modules/github-oidc`: `data` del proveedor OIDC existente, rol de apply `jano-dev-github-actions` (main) y rol de plan `jano-dev-github-actions-plan` (pull_request); la política de arranque del rol de apply se pega por CLI con el mismo comando que Cardea y se documenta · `validate` OK.
