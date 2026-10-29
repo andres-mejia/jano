@@ -425,6 +425,9 @@ test("vistas: centro de mando, flujo, auditoría y cumplimiento salen del regist
   assert.ok((d["pending"] as { kind: string }[]).some((p) => p.kind === "step_approval"));
   assert.ok((d["pending"] as { kind: string }[]).some((p) => p.kind === "accounts_approval"));
   assert.ok(d["insight"], "la lectura del Orquestador guardada por el motor");
+  // Varias pasadas del motor hoy, una sola lectura por campaña (FR-017).
+  const lecturas = await base.admin.enTenantSql(A.id, (tx) => tx.query("select 1 from campaign_reviews where campaign_id = cast(:c as uuid)", { c: campana }));
+  assert.equal(lecturas.length, 1);
 
   const f = (await pedir("GET /v1/campaigns/{campaignId}/flow", { pathParameters: { campaignId: campana } })).body;
   const nodos = Object.fromEntries((f["nodes"] as { stage: string; value: number }[]).map((n) => [n.stage, n.value]));

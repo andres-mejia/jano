@@ -504,12 +504,17 @@ async function campanasDe(uow: UnidadDeTrabajo, pasos: readonly PasoGuardado[]):
   return ids;
 }
 
-/** El Orquestador lee el flujo de cada campaña y deja su lectura guardada; no ejecuta nada. */
+/**
+ * La «Lectura de Jano» (FR-017): una vez al día por campaña con actividad, el
+ * Orquestador lee el flujo y deja su lectura guardada para el centro de mando. No
+ * ejecuta nada.
+ */
 export async function revisarCampanas(uow: UnidadDeTrabajo, s: Servicios, campaignIds: readonly string[]): Promise<void> {
   const desde = inicioDelDiaEnMadrid(s.reloj.ahora());
   for (const id of campaignIds) {
     const campana = await uow.campanas.obtener(id);
-    if (!campana) continue;
+    const previa = await uow.campanas.ultimaRevision(id);
+    if (!campana || (previa && Date.parse(previa.at) >= desde.getTime())) continue;
     const revision = await s.agentes.orquestador.revisarCampana({
       campaignName: campana.name,
       actuales: await uow.vistas.actuales(id),

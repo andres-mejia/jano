@@ -140,12 +140,14 @@ export function repositorioCampanas(tx: Tx, tenantId: string): RepositorioCampan
     },
 
     async ultimaRevision(id) {
-      const [f] = await tx.query<{ reading: string; bottleneck: ProspectStage | null; proposal: string | null }>(
-        `select reading, bottleneck, proposal::text as proposal from campaign_reviews
+      const [f] = await tx.query<{ reading: string; bottleneck: ProspectStage | null; proposal: string | null; at_ms: unknown }>(
+        `select reading, bottleneck, proposal::text as proposal, ${ms("at", "at_ms")} from campaign_reviews
          where tenant_id = :t and campaign_id = cast(:id as uuid) order by id desc limit 1`,
         { ...t, id },
       );
-      return f ? { lectura: f.reading, cuello: f.bottleneck, propuesta: f.proposal ? json<RevisionCampana["propuesta"]>(f.proposal) : null } : null;
+      return f
+        ? { lectura: f.reading, cuello: f.bottleneck, propuesta: f.proposal ? json<RevisionCampana["propuesta"]>(f.proposal) : null, at: iso(f.at_ms) }
+        : null;
     },
   };
 }

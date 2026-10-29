@@ -47,7 +47,7 @@ export interface RepositorioCampanas {
   turnos(id: string): Promise<IcpTurn[]>;
   anadirTurno(id: string, t: { role: IcpTurn["role"]; text: string; icp: Icp | null; suggestions: readonly string[] }): Promise<IcpTurn>;
   guardarRevision(id: string, r: RevisionCampana): Promise<void>;
-  ultimaRevision(id: string): Promise<RevisionCampana | null>;
+  ultimaRevision(id: string): Promise<(RevisionCampana & { readonly at: string }) | null>;
 }
 
 export interface NuevaCuenta {
