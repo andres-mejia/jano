@@ -9,16 +9,18 @@ cd ~/py/jano
 git fetch origin && git checkout main && git pull
 git checkout docs/lineamiento-cardea     # mientras no esté fusionada
 
-corepack enable && corepack prepare pnpm@10.4.0 --activate
+nvm install 22 && nvm use 22             # .nvmrc; corepack no vale si el PATH trae un Node viejo
+npm i -g pnpm@10.4.0
 pnpm install
 pnpm type-check && pnpm build && pnpm test
 
 aws sso login --profile fintrack-dev
 aws sts get-caller-identity --profile fintrack-dev
 
-# Spec Kit (GitHub). Si no tienes uv: https://docs.astral.sh/uv/
-uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
-specify init --here --ai claude --force
+# Spec Kit (GitHub), versión estable desde PyPI. Si no tienes uv: https://docs.astral.sh/uv/
+uv tool install --force specify-cli
+specify check                                     # nombre de la integración de Claude Code (normalmente `claude`)
+specify init --here --integration claude --force  # en 1.2.x el flag es --integration (antes --ai)
 # init puede reescribir la constitución con su plantilla; la nuestra ya está en git:
 git checkout -- .specify/memory/constitution.md
 ```
