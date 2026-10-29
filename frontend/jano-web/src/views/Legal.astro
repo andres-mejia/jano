@@ -20,7 +20,7 @@ const set = sets[lang];
 const doc = set.docs[key];
 
 // Solo se pintan los datos del titular que tienen valor.
-const fields: (keyof Titular)[] = ["nombre", "razonSocial", "nif", "domicilio", "registro", "email", "web"];
+const fields: (keyof Titular)[] = ["nombre", "nombreComercial", "nif", "domicilio", "registro", "email", "web"];
 const holder = fields
   .filter((f) => titular[f].trim() !== "")
   .map((f) => ({ key: f, label: set.holderLabels[f], value: titular[f] }));

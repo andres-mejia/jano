@@ -18,7 +18,7 @@ export interface LegalSet {
   readonly docs: Record<LegalKey, LegalDoc>;
   readonly holderLabels: {
     readonly nombre: string;
-    readonly razonSocial: string;
+    readonly nombreComercial: string;
     readonly nif: string;
     readonly domicilio: string;
     readonly registro: string;

@@ -2,7 +2,8 @@ import { routes } from "../routes";
 import { titular } from "../titular";
 import type { LegalSet } from "./types";
 
-const owner = titular.nombre;
+const owner = titular.nombreComercial;
+const holder = titular.nombre ? `${titular.nombre}, que opera como ${owner}` : owner;
 const mail = `<a href="mailto:${titular.email}">${titular.email}</a>`;
 const privacy = `<a href="${routes.privacy.es}">política de privacidad</a>`;
 const notice = `<a href="${routes.notice.es}">aviso legal</a>`;
@@ -11,7 +12,7 @@ const cookies = `<a href="${routes.cookies.es}">política de cookies</a>`;
 export const legalEs: LegalSet = {
   holderLabels: {
     nombre: "Titular",
-    razonSocial: "Razón social",
+    nombreComercial: "Nombre comercial",
     nif: "NIF",
     domicilio: "Domicilio",
     registro: "Datos registrales",
@@ -26,7 +27,7 @@ export const legalEs: LegalSet = {
         {
           heading: "Quién trata tus datos",
           body: [
-            `El responsable es ${owner}, titular de Jano (jano.tekhos.com y jano-app.tekhos.com). Sus datos identificativos están en el ${notice}. Para cualquier cuestión de privacidad escribe a ${mail}.`,
+            `El responsable es ${holder}, titular de Jano (jano.tekhos.com y jano-app.tekhos.com). Sus datos identificativos están en el ${notice}. Para cualquier cuestión de privacidad escribe a ${mail}.`,
           ],
         },
         {
@@ -167,7 +168,7 @@ export const legalEs: LegalSet = {
           heading: "Titular",
           holder: true,
           body: [
-            `Este sitio web y la app Jano son propiedad de ${owner}, en cumplimiento del artículo 10 de la Ley 34/2002 de servicios de la sociedad de la información y de comercio electrónico (LSSI).`,
+            `Este sitio web y la app Jano son propiedad de ${holder}, en cumplimiento del artículo 10 de la Ley 34/2002 de servicios de la sociedad de la información y de comercio electrónico (LSSI).`,
           ],
         },
         {
