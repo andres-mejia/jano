@@ -13,7 +13,7 @@ Runbook de `infra/` (spec 002). Cuenta `966378755474`, región `eu-west-1`, comp
 | Proveedor OIDC de GitHub | Estado de Fenora | Lo lee (`data`) |
 | Etiqueta de costes `Project` | Activada por CLI el 2026-10-29 | El presupuesto `jano-dev-monthly` filtra por `Project=jano` |
 | Secreto `jano/dev/google-oauth` | Cargado por CLI desde el JSON del client de Google el 2026-10-29 (spec 006) | Terraform lo lee para el IdP de Google de Cognito |
-| Client OAuth de Google | Proyecto de Google Cloud «Jano», en modo Testing | Su única URI de redirección es la de Cognito de Jano |
+| Client OAuth de Google | Proyecto de Google Cloud «Jano», publicado (en producción) desde el 2026-10-29 | Su única URI de redirección es la de Cognito de Jano |
 | Política de arranque del rol de CI | `infra/bootstrap/`, pegada por CLI | Ver `infra/bootstrap/README.md` |
 
 ## Desplegar a mano
@@ -55,8 +55,8 @@ Variables: los valores por defecto de `infra/environments/dev/variables.tf` son 
 3. **Política de arranque del rol de CI**: `infra/bootstrap/README.md`.
 4. **Google (spec 006).** En Google Cloud Console, proyecto «Jano» → Google Auth Platform:
    - **Clients**: client «Web application» sin orígenes JavaScript y con la URI de redirección `https://jano-dev.auth.eu-west-1.amazoncognito.com/oauth2/idpresponse`. Se descarga el JSON a `.credentials/` (ignorado por git).
-   - **Audience**: External y en Testing; solo entran las cuentas de «Test users» hasta publicar la app.
-   - **Branding**: nombre Jano, página `https://jano.tekhos.com`, dominio autorizado `tekhos.com`.
+   - **Audience**: External y publicada (In production) desde el 2026-10-29: cualquier cuenta de Google puede autenticarse, y el trigger PreSignUp solo deja entrar a quien ya está dado de alta.
+   - **Branding**: nombre Jano, página `https://jano.tekhos.com`, privacidad `https://jano.tekhos.com/legal/privacidad/`, condiciones `https://jano.tekhos.com/legal/terminos/`, dominio autorizado `tekhos.com`. El logo (`/marca/jano-logo-120.png`) exige verificación de marca.
    - **Data Access**: `openid`, `email`, `profile`.
 
    El secreto se carga desde el JSON sin imprimir el valor (`create-secret` la primera vez, `put-secret-value` al rotar) y después `deploy-dev.sh`:
