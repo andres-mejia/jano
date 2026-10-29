@@ -2,7 +2,7 @@ import { routes } from "../routes";
 import { titular } from "../titular";
 import type { LegalSet } from "./types";
 
-const owner = titular.razonSocial;
+const owner = titular.nombre;
 const mail = `<a href="mailto:${titular.email}">${titular.email}</a>`;
 const privacy = `<a href="${routes.privacy.en}">privacy policy</a>`;
 const notice = `<a href="${routes.notice.en}">legal notice</a>`;
@@ -10,7 +10,8 @@ const cookies = `<a href="${routes.cookies.en}">cookie policy</a>`;
 
 export const legalEn: LegalSet = {
   holderLabels: {
-    razonSocial: "Company name",
+    nombre: "Owner",
+    razonSocial: "Registered name",
     nif: "Tax ID (NIF)",
     domicilio: "Registered address",
     registro: "Registry details",

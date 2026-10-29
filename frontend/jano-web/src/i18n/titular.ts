@@ -4,6 +4,9 @@
  * Tekhos los confirme, sin poner marcadores en la página.
  */
 export interface Titular {
+  /** Nombre con el que se presenta el titular en los textos. */
+  readonly nombre: string;
+  /** Razón social completa, si difiere del nombre. */
   readonly razonSocial: string;
   readonly nif: string;
   readonly domicilio: string;
@@ -13,9 +16,10 @@ export interface Titular {
 }
 
 export const titular: Titular = {
-  razonSocial: "Tekhos",
-  nif: "",
-  domicilio: "",
+  nombre: "Tekhos",
+  razonSocial: "",
+  nif: "ES 16831970H",
+  domicilio: "Paseo Rei en Jaume 5, 46130 Valencia",
   registro: "",
   email: "jano@tekhos.com",
   web: "https://tekhos.com",
