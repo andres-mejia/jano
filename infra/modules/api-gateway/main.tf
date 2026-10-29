@@ -166,3 +166,4 @@ output "api_id" { value = aws_apigatewayv2_api.main.id }
 output "api_endpoint" { value = aws_apigatewayv2_api.main.api_endpoint }
 output "api_base_url" { value = "${aws_apigatewayv2_api.main.api_endpoint}/v1" }
 output "authorizer_id" { value = aws_apigatewayv2_authorizer.cognito.id }
+output "execution_arn" { value = aws_apigatewayv2_api.main.execution_arn }

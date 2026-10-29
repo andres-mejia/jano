@@ -13,8 +13,8 @@ Esperado: la batería de aislamiento (`backend/test/aislamiento.test.ts`) pasa c
 ## Dev
 ```bash
 infra/scripts/deploy-dev.sh             # construye el backend, plan, apply y migraciones
-pnpm --filter @jano/backend importar-tenant -- --tenant tenant-rumbonorte --nombre "Rumbo Norte"
-pnpm --filter @jano/backend alta-tenant -- --tenant tenant-faro --nombre "Faro Ingeniería" --owner <email de prueba>
+pnpm --filter @jano/backend importar-tenant --tenant tenant-rumbonorte --nombre "Rumbo Norte"
+pnpm --filter @jano/backend alta-tenant --tenant tenant-faro --nombre "Faro Ingeniería" --owner <email de prueba>
 ```
 Comprobaciones:
 1. `GET /v1/tenant` con el token del piloto devuelve Rumbo Norte y `role: owner` (SC-005).

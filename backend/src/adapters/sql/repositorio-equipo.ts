@@ -4,9 +4,9 @@ import { type Accion, EmailOcupado, type NuevoUsuario, type RepositorioEquipo, t
 import { esViolacionDeUnicidad, type Tx } from "./tx";
 
 /**
- * Ninguna consulta filtra por tenant: lo hace RLS con el `app.tenant_id` de la
- * transacción (FR-008). Si una consulta pudiera ver otro tenant, la batería de
- * aislamiento lo detectaría.
+ * Dos barreras (FR-008): cada consulta filtra por el tenant de la transacción y,
+ * además, RLS solo deja ver las filas de `app.tenant_id`. La batería de aislamiento
+ * prueba la segunda sola, con consultas sin filtro.
  */
 
 const COLUMNAS_USUARIO = `user_id, email, name, role, status, invited_by,
@@ -37,10 +37,11 @@ export function repositorioEquipo(tx: Tx, tenantId: string): RepositorioEquipo {
 
   return {
     async tenant() {
-      return primero(await tx.query<TenantGuardado>("select id, name, plan, status from tenants"));
+      return primero(await tx.query<TenantGuardado>("select id, name, plan, status from tenants where id = :t", { t: tenantId }));
     },
 
     async crearTenant(t) {
+      if (t.id !== tenantId) throw new Error("el tenant no coincide con el de la transacción");
       await tx.query("insert into tenants (id, name, plan) values (:id, :name, :plan)", {
         id: t.id,
         name: t.name,
@@ -49,12 +50,13 @@ export function repositorioEquipo(tx: Tx, tenantId: string): RepositorioEquipo {
     },
 
     async cambiarEstadoTenant(status: TenantStatus) {
-      await tx.query("update tenants set status = :status", { status });
+      await tx.query("update tenants set status = :status where id = :t", { status, t: tenantId });
     },
 
     async usuario(userId) {
       const f = primero(
-        await tx.query<FilaUsuario>(`select ${COLUMNAS_USUARIO} from tenant_users where user_id = :user_id`, {
+        await tx.query<FilaUsuario>(`select ${COLUMNAS_USUARIO} from tenant_users where tenant_id = :t and user_id = :user_id`, {
+          t: tenantId,
           user_id: userId,
         }),
       );
@@ -62,7 +64,7 @@ export function repositorioEquipo(tx: Tx, tenantId: string): RepositorioEquipo {
     },
 
     async listar() {
-      return (await tx.query<FilaUsuario>(`select ${COLUMNAS_USUARIO} from tenant_users`)).map(aUsuario);
+      return (await tx.query<FilaUsuario>(`select ${COLUMNAS_USUARIO} from tenant_users where tenant_id = :t`, { t: tenantId })).map(aUsuario);
     },
 
     async insertar(u: NuevoUsuario) {
@@ -92,8 +94,8 @@ export function repositorioEquipo(tx: Tx, tenantId: string): RepositorioEquipo {
     async cambiarEstado(userId, status) {
       const [f] = await tx.query<FilaUsuario>(
         `update tenant_users set status = :status, updated_at = now()
-         where user_id = :user_id returning ${COLUMNAS_USUARIO}`,
-        { status, user_id: userId },
+         where tenant_id = :t and user_id = :user_id returning ${COLUMNAS_USUARIO}`,
+        { status, t: tenantId, user_id: userId },
       );
       if (!f) throw new Error(`usuario ${userId} no encontrado`);
       return aUsuario(f);

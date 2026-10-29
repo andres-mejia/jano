@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Jano — despliegue del entorno dev (forma de fintrack/infra/deploy-dev.sh).
 #
-# init con el bucket de estado de Fenora (FR-001), validate, plan a fichero y
-# apply de ese mismo plan tras confirmar. Nada se aplica sin plan revisado
-# (AGENTS.md §8).
+# Construye el backend (Terraform empaqueta backend/dist/api), init con el bucket de
+# estado de Fenora (FR-001), validate, plan a fichero y apply de ese mismo plan tras
+# confirmar; después aplica las migraciones de Aurora (spec 007). Nada se aplica sin
+# plan revisado (AGENTS.md §8).
 #
 # Uso:
 #   aws sso login --profile fintrack-dev
@@ -26,6 +27,8 @@ ACCOUNT_ID="$(aws sts get-caller-identity --profile "$PROFILE" --query Account -
 BUCKET="fenora-terraform-state-${ACCOUNT_ID}"
 echo "cuenta ${ACCOUNT_ID} · bucket ${BUCKET} · clave jano/dev/terraform.tfstate"
 
+pnpm --dir "${SCRIPT_DIR}/../.." --filter @jano/backend build
+
 cd "$ENV_DIR"
 terraform init -input=false -reconfigure \
   -backend-config="bucket=${BUCKET}" \
@@ -39,3 +42,4 @@ terraform plan -input=false -out=tfplan -var "aws_profile=${PROFILE}" "$@"
 read -r -p "¿Aplicar este plan? Escribe 'si': " respuesta
 [ "$respuesta" = "si" ] || { echo "No se aplica."; exit 1; }
 terraform apply -input=false tfplan
+AWS_PROFILE="$PROFILE" pnpm --dir "${SCRIPT_DIR}/../.." --filter @jano/backend migrar

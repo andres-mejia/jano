@@ -4,17 +4,18 @@ import assert from "node:assert/strict";
 import { claimsDe, handler } from "./index.mjs";
 
 const evento = (attrs) => ({
+  version: "2",
   triggerSource: "TokenGeneration_Authentication",
   request: { userAttributes: { email: "piloto@rumbonorte.example", ...attrs } },
-  response: { claimsOverrideDetails: null },
+  response: { claimsAndScopeOverrideDetails: null },
 });
 
-test("añade tenant y rol a los claims del ID token", async () => {
+test("añade tenant y rol a los claims del ID token y del access token", async () => {
   const salida = await handler(evento({ "custom:tenant_id": "tenant-rumbonorte", "custom:role": "owner" }));
-  assert.deepEqual(salida.response.claimsOverrideDetails.claimsToAddOrOverride, {
-    "custom:tenant_id": "tenant-rumbonorte",
-    "custom:role": "owner",
-  });
+  const esperado = { "custom:tenant_id": "tenant-rumbonorte", "custom:role": "owner" };
+  const { idTokenGeneration, accessTokenGeneration } = salida.response.claimsAndScopeOverrideDetails;
+  assert.deepEqual(idTokenGeneration.claimsToAddOrOverride, esperado);
+  assert.deepEqual(accessTokenGeneration.claimsToAddOrOverride, esperado);
 });
 
 test("sin tenant no hay token", async () => {

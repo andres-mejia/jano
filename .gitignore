@@ -58,3 +58,4 @@ __pycache__/
 
 # Credenciales locales (OAuth de Google, etc.): nunca al repo
 .credentials/
+infra/modules/backend-api/api.zip
