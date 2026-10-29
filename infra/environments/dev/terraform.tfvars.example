@@ -5,3 +5,7 @@ landing_fqdn       = "jano.tekhos.com"
 app_fqdn           = "jano-app.tekhos.com"
 ses_from_address   = "jano@tekhos.com"
 ses_notify_address = "ramejiafernandez@gmail.com"
+
+# Motor (spec 008): destinatarios de prueba (alias con + admitidos) y duración de un «día» de secuencia.
+mail_allowlist   = "persona.prueba@gmail.example"
+demo_day_minutes = 5

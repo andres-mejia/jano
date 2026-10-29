@@ -85,3 +85,18 @@ variable "github_oidc_sub_prefix" {
   type    = string
   default = "repo:andres-mejia@49398769/jano@1437715854"
 }
+
+# Motor (spec 008). La lista blanca no va en el repo: se fija en terraform.tfvars en
+# local y como variable TF_VAR_mail_allowlist en CI. Vacía, el Contact Finder no
+# tiene destinatario de prueba (los prospects quedan sin verificar) y no sale nada.
+variable "mail_allowlist" {
+  type        = string
+  default     = ""
+  description = "Destinatarios de prueba separados por comas (spec 008 FR-021); admite alias con +."
+}
+
+variable "demo_day_minutes" {
+  type        = number
+  default     = 1440
+  description = "Duración de un «día» de secuencia en minutos (DEMO_DAY_MINUTES). Para la demo, p. ej. 5."
+}

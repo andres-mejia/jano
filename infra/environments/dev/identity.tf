@@ -53,6 +53,10 @@ module "backend_api" {
   authorizer_id     = module.api_gateway.authorizer_id
   api_execution_arn = module.api_gateway.execution_arn
   codigo_dir        = "${path.root}/../../../backend/dist/api"
-  # Demo con datos inventados hasta que la spec 003 sirva datos reales.
+  motor_codigo_dir  = "${path.root}/../../../backend/dist/motor"
+  mail_allowlist    = var.mail_allowlist
+  demo_day_minutes  = var.demo_day_minutes
+  # Comodín de demo para lo que el backend aún no sirva; con la spec 008 lo sirve todo
+  # y pasa a false en la fase D (T042), cuando el tenant de prueba esté dado de alta.
   demo_data = true
 }
