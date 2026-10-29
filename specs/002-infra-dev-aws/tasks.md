@@ -38,7 +38,7 @@ Convención: `[Tn] [P?] descripción · verificación`. `[P]` = paralelizable. C
 - [X] T053 Push de prueba a `main` (un cambio de texto en la landing) · Amplify publica solo; anotar el tiempo.
 
 ## Fase 6 · CI con OIDC
-- [ ] T060 `infra/modules/github-oidc`: `data` del proveedor OIDC existente, rol de apply `jano-dev-github-actions` (main) y rol de plan `jano-dev-github-actions-plan` (pull_request); la política de arranque del rol de apply se pega por CLI con el mismo comando que Cardea y se documenta · `validate` OK.
+- [X] T060 `infra/modules/github-oidc`: `data` del proveedor OIDC existente, rol de apply `jano-dev-github-actions` (main) y rol de plan `jano-dev-github-actions-plan` (pull_request); la política de arranque del rol de apply se pega por CLI con el mismo comando que Cardea y se documenta · `validate` OK.
 - [ ] T061 `.github/workflows/infra-plan.yml` (PR, comenta el plan) e `infra-apply.yml` (push a `main`, guarda del plan: aborta si hay `destroy`) · un PR de prueba comenta el plan.
 - [ ] T062 `docs/guias/despliegue-dev.md` con bootstrap, variables, comandos y qué se hace a mano (zona DNS, conexión Amplify, usuario piloto) · guía revisada por Andrés.
 

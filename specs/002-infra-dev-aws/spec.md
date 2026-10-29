@@ -1,6 +1,6 @@
 # Feature 002 · Infraestructura dev en AWS
 
-**Rama**: `infra/dev-base` · **Estado**: especificada · **Fecha**: 2026-10-29 · **Depende de**: 001
+**Rama**: `infra/dev-base` · **Estado**: aplicada en dev (2026-10-29) · **Fecha**: 2026-10-29 · **Depende de**: 001
 
 ## Objetivo
 Que `main` se publique solo: la landing y la app en Amplify, auth en Cognito, el formulario de acceso con backend real, y la base de datos, el bucket y la API listas para que 003 despliegue el backend. Misma cuenta, mismo estado y misma forma que Fenora.
@@ -47,11 +47,11 @@ Que `main` se publique solo: la landing y la app en Amplify, auth en Cognito, el
 Ninguna de dominio; recursos AWS descritos arriba. La tabla de waitlist: `email` (PK), `created_at`, `locale`, `source`, `partition` + GSI `created_at-index`, items de rate limit con TTL.
 
 ## Criterios de éxito
-- **SC-001** `terraform plan` en dev sin cambios tras el primer `apply` (idempotente).
-- **SC-002** `https://jano.tekhos.com` y `https://jano-app.tekhos.com` responden; un push de prueba a `main` publica en menos de 10 minutos.
-- **SC-003** Un alta en el formulario aparece en DynamoDB y llega el correo de confirmación.
-- **SC-004** Un usuario creado a mano en el pool entra en la app y el ID token lleva `custom:tenant_id`.
-- **SC-005** Coste estimado con cero tráfico por debajo de 15 €/mes (Aurora en pausa; sin NAT).
+- **SC-001** `terraform plan` en dev sin cambios tras el primer `apply` (idempotente). **Cumplido** (2026-10-29): `No changes` tras las seis fases.
+- **SC-002** `https://jano.tekhos.com` y `https://jano-app.tekhos.com` responden; un push de prueba a `main` publica en menos de 10 minutos. **Cumplido**: 200 en las dos; el merge del PR #2 publicó en 4 min 48 s.
+- **SC-003** Un alta en el formulario aparece en DynamoDB y llega el correo de confirmación. **Cumplido** con el simulador de SES; el aviso llegó redirigido a Gmail.
+- **SC-004** Un usuario creado a mano en el pool entra en la app y el ID token lleva `custom:tenant_id`. **Cumplido** en el ID token; el inicio de sesión desde el navegador queda para la revisión de Andrés.
+- **SC-005** Coste estimado con cero tráfico por debajo de 15 €/mes (Aurora en pausa; sin NAT). **Pendiente**: se mide a las 24 h (T015).
 
 ## Fuera de alcance
 Lambdas del backend (003), colas y scheduler (003), WAF (se valora en producción), entorno de producción.

@@ -116,3 +116,18 @@ curl https://jano-app.tekhos.com/login           -> 200; el bundle lleva el pool
 T053 se cubrió con el merge del PR #2 (un push a `main` que no tocaba `frontend/`) en lugar de un cambio de texto: dispara los dos builds igual y mide lo mismo.
 
 Primer intento de crear las apps: `Bad credentials`. `gh auth token` no existe en gh 2.4 (Ubuntu) y la variable recibió el texto de ayuda; la guía da el comando que vale para las dos versiones.
+
+### Fase 6 · CI con OIDC (2026-10-29)
+
+```
+python3 -m pytest .github/scripts                -> 46 passed (guardia del plan y política de arranque)
+terraform apply tfplan                           -> Apply complete! Resources: 5 added, 0 changed, 0 destroyed.
+aws accessanalyzer validate-policy               -> sin errores; avisos propios de Allow * (PassRole, SLR) y
+                                                    DENY_WITH_UNSUPPORTED_TAG_CONDITION_KEY_FOR_SERVICE, igual que en Cardea
+aws iam put-role-policy ... arranque-ci-caduca-2027-01-31
+aws iam list-role-policies --role-name jano-dev-github-actions
+                                                 -> arranque-ci-caduca-2027-01-31, jano-dev-github-actions-deploy
+infra/scripts/deploy-dev.sh --plan-only          -> No changes. Your infrastructure matches the configuration.
+```
+
+Pendiente para T061: los secretos `AWS_GITHUB_OIDC_ROLE_ARN` y `AWS_GITHUB_OIDC_PLAN_ROLE_ARN` del repo (la sesión no tuvo permiso para `gh secret set`).
