@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { AccountSchema, ContactSchema } from "./account";
+
 /**
  * Prospect, secuencia y registro de eventos.
  *
@@ -33,7 +35,8 @@ export const PROSPECT_TRANSITIONS: Readonly<Record<ProspectStage, readonly Prosp
   waiting: ["in_sequence", "replied", "opted_out", "discarded"],
   replied: ["meeting", "not_now", "opted_out", "in_sequence"],
   meeting: [],
-  not_now: ["in_sequence", "discarded"],
+  // Una baja es inmediata también desde «ahora no» (AGENTS.md §3).
+  not_now: ["in_sequence", "opted_out", "discarded"],
   opted_out: [],
   discarded: [],
 };
@@ -142,3 +145,17 @@ export const ProspectSchema = z.object({
   updatedAt: z.string().datetime(),
 });
 export type Prospect = z.infer<typeof ProspectSchema>;
+
+export const ProspectDetailSchema = z.object({
+  prospect: ProspectSchema,
+  account: AccountSchema,
+  contact: ContactSchema.nullable(),
+});
+export type ProspectDetail = z.infer<typeof ProspectDetailSchema>;
+
+/** Lo que devuelve una acción del motor: el prospect como queda y el evento que la registra. */
+export const ProspectActionResultSchema = z.object({
+  prospect: ProspectSchema,
+  event: ProspectEventSchema,
+});
+export type ProspectActionResult = z.infer<typeof ProspectActionResultSchema>;

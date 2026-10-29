@@ -30,7 +30,7 @@ export type AgentActivity = z.infer<typeof AgentActivitySchema>;
 
 export const PendingDecisionSchema = z.object({
   id: z.string().uuid(),
-  kind: z.enum(["inbox_draft", "accounts_approval", "whatsapp_approval"]),
+  kind: z.enum(["inbox_draft", "accounts_approval", "step_approval", "whatsapp_approval"]),
   title: z.string(),
   subtitle: z.string(),
   href: z.string(),

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Jano API
-  version: 0.2.0
+  version: 0.3.0
   description: |
     API de la app de Jano. Contract-first: este fichero cambia antes que el
     código que lo usa. Los esquemas replican `packages/domain` (TypeScript +
@@ -32,6 +32,8 @@ tags:
   - name: prospects
   - name: inbox
   - name: compliance
+  - name: opportunities
+    description: Reuniones agendadas y su exportación a Excel (spec 008).
   - name: connections
   - name: team
     description: Tenant actual y equipo (spec 007). Las rutas de /tenant/users exigen rol owner.
@@ -259,6 +261,33 @@ paths:
                 properties:
                   discarded: { type: integer }
 
+  /campaigns/{campaignId}/accounts/candidates:
+    parameters:
+      - $ref: "#/components/parameters/campaignId"
+    post:
+      tags: [accounts]
+      summary: Buscar cuentas candidatas y puntuarlas
+      description: |
+        Trae candidatas de la región (OpenStreetMap, spec 008 FR-013b) o de los
+        dominios que pega la persona, lee la web de cada una y la puntúa contra
+        el ICP. Una web que no responde o prohíbe el rastreo queda `discarded`
+        con el motivo, sin fit inventado. Los dominios que ya están en la
+        campaña no se repiten. Como mucho 50 nuevas por petición.
+      operationId: findAccountCandidates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CandidateRequest" }
+      responses:
+        "200":
+          description: Cuentas nuevas, puntuadas o descartadas con su motivo
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CandidateResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
   /prospects/{prospectId}:
     parameters:
       - $ref: "#/components/parameters/prospectId"
@@ -300,6 +329,11 @@ paths:
       responses:
         "200":
           description: Prospect detenido y evento registrado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProspectActionResult" }
+        "409":
+          description: La máquina de estados no lo permite; queda registrado un evento `rejected`
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ProspectActionResult" }
@@ -379,6 +413,13 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/InboxItem" }
+        "409":
+          description: |
+            Una regla lo bloquea o el envío falla. No se aplica ningún efecto; el
+            borrador sigue pendiente y el evento `blocked` explica por qué.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Problem" }
 
   /inbox/{itemId}/discard:
     parameters:
@@ -465,6 +506,58 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Guardrails" }
+
+  /opportunities:
+    get:
+      tags: [opportunities]
+      summary: Oportunidades (reuniones agendadas)
+      operationId: listOpportunities
+      responses:
+        "200":
+          description: Oportunidades del tenant, las más recientes primero
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Opportunity" }
+
+  /opportunities/export:
+    get:
+      tags: [opportunities]
+      summary: Exportar oportunidades a Excel
+      description: CSV en UTF-8 con BOM y separador `;`, para que Excel en español lo abra con tildes y columnas.
+      operationId: exportOpportunities
+      responses:
+        "200":
+          description: Fichero CSV
+          headers:
+            Content-Disposition:
+              schema: { type: string, example: 'attachment; filename="oportunidades.csv"' }
+          content:
+            text/csv:
+              schema: { type: string }
+
+  /baja/{token}:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        schema: { type: string, pattern: "^[a-f0-9]{32}$" }
+    get:
+      tags: [compliance]
+      summary: Darse de baja desde el enlace del pie de un correo
+      description: |
+        Pública, sin JWT (spec 008 FR-022). Añade la dirección a la lista de
+        supresión del tenant al instante y detiene la secuencia. Responde lo
+        mismo exista o no el token, para no revelar nada.
+      operationId: optOut
+      security: []
+      responses:
+        "200":
+          description: Página de confirmación
+          content:
+            text/html:
+              schema: { type: string }
 
   /connections:
     get:
@@ -598,6 +691,11 @@ components:
       schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
 
   responses:
+    BadRequest:
+      description: Datos no válidos
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Problem" }
     Forbidden:
       description: Sin permiso (rol, usuario desactivado o tenant suspendido)
       content:
@@ -752,6 +850,31 @@ components:
       required: [accountIds]
       properties:
         accountIds: { type: array, minItems: 1, maxItems: 500, items: { type: string, format: uuid } }
+    CandidateRequest:
+      description: La región del ICP para buscar en OpenStreetMap, o de 1 a 25 dominios pegados a mano.
+      oneOf:
+        - type: object
+          required: [region]
+          additionalProperties: false
+          properties:
+            region: { type: string, minLength: 2, maxLength: 80 }
+        - type: object
+          required: [domains]
+          additionalProperties: false
+          properties:
+            domains:
+              type: array
+              minItems: 1
+              maxItems: 25
+              items: { type: string, description: "Dominio o URL; se guarda el host sin www." }
+    CandidateResult:
+      type: object
+      required: [added, discarded, skipped, accounts]
+      properties:
+        added: { type: integer, description: Cuentas nuevas puntuadas }
+        discarded: { type: integer, description: Cuentas nuevas descartadas al leer su web }
+        skipped: { type: integer, description: Dominios que ya estaban en la campaña }
+        accounts: { type: array, items: { $ref: "#/components/schemas/Account" } }
     LegalBasisStatus:
       type: string
       enum: [pending, validated, rejected]
@@ -920,6 +1043,25 @@ components:
       properties:
         tone: { type: string, enum: [mas_breve, mas_formal, mas_cercano, otra_propuesta] }
 
+    # ── Oportunidades ────────────────────────────────────────────────
+    Opportunity:
+      type: object
+      required: [id, prospectId, campaignId, campaignName, accountName, domain, contactName, contactRole, contactEmail, meetingStart, meetingEnd, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        prospectId: { type: string, format: uuid }
+        campaignId: { type: string, format: uuid }
+        campaignName: { type: string }
+        accountName: { type: string }
+        domain: { type: string }
+        contactName: { type: [string, "null"] }
+        contactRole: { type: [string, "null"] }
+        contactEmail: { type: [string, "null"], format: email }
+        meetingStart: { type: [string, "null"], format: date-time }
+        meetingEnd: { type: [string, "null"], format: date-time }
+        status: { type: string, enum: [open, won, lost] }
+        createdAt: { type: string, format: date-time }
+
     # ── Cumplimiento y conexiones ────────────────────────────────────
     Guardrails:
       type: object
@@ -1005,7 +1147,7 @@ components:
       required: [id, kind, title, subtitle, href]
       properties:
         id: { type: string, format: uuid }
-        kind: { type: string, enum: [inbox_draft, accounts_approval, whatsapp_approval] }
+        kind: { type: string, enum: [inbox_draft, accounts_approval, step_approval, whatsapp_approval] }
         title: { type: string }
         subtitle: { type: string }
         href: { type: string }

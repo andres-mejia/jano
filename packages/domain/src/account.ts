@@ -86,3 +86,30 @@ export const AccountSelectionSchema = z.object({
   accountIds: z.array(z.string().uuid()).min(1).max(500),
 });
 export type AccountSelection = z.infer<typeof AccountSelectionSchema>;
+
+/**
+ * Candidatas de una campaña (spec 008, FR-013b): la región del ICP para buscar
+ * en OpenStreetMap, o dominios que pega la persona. Un dominio se normaliza a
+ * su host sin `www.`, protocolo ni ruta.
+ */
+export const CompanyDomainSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .transform((d) => d.replace(/^https?:\/\//, "").replace(/^www\./, "").split(/[/?#]/)[0] ?? "")
+  .pipe(z.string().regex(/^(?=.{4,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/, "dominio no válido"));
+
+export const CandidateRequestSchema = z.union([
+  z.object({ region: z.string().trim().min(2).max(80) }).strict(),
+  z.object({ domains: z.array(CompanyDomainSchema).min(1).max(25) }).strict(),
+]);
+export type CandidateRequest = z.infer<typeof CandidateRequestSchema>;
+
+/** Resultado de buscar candidatas: las nuevas (puntuadas o descartadas con su motivo) y las que ya estaban. */
+export const CandidateResultSchema = z.object({
+  added: z.number().int().nonnegative(),
+  discarded: z.number().int().nonnegative(),
+  skipped: z.number().int().nonnegative(),
+  accounts: z.array(AccountSchema),
+});
+export type CandidateResult = z.infer<typeof CandidateResultSchema>;
