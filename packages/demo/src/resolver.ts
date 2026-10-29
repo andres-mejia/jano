@@ -13,6 +13,7 @@ import { ApproveDraftSchema, CreateCampaignSchema, GuardrailsSchema, InviteTenan
 import { ACCOUNTS, CAMPAIGN, CONTACTS, ICP_TURNS } from "./fixtures/campaign";
 import { IDS, nextMockId } from "./fixtures/ids";
 import { INBOX } from "./fixtures/inbox";
+import { OPPORTUNITIES, oportunidadesCsv } from "./fixtures/opportunities";
 import { EVENTS, PROSPECTS, STAGE_EVENTS } from "./fixtures/prospects";
 import { TEAM, TENANT } from "./fixtures/team";
 import { AUDIT, COMPLIANCE, CONNECTIONS, DASHBOARD, FLOW, GUARDRAILS } from "./fixtures/views";
@@ -236,6 +237,8 @@ const routes: Array<[method: string, pattern: string, handler: Handler]> = [
     },
   ],
   ["GET", "/connections", () => CONNECTIONS],
+  ["GET", "/opportunities", () => OPPORTUNITIES],
+  ["GET", "/opportunities/export", () => oportunidadesCsv(OPPORTUNITIES)],
 
   ["GET", "/tenant", () => TENANT],
   ["GET", "/tenant/users", () => state.team],

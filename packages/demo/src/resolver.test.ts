@@ -4,7 +4,10 @@ import { test } from "node:test";
 
 import { DEMO_IDS, DemoNoEncontrado, resolverDemo } from "./index";
 
-/** Todas las rutas GET del contrato tienen datos de demo (la demo no enseña huecos). */
+/**
+ * Todas las rutas GET del contrato que usa la app tienen datos de demo (la demo no
+ * enseña huecos). Las públicas (`security: []`, como la baja) no las llama la app.
+ */
 const contrato = readFileSync(new URL("../../../contracts/openapi/jano-api.yaml", import.meta.url), "utf8");
 const rutasGet: string[] = [];
 let actual: string | null = null;
@@ -13,6 +16,7 @@ for (const linea of contrato.split("\n")) {
   if (ruta?.[1]) actual = ruta[1];
   else if (/^\S/.test(linea)) actual = null;
   else if (actual && /^ {4}get:/.test(linea)) rutasGet.push(actual);
+  else if (actual && /^ {6}security: \[\]/.test(linea) && rutasGet.at(-1) === actual) rutasGet.pop();
 }
 
 const primero = (o: Record<string, string>): string => Object.values(o)[0] ?? "";
