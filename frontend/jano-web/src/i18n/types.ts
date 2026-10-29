@@ -70,10 +70,9 @@ export interface Dict {
     readonly id: string;
     readonly title: string;
     readonly lead: string;
-    readonly diagramLabel: string;
     readonly orchestrator: TitledText;
     readonly agents: readonly TitledText[];
-    readonly meetings: string;
+    readonly run: FlowRun;
     readonly note: string;
   };
   readonly screens: {
@@ -127,4 +126,32 @@ export interface Dict {
     readonly updated: string;
     readonly backHome: string;
   };
+}
+
+/** Quién ejecuta un paso del recorrido: un agente (decide la IA), el motor de reglas, la persona o el resultado. */
+export type FlowOwner = "agent" | "engine" | "you" | "outcome";
+
+/** Cómo acaba un paso: bien, retenido por una regla o detenido. */
+export type FlowTone = "ok" | "hold" | "stop";
+
+/** Recorrido animado de una empresa por el equipo de Jano. */
+export interface FlowRun {
+  readonly label: string;
+  readonly orchestrator: string;
+  /** Plantilla con {stage} y {task}. */
+  readonly dispatch: string;
+  readonly idle: string;
+  readonly working: string;
+  readonly pending: string;
+  readonly feedTitle: string;
+  readonly pause: string;
+  readonly play: string;
+  readonly owners: Readonly<Record<FlowOwner, string>>;
+  readonly stages: readonly { readonly title: string; readonly owner: FlowOwner; readonly task: string }[];
+  /** Cada escenario recorre los pasos en orden; si tiene menos pasos que etapas, se para en el último. */
+  readonly scenarios: readonly {
+    readonly company: string;
+    readonly start: string;
+    readonly steps: readonly { readonly status: string; readonly log: string; readonly tone?: FlowTone }[];
+  }[];
 }

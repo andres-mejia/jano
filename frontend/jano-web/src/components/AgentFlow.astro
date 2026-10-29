@@ -1,9 +1,10 @@
 ---
 /**
- * Flujo de agentes animado: el Orquestador reparte trabajo a los cuatro
- * agentes y todo desemboca en reuniones. Partículas SVG (SMIL) recorren los
- * tramos; con movimiento reducido se ocultan y queda el diagrama quieto.
- * Dos composiciones del mismo grafo: horizontal desde lg, vertical debajo.
+ * Workflow vivo: el Orquestador asigna cada paso a un agente, al motor de
+ * reglas o a la persona, y el registro de eventos crece a la derecha. Tres
+ * empresas de ejemplo con finales distintos: reunión, envío retenido por el
+ * límite diario y baja. Sin JS o con movimiento reducido se ve la primera
+ * empresa terminada y quieta.
  */
 import { t, type Lang } from "../i18n";
 
@@ -12,196 +13,605 @@ interface Props {
 }
 
 const { lang } = Astro.props;
-const f = t(lang).flow;
-const agents = f.agents.map((a) => a.title);
+const run = t(lang).flow.run;
+const first = run.scenarios[0]!;
 
-// Horizontal (lg): 1000 × 360.
-const H = {
-  orq: { x: 16, y: 145, w: 210, h: 70 },
-  agent: { x: 395, w: 214, h: 56, ys: [16, 106, 196, 286] },
-  meet: { x: 778, y: 145, w: 206, h: 70 },
+/** Hora de cada evento: el escenario empieza en `start` y avanza 40 s por paso. */
+const at = (start: string, i: number) => {
+  const [h, m] = start.split(":").map(Number);
+  const s = (h ?? 0) * 3600 + (m ?? 0) * 60 + 12 + i * 40;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
 };
-const hAgents = agents.map((name, i) => {
-  const y = H.agent.ys[i] ?? 0;
-  const cy = y + H.agent.h / 2;
-  const mid = H.orq.y + H.orq.h / 2;
-  const x0 = H.orq.x + H.orq.w;
-  const x1 = H.agent.x;
-  const x2 = H.agent.x + H.agent.w;
-  const x3 = H.meet.x;
-  return {
-    name,
-    y,
-    cy,
-    inD: `M${x0} ${mid} C ${x0 + 90} ${mid}, ${x1 - 90} ${cy}, ${x1} ${cy}`,
-    outD: `M${x2} ${cy} C ${x2 + 90} ${cy}, ${x3 - 90} ${mid}, ${x3} ${mid}`,
-  };
-});
-
-// Vertical (< lg): 360 × 392. Nombres de agente en dos líneas.
-const V = {
-  orq: { x: 70, y: 8, w: 220, h: 56 },
-  agent: { y: 160, w: 82, h: 66, xs: [2, 94, 186, 278] },
-  meet: { x: 70, y: 326, w: 220, h: 56 },
-};
-const vAgents = agents.map((name, i) => {
-  const x = V.agent.xs[i] ?? 0;
-  const cx = x + V.agent.w / 2;
-  const mx = V.orq.x + V.orq.w / 2;
-  const y0 = V.orq.y + V.orq.h;
-  const y1 = V.agent.y;
-  const y2 = V.agent.y + V.agent.h;
-  const y3 = V.meet.y;
-  return {
-    lines: name.split(" "),
-    x,
-    cx,
-    inD: `M${mx} ${y0} C ${mx} ${y0 + 50}, ${cx} ${y1 - 50}, ${cx} ${y1}`,
-    outD: `M${cx} ${y2} C ${cx} ${y2 + 50}, ${mx} ${y3 - 50}, ${mx} ${y3}`,
-  };
-});
-const DUR = 3.2;
+const firstFeed = first.steps.map((step, i) => ({ time: at(first.start, i), who: run.stages[i]!.title, text: `${first.company} · ${step.log}` })).reverse();
 ---
 
-<div class="flow" data-reveal>
-  <!-- Horizontal -->
-  <svg viewBox="0 0 1000 360" class="hidden w-full lg:block" role="img" aria-label={f.diagramLabel}>
-    {
-      hAgents.map((a, i) => (
-        <g>
-          <path id={`fh-in-${i}`} d={a.inD} class="flow__path" />
-          <path id={`fh-out-${i}`} d={a.outD} class="flow__path flow__path--out" />
-          <circle r="4.5" class="flow__dot">
-            <animateMotion dur={`${DUR}s`} begin={`${i * 0.8}s`} repeatCount="indefinite">
-              <mpath href={`#fh-in-${i}`} />
-            </animateMotion>
-          </circle>
-          <circle r="4.5" class="flow__dot flow__dot--out">
-            <animateMotion dur={`${DUR}s`} begin={`${i * 0.8 + DUR / 2}s`} repeatCount="indefinite">
-              <mpath href={`#fh-out-${i}`} />
-            </animateMotion>
-          </circle>
-        </g>
-      ))
-    }
-    <g>
-      <rect x={H.orq.x} y={H.orq.y} width={H.orq.w} height={H.orq.h} rx="18" class="flow__orq" />
-      <text x={H.orq.x + H.orq.w / 2} y={H.orq.y + H.orq.h / 2} class="flow__label flow__label--lg flow__label--light">{f.orchestrator.title}</text>
-    </g>
-    {
-      hAgents.map((a) => (
-        <g>
-          <rect x={H.agent.x} y={a.y} width={H.agent.w} height={H.agent.h} rx="14" class="flow__agent" />
-          <text x={H.agent.x + H.agent.w / 2} y={a.cy} class="flow__label">{a.name}</text>
-        </g>
-      ))
-    }
-    <g>
-      <rect x={H.meet.x} y={H.meet.y} width={H.meet.w} height={H.meet.h} rx="18" class="flow__meet" />
-      <circle cx={H.meet.x + 30} cy={H.meet.y + H.meet.h / 2} r="6" class="flow__meet-dot" />
-      <text x={H.meet.x + H.meet.w / 2 + 12} y={H.meet.y + H.meet.h / 2} class="flow__label flow__label--lg flow__label--light">{f.meetings}</text>
-    </g>
-  </svg>
+<div class="run" data-run data-run-config={JSON.stringify(run)} role="group" aria-label={run.label}>
+  <div class="run__board">
+    <div class="run__head">
+      <span class="run__orq">
+        <span class="run__pulse" aria-hidden="true"></span>
+        {run.orchestrator}
+      </span>
+      <span class="run__now" data-now>{run.idle}</span>
+      <button type="button" class="run__toggle" data-toggle hidden aria-label={run.pause} aria-pressed="false">
+        <svg viewBox="0 0 16 16" aria-hidden="true" class="run__icon-pause"><rect x="4" y="3" width="3" height="10" rx="1" /><rect x="9" y="3" width="3" height="10" rx="1" /></svg>
+        <svg viewBox="0 0 16 16" aria-hidden="true" class="run__icon-play"><path d="M5 3.5v9a.5.5 0 0 0 .77.42l7-4.5a.5.5 0 0 0 0-.84l-7-4.5A.5.5 0 0 0 5 3.5Z" /></svg>
+      </button>
+    </div>
 
-  <!-- Vertical -->
-  <svg viewBox="0 0 360 392" class="mx-auto block w-full max-w-md lg:hidden" role="img" aria-label={f.diagramLabel}>
-    {
-      vAgents.map((a, i) => (
-        <g>
-          <path id={`fv-in-${i}`} d={a.inD} class="flow__path" />
-          <path id={`fv-out-${i}`} d={a.outD} class="flow__path flow__path--out" />
-          <circle r="3.5" class="flow__dot">
-            <animateMotion dur={`${DUR}s`} begin={`${i * 0.8}s`} repeatCount="indefinite">
-              <mpath href={`#fv-in-${i}`} />
-            </animateMotion>
-          </circle>
-          <circle r="3.5" class="flow__dot flow__dot--out">
-            <animateMotion dur={`${DUR}s`} begin={`${i * 0.8 + DUR / 2}s`} repeatCount="indefinite">
-              <mpath href={`#fv-out-${i}`} />
-            </animateMotion>
-          </circle>
-        </g>
-      ))
-    }
-    <rect x={V.orq.x} y={V.orq.y} width={V.orq.w} height={V.orq.h} rx="16" class="flow__orq" />
-    <text x={V.orq.x + V.orq.w / 2} y={V.orq.y + V.orq.h / 2} class="flow__label flow__label--md flow__label--light">{f.orchestrator.title}</text>
-    {
-      vAgents.map((a) => (
-        <g>
-          <rect x={a.x} y={V.agent.y} width={V.agent.w} height={V.agent.h} rx="12" class="flow__agent" />
-          <text x={a.cx} y={V.agent.y + V.agent.h / 2} class="flow__label flow__label--sm">
-            {a.lines.length > 1 ? (
-              a.lines.map((line, j) => (
-                <tspan x={a.cx} dy={j === 0 ? "-0.6em" : "1.2em"}>
-                  {line}
-                </tspan>
-              ))
-            ) : (
-              a.lines[0]
-            )}
-          </text>
-        </g>
-      ))
-    }
-    <rect x={V.meet.x} y={V.meet.y} width={V.meet.w} height={V.meet.h} rx="16" class="flow__meet" />
-    <circle cx={V.meet.x + 28} cy={V.meet.y + V.meet.h / 2} r="5" class="flow__meet-dot" />
-    <text x={V.meet.x + V.meet.w / 2 + 10} y={V.meet.y + V.meet.h / 2} class="flow__label flow__label--md flow__label--light">{f.meetings}</text>
-  </svg>
+    <div class="run__company">
+      <span class="run__chip" data-company>{first.company}</span>
+    </div>
+
+    <div class="run__track" data-track style={`--progress: ${first.steps.length / run.stages.length}`}>
+      <span class="run__spine" aria-hidden="true"><span class="run__fill"></span></span>
+      <ol class="run__steps">
+      {
+        run.stages.map((stage, i) => {
+          const step = first.steps[i];
+          return (
+            <li class:list={["run__step", `run__step--${stage.owner}`, step ? "is-done" : "is-pending"]} data-step={i}>
+              <span class="run__node" aria-hidden="true">
+                <svg viewBox="0 0 16 16" class="run__check"><path d="M3.5 8.5l3 3 6-7" /></svg>
+              </span>
+              <div class="run__body">
+                <div class="run__top">
+                  <span class="run__title">{stage.title}</span>
+                  <span class="run__owner">{run.owners[stage.owner]}</span>
+                </div>
+                <p class="run__status" data-status>{step ? step.status : run.pending}</p>
+              </div>
+            </li>
+          );
+        })
+      }
+      </ol>
+    </div>
+  </div>
+
+  <aside class="run__feed" aria-label={run.feedTitle}>
+    <h3 class="run__feed-title">
+      <span class="run__live" aria-hidden="true"></span>
+      {run.feedTitle}
+    </h3>
+    <ol class="run__log" data-feed>
+      {
+        firstFeed.map((e) => (
+          <li class="run__entry">
+            <time>{e.time}</time>
+            <span class="run__who">{e.who}</span>
+            <span class="run__what">{e.text}</span>
+          </li>
+        ))
+      }
+    </ol>
+  </aside>
 </div>
 
+<script>
+  import type { FlowRun } from "../i18n/types";
+
+  const STEP_MS = 1500;
+  const WORK_MS = 900;
+  const HOLD_MS = 3600;
+  const FEED_MAX = 8;
+
+  for (const root of document.querySelectorAll<HTMLElement>("[data-run]")) {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) continue;
+    const run = JSON.parse(root.dataset.runConfig ?? "{}") as FlowRun;
+    const steps = [...root.querySelectorAll<HTMLElement>("[data-step]")];
+    const now = root.querySelector<HTMLElement>("[data-now]")!;
+    const company = root.querySelector<HTMLElement>("[data-company]")!;
+    const feed = root.querySelector<HTMLElement>("[data-feed]")!;
+    const track = root.querySelector<HTMLElement>("[data-track]")!;
+    const toggle = root.querySelector<HTMLButtonElement>("[data-toggle]")!;
+
+    // La página llega con la primera empresa terminada: el pase sigue con la segunda.
+    let scenario = 0;
+    let index = 0;
+    let phase: "work" | "done" | "end" = "end";
+    let timer: number | undefined;
+    let visible = false;
+    let paused = false;
+
+    // Reloj del registro: nunca retrocede, aunque el pase vuelva a la primera empresa.
+    const [lh, lm, ls] = (feed.querySelector("time")?.textContent ?? "0:0:0").split(":").map(Number);
+    let last = (lh ?? 0) * 3600 + (lm ?? 0) * 60 + (ls ?? 0);
+    let base = 0;
+    const clock = (start: string, i: number) => {
+      const [h, m] = start.split(":").map(Number);
+      if (i === 0) base = Math.max((h ?? 0) * 3600 + (m ?? 0) * 60 + 12, last + 60);
+      const s = (last = base + i * 40) % 86400;
+      const pad = (n: number) => String(n).padStart(2, "0");
+      return `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
+    };
+
+    const setProgress = (n: number) => track.style.setProperty("--progress", String(n / steps.length));
+
+    const reset = () => {
+      const sc = run.scenarios[scenario]!;
+      company.classList.remove("is-in");
+      void company.offsetWidth;
+      company.textContent = sc.company;
+      company.classList.add("is-in");
+      steps.forEach((el) => {
+        el.classList.remove("is-done", "is-working", "is-hold", "is-stop");
+        el.classList.add("is-pending");
+        el.querySelector("[data-status]")!.textContent = run.pending;
+      });
+      setProgress(0);
+      now.textContent = run.idle;
+    };
+
+    const log = (who: string, text: string, time: string, tone?: string) => {
+      const li = document.createElement("li");
+      li.className = `run__entry is-new${tone ? ` run__entry--${tone}` : ""}`;
+      const tEl = document.createElement("time");
+      tEl.textContent = time;
+      const w = document.createElement("span");
+      w.className = "run__who";
+      w.textContent = who;
+      const x = document.createElement("span");
+      x.className = "run__what";
+      x.textContent = text;
+      li.append(tEl, w, x);
+      feed.prepend(li);
+      while (feed.children.length > FEED_MAX) feed.lastElementChild?.remove();
+    };
+
+    const tick = () => {
+      const sc = run.scenarios[scenario]!;
+      if (phase === "end") {
+        scenario = (scenario + 1) % run.scenarios.length;
+        index = 0;
+        reset();
+        phase = "work";
+        return schedule(700);
+      }
+      const el = steps[index]!;
+      const stage = run.stages[index]!;
+      const step = sc.steps[index]!;
+      const status = el.querySelector("[data-status]")!;
+      if (phase === "work") {
+        el.classList.replace("is-pending", "is-working");
+        status.textContent = run.working;
+        now.textContent = run.dispatch.replace("{stage}", stage.title).replace("{task}", stage.task);
+        phase = "done";
+        return schedule(WORK_MS);
+      }
+      el.classList.replace("is-working", step.tone === "hold" ? "is-hold" : step.tone === "stop" ? "is-stop" : "is-done");
+      status.textContent = step.status;
+      setProgress(index + 1);
+      log(stage.title, `${sc.company} · ${step.log}`, clock(sc.start, index), step.tone);
+      index += 1;
+      if (index >= sc.steps.length) {
+        phase = "end";
+        now.textContent = run.idle;
+        return schedule(HOLD_MS);
+      }
+      phase = "work";
+      schedule(STEP_MS - WORK_MS);
+    };
+
+    const schedule = (ms: number) => {
+      window.clearTimeout(timer);
+      if (!visible || paused || document.hidden) {
+        timer = undefined;
+        return;
+      }
+      timer = window.setTimeout(tick, ms);
+    };
+
+    const resume = () => {
+      if (timer === undefined && visible && !paused && !document.hidden) schedule(400);
+    };
+    const stop = () => {
+      window.clearTimeout(timer);
+      timer = undefined;
+    };
+
+    toggle.hidden = false;
+    toggle.addEventListener("click", () => {
+      paused = !paused;
+      toggle.setAttribute("aria-pressed", String(paused));
+      toggle.setAttribute("aria-label", paused ? run.play : run.pause);
+      root.classList.toggle("is-paused", paused);
+      paused ? stop() : resume();
+    });
+    document.addEventListener("visibilitychange", () => (document.hidden ? stop() : resume()));
+    new IntersectionObserver(
+      ([entry]) => {
+        visible = !!entry?.isIntersecting;
+        visible ? resume() : stop();
+      },
+      { threshold: 0.25 },
+    ).observe(root);
+  }
+</script>
+
 <style>
-  .flow__path {
-    fill: none;
-    stroke: var(--color-jano-cobalto-linea);
-    stroke-width: 2;
+  .run {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem;
   }
-  .flow__path--out {
-    stroke: color-mix(in srgb, var(--color-jano-bronce) 45%, var(--color-jano-linea));
+  @media (min-width: 64rem) {
+    .run {
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+      gap: 2rem;
+    }
   }
-  .flow__dot {
-    fill: var(--color-jano-cobalto);
+
+  /* Cabecera: el Orquestador y lo que acaba de asignar. */
+  .run__head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 2.75rem;
   }
-  .flow__dot--out {
-    fill: var(--color-jano-bronce);
-  }
-  .flow__orq {
-    fill: var(--color-jano-cobalto);
-  }
-  .flow__agent {
-    fill: var(--color-jano-papel);
-    stroke: var(--color-jano-linea);
-    stroke-width: 1.5;
-  }
-  .flow__meet {
-    fill: var(--color-jano-tinta);
-  }
-  .flow__meet-dot {
-    fill: var(--color-jano-bronce);
-  }
-  .flow__label {
+  .run__orq {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    background: var(--color-jano-cobalto);
+    padding: 0.5rem 0.95rem;
     font-family: var(--font-display);
+    font-size: 0.95rem;
     font-weight: 700;
-    font-size: 19px;
-    letter-spacing: -0.01em;
-    fill: var(--color-jano-tinta);
-    text-anchor: middle;
-    dominant-baseline: central;
+    color: var(--color-jano-papel);
   }
-  .flow__label--lg {
-    font-size: 22px;
+  .run__pulse {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: var(--color-jano-bronce);
+    animation: run-pulse 1.6s var(--ease-jano) infinite;
   }
-  .flow__label--md {
-    font-size: 17px;
+  .run__now {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--color-jano-muted);
   }
-  .flow__label--sm {
-    font-size: 13px;
+  .run__toggle {
+    margin-left: auto;
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-jano-linea);
+    color: var(--color-jano-muted);
+    transition: color 0.2s, border-color 0.2s;
   }
-  .flow__label--light {
-    fill: var(--color-jano-papel);
+  .run__toggle:hover {
+    color: var(--color-jano-tinta);
+    border-color: var(--color-jano-cobalto-linea);
   }
+  .run__toggle svg {
+    width: 0.85rem;
+    height: 0.85rem;
+    fill: currentColor;
+  }
+  .run__icon-play,
+  .is-paused .run__icon-pause {
+    display: none;
+  }
+  .is-paused .run__icon-play {
+    display: block;
+  }
+
+  .run__company {
+    margin: 1rem 0 0.75rem 2.75rem;
+  }
+  .run__chip {
+    display: inline-block;
+    border-radius: 0.5rem;
+    background: var(--color-jano-cobalto-tinte);
+    padding: 0.3rem 0.65rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-jano-cobalto-oscuro);
+  }
+  .run__chip.is-in {
+    animation: run-in 0.5s var(--ease-jano);
+  }
+
+  /* Pasos sobre una espina que se rellena con el avance. */
+  .run__track {
+    position: relative;
+  }
+  .run__steps {
+    display: grid;
+    gap: 0.4rem;
+  }
+  .run__spine {
+    position: absolute;
+    top: 1.4rem;
+    bottom: 1.4rem;
+    left: 1.0625rem;
+    width: 2px;
+    background: var(--color-jano-linea);
+  }
+  .run__fill {
+    position: absolute;
+    inset: 0;
+    background: var(--color-jano-cobalto);
+    transform-origin: top;
+    transform: scaleY(var(--progress, 0));
+    transition: transform 0.6s var(--ease-jano);
+  }
+  .run__step {
+    position: relative;
+    display: grid;
+    grid-template-columns: 2.25rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .run__node {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 999px;
+    border: 2px solid var(--color-jano-linea);
+    background: var(--color-jano-papel);
+    transition:
+      background 0.3s,
+      border-color 0.3s;
+  }
+  .run__check {
+    width: 0.95rem;
+    height: 0.95rem;
+    fill: none;
+    stroke: var(--color-jano-papel);
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0;
+  }
+  .run__body {
+    border: 1px solid var(--color-jano-linea);
+    border-radius: 0.875rem;
+    background: var(--color-jano-papel);
+    padding: 0.6rem 0.85rem;
+    transition:
+      border-color 0.3s,
+      box-shadow 0.3s,
+      opacity 0.3s;
+  }
+  /* Lo que decide la IA lleva el borde ai del proyecto (AGENTS.md §5). */
+  .run__step--agent.is-done .run__body {
+    border-color: transparent;
+    background:
+      linear-gradient(var(--color-jano-papel), var(--color-jano-papel)) padding-box,
+      linear-gradient(120deg, var(--color-jano-cobalto-claro), var(--color-jano-cobalto) 45%, var(--color-jano-bronce)) border-box;
+  }
+  .run__top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .run__title {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-jano-tinta);
+  }
+  .run__owner {
+    flex: none;
+    border-radius: 999px;
+    padding: 0.05rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: var(--color-jano-niebla);
+    color: var(--color-jano-muted);
+  }
+  .run__step--agent .run__owner {
+    background: var(--color-jano-cobalto-tinte);
+    color: var(--color-jano-cobalto-oscuro);
+  }
+  .run__step--you .run__owner {
+    background: var(--color-jano-bronce-tinte);
+    color: var(--color-jano-bronce-texto);
+  }
+  .run__step--outcome .run__owner {
+    background: var(--color-jano-tinta);
+    color: var(--color-jano-papel);
+  }
+  .run__status {
+    margin-top: 0.15rem;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: var(--color-jano-muted);
+  }
+
+  /* Estados. */
+  .run__step.is-pending .run__body {
+    opacity: 0.55;
+  }
+  .run__step.is-working .run__node {
+    border-color: var(--color-jano-cobalto);
+    animation: run-ring 1.1s var(--ease-jano) infinite;
+  }
+  .run__step.is-working .run__body {
+    border-color: var(--color-jano-cobalto-linea);
+    box-shadow: 0 6px 20px -12px var(--color-jano-cobalto);
+  }
+  .run__step.is-working .run__status::after {
+    content: "…";
+    display: inline-block;
+    animation: run-blink 1s steps(2) infinite;
+  }
+  .run__step.is-done .run__node,
+  .run__step.is-hold .run__node,
+  .run__step.is-stop .run__node {
+    border-color: transparent;
+    background: var(--color-jano-cobalto);
+  }
+  .run__step.is-done .run__check,
+  .run__step.is-hold .run__check,
+  .run__step.is-stop .run__check {
+    opacity: 1;
+  }
+  .run__step--outcome.is-done .run__node {
+    background: var(--color-jano-verde);
+  }
+  .run__step--outcome.is-done .run__body {
+    border-color: var(--color-jano-verde);
+    background: var(--color-jano-verde-tinte);
+  }
+  .run__step--outcome.is-done .run__status {
+    color: var(--color-jano-verde-texto);
+    font-weight: 600;
+  }
+  .run__step.is-hold .run__node {
+    background: var(--color-jano-bronce);
+  }
+  .run__step.is-hold .run__body {
+    border-color: var(--color-jano-bronce);
+    background: var(--color-jano-bronce-tinte);
+  }
+  .run__step.is-hold .run__status {
+    color: var(--color-jano-bronce-texto);
+  }
+  .run__step.is-stop .run__node {
+    background: var(--color-jano-rojo-texto);
+  }
+  .run__step.is-stop .run__body {
+    border-color: var(--color-jano-rojo-texto);
+    background: var(--color-jano-rojo-tinte);
+  }
+  .run__step.is-stop .run__status {
+    color: var(--color-jano-rojo-texto);
+  }
+  .run__step.is-done .run__status,
+  .run__step.is-hold .run__status,
+  .run__step.is-stop .run__status {
+    animation: run-in 0.45s var(--ease-jano);
+  }
+
+  /* Registro de eventos: append-only, lo último arriba. */
+  .run__feed {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-radius: 1.25rem;
+    background: var(--color-jano-tinta);
+    padding: 1.1rem 1.1rem 0.5rem;
+    color: var(--color-jano-sobre-tinta);
+  }
+  .run__feed-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--color-jano-papel);
+  }
+  .run__live {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: var(--color-jano-verde-tinte);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-jano-verde) 45%, transparent);
+    animation: run-pulse 2s var(--ease-jano) infinite;
+  }
+  .run__log {
+    margin-top: 0.75rem;
+    display: grid;
+    align-content: start;
+    overflow: hidden;
+    mask-image: linear-gradient(to bottom, #000 70%, transparent);
+    max-height: 30rem;
+  }
+  .run__log :global(.run__entry) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 0.75rem;
+    border-top: 1px solid var(--color-jano-tinta-3);
+    padding: 0.6rem 0;
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+  .run__log :global(.run__entry:first-child) {
+    border-top: 0;
+  }
+  .run__log :global(time) {
+    grid-row: span 2;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-jano-cobalto-claro);
+  }
+  .run__log :global(.run__who) {
+    font-weight: 600;
+    color: var(--color-jano-papel);
+  }
+  .run__log :global(.run__entry--hold .run__what) {
+    color: var(--color-jano-bronce);
+  }
+  .run__log :global(.run__entry--stop .run__what) {
+    color: var(--color-jano-rojo-tinte);
+  }
+  .run__log :global(.run__entry.is-new) {
+    animation: run-drop 0.5s var(--ease-jano);
+  }
+
+  @media (max-width: 63.99rem) {
+    .run__log {
+      max-height: 13.5rem;
+    }
+  }
+
+  @keyframes run-pulse {
+    50% {
+      opacity: 0.35;
+    }
+  }
+  @keyframes run-ring {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-jano-cobalto) 40%, transparent);
+    }
+    100% {
+      box-shadow: 0 0 0 10px transparent;
+    }
+  }
+  @keyframes run-blink {
+    50% {
+      opacity: 0;
+    }
+  }
+  @keyframes run-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+  @keyframes run-drop {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .flow__dot {
-      display: none;
+    .run *,
+    .run *::after {
+      animation: none !important;
+      transition: none !important;
     }
   }
 </style>
