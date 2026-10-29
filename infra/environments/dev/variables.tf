@@ -32,8 +32,8 @@ variable "ses_from_address" {
 
 variable "ses_notify_address" {
   type        = string
-  description = "Buzón externo que recibe el aviso de cada alta en la waitlist y la redirección de jano@tekhos.com."
-  default     = ""
+  description = "Destino del aviso de cada alta en la waitlist y de los avisos del presupuesto. Como en Cardea, una dirección de tekhos.com: el catch-all de us-east-1 la redirige a Andrés."
+  default     = "jano@tekhos.com"
 }
 
 variable "github_repository" {
@@ -47,4 +47,41 @@ variable "github_access_token" {
   default     = ""
   sensitive   = true
   description = "GitHub PAT con scopes repo + admin:repo_hook. Si vacío, el repo se cablea una vez desde la consola de Amplify."
+}
+
+variable "aurora_min_acu" {
+  type        = number
+  default     = 0
+  description = "0 = auto-pause."
+}
+
+variable "aurora_max_acu" {
+  type    = number
+  default = 4
+}
+
+variable "monthly_budget_usd" {
+  type        = string
+  default     = "50"
+  description = "Límite mensual del presupuesto de Jano (FR-009)."
+}
+
+variable "pnpm_version" {
+  type        = string
+  default     = "10.4.0"
+  description = "Igual que packageManager en package.json."
+}
+
+variable "github_repo" {
+  type        = string
+  default     = "andres-mejia/jano"
+  description = "owner/repo que asume los roles OIDC."
+}
+
+# El repo usa el formato inmutable del claim `sub` de GitHub (owner y repo con su id
+# numérico): el trust con `repo:andres-mejia/jano:...` nunca casa. Se consulta con
+# `gh api repos/andres-mejia/jano/actions/oidc/customization/sub`.
+variable "github_oidc_sub_prefix" {
+  type    = string
+  default = "repo:andres-mejia@49398769/jano@1437715854"
 }

@@ -49,7 +49,7 @@ Tras `specify init`, Claude Code tendrá los comandos `/speckit-constitution`, `
 |---|---|
 | Backend | TypeScript (Node 22), dominio compartido en `packages/domain` (ADR-001) |
 | Dominio | `jano.tekhos.com` (landing) y `jano-app.tekhos.com` (app) sobre la zona existente de `tekhos.com`; Cognito con prefijo `jano-dev` |
-| Correo | Rule set de recepción de `tekhos.com` reutilizado; regla para `jano@tekhos.com` con la misma redirección que Cardea (`ramejiafernandez@gmail.com`); remitente `jano@tekhos.com` |
+| Correo | Sin regla propia: el catch-all de `tekhos.com` (us-east-1) redirige `jano@tekhos.com` a `ramejiafernandez@gmail.com`, como en Cardea; remitente `jano@tekhos.com` |
 | Rol de apply | Patrón Fenora: política de arranque `Allow *` con caducidad y `Deny` de guarda, pegada por CLI una vez |
 | Rol de plan | `jano-dev-github-actions-plan`, solo lectura, acotado a `pull_request` |
 | Aurora | Privada + Data API, Lambdas sin VPC (el backend es TypeScript; no aplica el motivo JDBC/Helm de Cardea). Si Andrés prefiere unificar con Cardea: VPC + NAT instance + bastión SSM |

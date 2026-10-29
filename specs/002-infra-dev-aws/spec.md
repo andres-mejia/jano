@@ -1,6 +1,6 @@
 # Feature 002 · Infraestructura dev en AWS
 
-**Rama**: `infra/dev-base` · **Estado**: especificada · **Fecha**: 2026-10-29 · **Depende de**: 001
+**Rama**: `infra/dev-base` · **Estado**: aplicada en dev (2026-10-29) · **Fecha**: 2026-10-29 · **Depende de**: 001
 
 ## Objetivo
 Que `main` se publique solo: la landing y la app en Amplify, auth en Cognito, el formulario de acceso con backend real, y la base de datos, el bucket y la API listas para que 003 despliegue el backend. Misma cuenta, mismo estado y misma forma que Fenora.
@@ -34,7 +34,7 @@ Que `main` se publique solo: la landing y la app en Amplify, auth en Cognito, el
 ## Requisitos funcionales
 
 - **FR-001** Estado remoto en el bucket `fenora-terraform-state-<ACCOUNT_ID>` con clave `jano/dev/terraform.tfstate` y la tabla de locks `fenora-terraform-locks` (ya existen). *(Alternativa descartada: bucket propio; exige bootstrap y no aporta aislamiento real dentro de la misma cuenta.)*
-- **FR-002** Módulos propios en `infra/modules/`, uno por componente, con la forma de `fintrack/infra/modules`: `cognito`, `landing` (Amplify WEB), `app-hosting` (Amplify WEB_COMPUTE), `waitlist` (DynamoDB + Lambda Node 22 + HTTP API + SES), `email` (regla de recepción en el rule set de `tekhos.com`, configuration set; la identidad del dominio ya existe), `aurora` (Serverless v2, min ACU 0, auto-pause 300 s, Data API activada, sin RDS Proxy), `assets` (S3 con cifrado, versionado y bloqueo público), `api-gateway` (HTTP API con autorizador JWT de Cognito, CORS para app y localhost), `github-oidc` (rol de apply con política de arranque y rol de plan de solo lectura), `vpc` (mínima, solo para Aurora), `dns` (registros en la zona de `tekhos.com`, certificados global y regional).
+- **FR-002** Módulos propios en `infra/modules/`, uno por componente, con la forma de `fintrack/infra/modules`: `cognito`, `landing` (Amplify WEB), `app-hosting` (Amplify WEB_COMPUTE), `waitlist` (DynamoDB + Lambda Node 22 + HTTP API + SES), `email` (configuration set y alarmas; la identidad y la recepción de `tekhos.com` ya existen fuera de Terraform), `aurora` (Serverless v2, min ACU 0, auto-pause 300 s, Data API activada, sin RDS Proxy), `assets` (S3 con cifrado, versionado y bloqueo público), `api-gateway` (HTTP API con autorizador JWT de Cognito, CORS para app y localhost), `github-oidc` (rol de apply con política de arranque y rol de plan de solo lectura), `vpc` (mínima, solo para Aurora). Sin módulo `dns`: Amplify crea sus certificados y sus registros en la zona de `tekhos.com`, como en Cardea.
 - **FR-003** Naming `jano-<env>-<componente>`; tags `Project=jano`, `Environment`, `ManagedBy=terraform` por `default_tags`.
 - **FR-004** Lambdas fuera de VPC. Aurora en subnets privadas de una VPC propia de Jano con Data API como única vía desde Lambda. *(Decidido en el plan, decisión 2: VPC mínima sin NAT ni IGW; la de Fenora es la alternativa si Andrés la prefiere.)*
 - **FR-005** Secrets en Secrets Manager: credenciales de Aurora (gestionadas por RDS), futura credencial de Microsoft Graph y de proveedores. Ninguna en variables de entorno.
@@ -47,18 +47,18 @@ Que `main` se publique solo: la landing y la app en Amplify, auth en Cognito, el
 Ninguna de dominio; recursos AWS descritos arriba. La tabla de waitlist: `email` (PK), `created_at`, `locale`, `source`, `partition` + GSI `created_at-index`, items de rate limit con TTL.
 
 ## Criterios de éxito
-- **SC-001** `terraform plan` en dev sin cambios tras el primer `apply` (idempotente).
-- **SC-002** `https://jano.tekhos.com` y `https://jano-app.tekhos.com` responden; un push de prueba a `main` publica en menos de 10 minutos.
-- **SC-003** Un alta en el formulario aparece en DynamoDB y llega el correo de confirmación.
-- **SC-004** Un usuario creado a mano en el pool entra en la app y el ID token lleva `custom:tenant_id`.
-- **SC-005** Coste estimado con cero tráfico por debajo de 15 €/mes (Aurora en pausa; sin NAT).
+- **SC-001** `terraform plan` en dev sin cambios tras el primer `apply` (idempotente). **Cumplido** (2026-10-29): `No changes` tras las seis fases.
+- **SC-002** `https://jano.tekhos.com` y `https://jano-app.tekhos.com` responden; un push de prueba a `main` publica en menos de 10 minutos. **Cumplido**: 200 en las dos; el merge del PR #2 publicó en 4 min 48 s.
+- **SC-003** Un alta en el formulario aparece en DynamoDB y llega el correo de confirmación. **Cumplido** con el simulador de SES; el aviso llegó redirigido a Gmail.
+- **SC-004** Un usuario creado a mano en el pool entra en la app y el ID token lleva `custom:tenant_id`. **Cumplido** en el ID token; el inicio de sesión desde el navegador queda para la revisión de Andrés.
+- **SC-005** Coste estimado con cero tráfico por debajo de 15 €/mes (Aurora en pausa; sin NAT). **Pendiente**: se mide a las 24 h (T015).
 
 ## Fuera de alcance
 Lambdas del backend (003), colas y scheduler (003), WAF (se valora en producción), entorno de producción.
 
 ## Decisiones tomadas (Andrés, 2026-10-29; mismo lineamiento que Cardea en la misma cuenta)
 - **Dominio**: subdominios del dominio principal `tekhos.com`, cuya zona ya existe en Route 53: landing en `jano.tekhos.com` y app en `jano-app.tekhos.com`. Terraform crea los registros en esa zona (`data "aws_route53_zone"`, nunca la zona). `domain_name` deja de ser apex: `landing_fqdn` y `app_fqdn` son variables con esos valores por defecto. Cognito Hosted UI con prefijo `jano-dev` (sin dominio propio hasta decidir nombre y dominio definitivos). `www` no aplica.
-- **SES**: solo puede haber un rule set de recepción activo por región y en `eu-west-1` es el de `tekhos.com`: se reutiliza. Terraform añade a ese rule set una regla para `jano@tekhos.com` con la misma redirección que Cardea (a `ramejiafernandez@gmail.com`); el remitente de la waitlist y de los correos del producto es `jano@tekhos.com`, sobre la identidad SES de `tekhos.com` ya verificada. Variable `ses_notify_address` para el aviso del formulario.
+- **SES** (enmendada en la fase 0, `research.md` T002): el MX de `tekhos.com` apunta a us-east-1, cuyo rule set activo (`tekhos-inbound`, fuera de Terraform) tiene un catch-all que ya redirige cualquier dirección del dominio a `ramejiafernandez@gmail.com`; es lo que usa Cardea, sin regla propia. Jano tampoco crea regla: `jano@tekhos.com` ya llega. El rule set activo de `eu-west-1` es de Fenora y no se toca; el remitente de la waitlist y de los correos del producto es `jano@tekhos.com`, sobre la identidad SES de `tekhos.com` ya verificada. Variable `ses_notify_address` para el aviso del formulario.
 - **Rol de apply en CI**: patrón Fenora: política de arranque `Allow *` con caducidad más los mismos `Deny` de guarda, pegada por CLI una vez y documentada en `docs/guias/despliegue-dev.md`. Se acepta que Jano podría tocar recursos de Fenora o Cardea; se mitiga con naming `jano-*` y revisión del plan.
 - **Rol de plan en PR**: rol aparte `jano-dev-github-actions-plan`, solo lectura más lectura del estado y escritura del lock, acotado a `repo:andres-mejia/jano:pull_request`. El de apply, `jano-dev-github-actions`, solo a `refs/heads/main`.
 - **Aurora**: se mantiene lo que dice esta spec, Aurora privada + Data API y Lambdas sin VPC, porque el backend es TypeScript (ADR-001) y no necesita JDBC ni portabilidad a Helm, que es lo que llevó a Cardea al patrón Fenora actual (VPC, NAT y bastión). Si Andrés prefiere un único patrón en la cuenta, se cambia a VPC + NAT instance + bastión SSM (~6,5 €/mes más) y se enmienda FR-004 en el plan.

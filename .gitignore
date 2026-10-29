@@ -51,3 +51,6 @@ test-results/
 # Claude Code: configuracion local de cada maquina (permisos, tokens). Los skills y comandos SI se versionan.
 .claude/settings.local.json
 .claude/**/*.local.*
+
+# Python
+__pycache__/

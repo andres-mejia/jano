@@ -1,0 +1,91 @@
+# Plan de Terraform en PR con el rol de solo lectura `jano-dev-github-actions-plan`.
+# No aplica nunca. La guardia corre en modo informativo: dice si el apply de `main` se pararía.
+# El plan y la guardia se publican como comentario del PR (US4.1), que se reescribe en cada push.
+name: Infra plan
+
+on:
+  pull_request:
+    paths:
+      - 'infra/**'
+      - '.github/workflows/infra-*.yml'
+      - '.github/scripts/guardia_plan.py'
+
+concurrency:
+  group: infra-plan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write # para asumir el rol OIDC de plan
+  pull-requests: write # para comentar el plan
+
+jobs:
+  plan:
+    name: infra · plan
+    # Los PR desde forks no reciben token OIDC.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TF_IN_AUTOMATION: 'true'
+      TF_INPUT: '0'
+      AWS_REGION: eu-west-1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: 1.9.8
+          terraform_wrapper: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Credenciales AWS (OIDC, solo lectura)
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        with:
+          role-to-assume: ${{ secrets.AWS_GITHUB_OIDC_PLAN_ROLE_ARN }}
+          aws-region: eu-west-1
+      - name: terraform init
+        working-directory: infra/environments/dev
+        run: |
+          ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+          terraform init -input=false \
+            -backend-config="bucket=fenora-terraform-state-${ACCOUNT_ID}"
+      - name: terraform validate
+        working-directory: infra/environments/dev
+        run: terraform validate
+      - name: terraform plan
+        working-directory: infra/environments/dev
+        run: |
+          terraform plan -input=false -lock-timeout=5m -out=tfplan -var 'aws_profile='
+          terraform show -json tfplan > tfplan.json
+      - name: Guardia del plan (informativa)
+        id: guardia
+        working-directory: infra/environments/dev
+        continue-on-error: true
+        run: python3 "${GITHUB_WORKSPACE}/.github/scripts/guardia_plan.py" tfplan.json > guardia.txt 2>&1; s=$?; cat guardia.txt; exit $s
+      - name: Comentar el plan en el PR
+        if: always() && hashFiles('infra/environments/dev/tfplan') != ''
+        working-directory: infra/environments/dev
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          terraform show -no-color tfplan > plan.txt
+          {
+            echo "### Terraform plan · dev"
+            echo
+            grep -E '^Plan:|^No changes' plan.txt || echo "(sin resumen)"
+            echo
+            echo '```'
+            cat guardia.txt 2>/dev/null || echo "guardia sin salida"
+            echo '```'
+            echo
+            echo "<details><summary>Plan completo</summary>"
+            echo
+            echo '```'
+            head -c 55000 plan.txt
+            echo '```'
+            echo "</details>"
+          } > comentario.md
+          gh pr comment "$PR" --edit-last --body-file comentario.md 2>/dev/null \
+            || gh pr comment "$PR" --body-file comentario.md
