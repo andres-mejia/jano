@@ -50,7 +50,7 @@ Que un usuario que el administrador ya dio de alta pueda entrar en la app con su
 
 ## Supuestos y dependencias
 - Andrés crea en Google Cloud Console el proyecto «Jano» y su client OAuth con la URL de retorno de Cognito de Jano; sin ella Google rechaza el inicio de sesión.
-- Mientras la app de Google esté en modo Testing, solo entran las cuentas de «Test users». Antes de clientes piloto se completa el branding y se publica.
+- La app de Google se publicó el 2026-10-29 (antes estaba en Testing y solo entraban las cuentas de «Test users»).
 - Tras cerrar sesión, quien tenga una sola cuenta de Google en el navegador vuelve a entrar sin elegir cuenta (limitación ya documentada en Fenora); se acepta.
 - Enmienda ADR-001 §3, que excluía los IdP sociales: Google entra solo como método de acceso de usuarios ya dados de alta.
 
