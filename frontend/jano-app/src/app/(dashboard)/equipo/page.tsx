@@ -4,17 +4,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 
 import { Topbar } from "@/components/layout/topbar";
-import { Button, Card, ListItem, Pill } from "@/components/ui/primitives";
+import { Button, Card, ListItem } from "@/components/ui/primitives";
 import { ApiError } from "@/lib/api/client";
 import { jano } from "@/lib/api/jano";
 import { useAuth } from "@/lib/auth/use-auth";
 import { timeAgo } from "@/lib/format";
 import type { TenantUser, TenantUserStatus } from "@jano/domain";
 
-const ESTADO: Record<TenantUserStatus, { label: string; tone: "g" | "b" | "n" }> = {
-  active: { label: "Activo", tone: "g" },
-  invited: { label: "Invitado", tone: "b" },
-  disabled: { label: "Desactivado", tone: "n" },
+const ESTADO: Record<TenantUserStatus, { label: string; clase: string }> = {
+  active: { label: "Activo", clase: "text-jano-verde-texto" },
+  invited: { label: "Invitado, sin entrar", clase: "text-jano-muted" },
+  disabled: { label: "Desactivado", clase: "text-jano-muted line-through" },
 };
 
 const mensaje = (e: unknown): string =>
@@ -73,21 +73,9 @@ export default function TeamPage() {
   return (
     <>
       <Topbar title="Equipo" subtitle="Quién de tu empresa entra en Jano" />
-      <div className="flex flex-wrap gap-2">
-        <Pill tone="g">
-          <span className="tabular">{activos}</span> activos
-        </Pill>
-        {usuarios.some((u) => u.status === "invited") && (
-          <Pill tone="b">
-            <span className="tabular">{usuarios.filter((u) => u.status === "invited").length}</span>{" "}
-            {usuarios.filter((u) => u.status === "invited").length === 1 ? "pendiente" : "pendientes"} de entrar
-          </Pill>
-        )}
-      </div>
-
       <Card title="Invitar a alguien">
         <form onSubmit={enviar} className="flex flex-wrap items-end gap-3">
-          <label className="flex min-w-[240px] flex-1 flex-col gap-1 text-[13px] font-semibold">
+          <label className="flex min-w-[240px] flex-1 flex-col gap-1 text-sm font-semibold">
             Email de trabajo
             <input
               type="email"
@@ -95,35 +83,45 @@ export default function TeamPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="nombre@tuempresa.es"
-              className="rounded-[10px] bg-jano-papel px-3 py-2 text-[14px] font-normal shadow-[inset_0_0_0_1px_var(--color-jano-linea)] outline-none focus:shadow-[inset_0_0_0_2px_var(--color-jano-cobalto)]"
+              className="rounded-lg bg-jano-papel px-3 py-2 text-base font-normal shadow-[inset_0_0_0_1px_var(--color-jano-linea)] outline-none placeholder:text-jano-gris-medio focus:shadow-[inset_0_0_0_2px_var(--color-jano-cobalto)]"
             />
           </label>
-          <label className="flex min-w-[180px] flex-1 flex-col gap-1 text-[13px] font-semibold">
+          <label className="flex min-w-[180px] flex-1 flex-col gap-1 text-sm font-semibold">
             Nombre (opcional)
             <input
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               maxLength={120}
-              className="rounded-[10px] bg-jano-papel px-3 py-2 text-[14px] font-normal shadow-[inset_0_0_0_1px_var(--color-jano-linea)] outline-none focus:shadow-[inset_0_0_0_2px_var(--color-jano-cobalto)]"
+              placeholder="Cómo se llama"
+              className="rounded-lg bg-jano-papel px-3 py-2 text-base font-normal shadow-[inset_0_0_0_1px_var(--color-jano-linea)] outline-none placeholder:text-jano-gris-medio focus:shadow-[inset_0_0_0_2px_var(--color-jano-cobalto)]"
             />
           </label>
           <Button type="submit" disabled={invitar.isPending || !email}>
             {invitar.isPending ? "Enviando…" : "Enviar invitación"}
           </Button>
         </form>
-        <p className="mt-2 text-[13px] text-jano-muted">
+        <p className="mt-2 text-sm text-jano-muted">
           Le llegará un correo con una contraseña temporal. Si usa Google con ese mismo email, puede entrar con «Continuar con Google».
         </p>
         {aviso && (
-          <p role="status" className={aviso.tono === "ok" ? "mt-3 text-[13.5px] text-jano-verde-texto" : "mt-3 text-[13.5px] text-jano-rojo-texto"}>
+          <p role="status" className={aviso.tono === "ok" ? "mt-3 text-sm text-jano-verde-texto" : "mt-3 text-sm text-jano-rojo-texto"}>
             {aviso.texto}
           </p>
         )}
       </Card>
 
-      <Card title="Personas">
-        {equipo.isLoading && <p className="text-[13.5px] text-jano-muted">Cargando…</p>}
-        {equipo.error && <p className="text-[13.5px] text-jano-rojo-texto">{mensaje(equipo.error)}</p>}
+      <Card
+        title="Personas"
+        action={
+          <span className="text-sm font-normal text-jano-muted tabular">
+            {activos} {activos === 1 ? "activa" : "activas"}
+            {usuarios.some((u) => u.status === "invited") &&
+              ` · ${usuarios.filter((u) => u.status === "invited").length} ${usuarios.filter((u) => u.status === "invited").length === 1 ? "pendiente" : "pendientes"} de entrar`}
+          </span>
+        }
+      >
+        {equipo.isLoading && <p className="text-sm text-jano-muted">Cargando…</p>}
+        {equipo.error && <p className="text-sm text-jano-rojo-texto">{mensaje(equipo.error)}</p>}
         <ul>
           {usuarios.map((u) => {
             const yo = auth.status === "ready" && u.email === auth.user.email.toLowerCase();
@@ -134,14 +132,12 @@ export default function TeamPage() {
                     {u.name ?? u.email}
                     {yo && <span className="font-normal text-jano-muted"> · tú</span>}
                   </div>
-                  <div className="truncate text-[13px] text-jano-muted">
+                  <div className="truncate text-sm text-jano-muted">
                     {u.name ? `${u.email} · ` : ""}
                     {u.role === "owner" ? "Responsable" : "Equipo"} · desde {timeAgo(u.createdAt)}
                   </div>
                 </div>
-                <Pill tone={ESTADO[u.status].tone} className="ml-auto">
-                  {ESTADO[u.status].label}
-                </Pill>
+                <span className={`ml-auto shrink-0 text-sm font-semibold ${ESTADO[u.status].clase}`}>{ESTADO[u.status].label}</span>
                 {u.role === "member" && (
                   <div className="flex shrink-0 gap-1.5">
                     {u.status === "invited" && (

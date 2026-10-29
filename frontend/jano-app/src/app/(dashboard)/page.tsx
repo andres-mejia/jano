@@ -1,16 +1,15 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays } from "lucide-react";
 import Link from "next/link";
 
 import { Topbar } from "@/components/layout/topbar";
-import { Button, Card, DemoPill, Dot, ListItem, Pill, Skeleton, Spark, Sparkline } from "@/components/ui/primitives";
+import { AiTag, Button, Card, DemoPill, Dot, ListItem, Meter, Pill, Skeleton, Spark } from "@/components/ui/primitives";
 import { jano } from "@/lib/api/jano";
 import { useAuth } from "@/lib/auth/use-auth";
 import { AGENT_LABEL, formatLongDate, formatShortDate, timeAgo } from "@/lib/format";
 
-const FUNNEL_COLORS = ["#14162B", "#2C2A7A", "#4338D6", "#7B73F0", "#E39A2E"];
+const FUNNEL_COLORS = ["var(--color-jano-tinta)", "var(--color-jano-cobalto-medio)", "var(--color-jano-cobalto)", "var(--color-jano-cobalto-claro)", "var(--color-jano-bronce)"];
 const STATUS_DOT = { working: "g", deciding: "c", waiting_human: "w", idle: "n" } as const;
 
 function Funnel({ values }: { values: number[] }) {
@@ -45,69 +44,74 @@ export default function HomePage() {
       <Topbar title={`Buenos días${firstName ? `, ${firstName}` : ""}`} subtitle={formatLongDate(new Date().toISOString())} />
 
       {!d ? (
-        <div className="grid grid-cols-4 gap-3.5">
-          {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-28" />
-          ))}
+        <div className="grid gap-3.5 lg:grid-cols-[1fr_2fr]">
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
         </div>
       ) : (
         <>
-          <div className="grid gap-3.5 md:grid-cols-2 xl:grid-cols-4">
-            {(
-              [
-                ["Cuentas encontradas", d.kpis.accountsFound, "var(--color-jano-cobalto)"],
-                ["Contactos verificados", d.kpis.contactsVerified, "var(--color-jano-cobalto)"],
-                ["Conversaciones abiertas", d.kpis.openConversations, "var(--color-jano-cobalto)"],
-                ["Reuniones agendadas", d.kpis.meetingsBooked, "var(--color-jano-bronce)"],
-              ] as const
-            ).map(([label, kpi, color]) => (
-              <Card key={label} className="flex items-end justify-between">
-                <div>
-                  <div className="text-[13px] font-semibold text-jano-muted">{label}</div>
-                  <div className="font-display my-1 text-[34px] font-bold leading-none tabular">{kpi.value}</div>
-                  <div className="text-[12.5px] text-jano-muted">{kpi.note}</div>
+          {/* Una métrica manda: reuniones contra el objetivo. El resto es contexto. */}
+          <div className="grid gap-3.5 lg:grid-cols-[1fr_2fr]">
+            <Card className="flex flex-col justify-between">
+              <div className="text-sm font-semibold text-jano-muted">Reuniones agendadas este mes</div>
+              <div className="my-2 flex items-baseline gap-2">
+                <span className="font-display text-3xl font-bold leading-none tabular">{d.kpis.meetingsBooked.value}</span>
+                <span className="text-base text-jano-muted tabular">de {d.meetingsGoal}</span>
+              </div>
+              <Meter value={d.kpis.meetingsBooked.value / Math.max(d.meetingsGoal, 1)} tone="w" label="Reuniones sobre el objetivo" />
+              <div className="mt-2 text-sm text-jano-muted">
+                {d.meetingsGoal > d.kpis.meetingsBooked.value
+                  ? `Faltan ${d.meetingsGoal - d.kpis.meetingsBooked.value} para el objetivo`
+                  : "Objetivo cumplido"}
+              </div>
+            </Card>
+            <Card className="grid grid-cols-1 divide-y divide-jano-linea sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+              {(
+                [
+                  ["Cuentas encontradas", d.kpis.accountsFound],
+                  ["Contactos verificados", d.kpis.contactsVerified],
+                  ["Conversaciones abiertas", d.kpis.openConversations],
+                ] as const
+              ).map(([label, kpi]) => (
+                <div key={label} className="py-3 first:pt-0 last:pb-0 sm:px-5 sm:py-0 sm:first:pl-0 sm:last:pr-0">
+                  <div className="text-sm font-semibold text-jano-muted">{label}</div>
+                  <div className="font-display my-1 text-2xl font-bold leading-none tabular">{kpi.value}</div>
+                  <div className="text-sm text-jano-muted">{kpi.note}</div>
                 </div>
-                <Sparkline points={kpi.trend} color={color} />
-              </Card>
-            ))}
+              ))}
+            </Card>
           </div>
 
           <div className="grid gap-3.5 xl:grid-cols-[1.55fr_1fr]">
             <Card
               title="Embudo de la campaña"
-              action={
-                <>
-                  <Pill tone="n">{d.campaignName}</Pill>
-                  <DemoPill />
-                </>
-              }
+              action={<DemoPill />}
             >
-              <div className="grid grid-cols-5">
-                {d.funnel.map((s) => (
-                  <div key={s.key}>
-                    <div className="font-display text-xl font-bold tabular">{s.value}</div>
-                    <div className="text-[12.5px] text-jano-muted">{s.label}</div>
-                  </div>
-                ))}
-              </div>
-              <Funnel values={d.funnel.map((s) => s.value)} />
-              <div className="font-mono grid grid-cols-5 text-[12.5px] text-jano-muted">
+              <p className="-mt-2 mb-3 truncate text-sm text-jano-muted">{d.campaignName}</p>
+              <div className="grid grid-cols-3 gap-x-2 gap-y-3 sm:grid-cols-5">
                 {d.funnel.map((s, i) => {
                   const prev = d.funnel[i - 1];
-                  return <div key={s.key}>{prev && prev.value > 0 ? `${Math.round((100 * s.value) / prev.value)} %` : ""}</div>;
+                  return (
+                    <div key={s.key} className="min-w-0">
+                      <div className="font-display text-xl font-bold tabular">{s.value}</div>
+                      <div className="truncate text-sm text-jano-muted">{s.label}</div>
+                      <div className="text-xs text-jano-muted tabular">{prev && prev.value > 0 ? (
+                          <>
+                            {Math.round((100 * s.value) / prev.value)} %<span className="hidden xl:inline"> del paso anterior</span>
+                          </>
+                        ) : (
+                          "\u00a0"
+                        )}</div>
+                    </div>
+                  );
                 })}
               </div>
+              <Funnel values={d.funnel.map((s) => s.value)} />
               {d.insight && (
-                <div className="mt-3 flex items-center gap-3 rounded-xl bg-jano-cobalto-tinte px-3.5 py-2.5 text-[13.5px] text-jano-cobalto-oscuro">
-                  <Spark />
-                  <span>
-                    <b>Lectura de Jano:</b> {d.insight.text}
-                  </span>
-                  {d.insight.action && (
-                    <Button size="sm" className="ml-auto">
-                      {d.insight.action}
-                    </Button>
-                  )}
+                <div className="ai-border mt-3 flex flex-wrap items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm">
+                  <AiTag>Lectura de Jano</AiTag>
+                  <span className="min-w-0 basis-full sm:basis-0 sm:flex-1">{d.insight.text}</span>
+                  {d.insight.action && <Button size="sm">{d.insight.action}</Button>}
                 </div>
               )}
             </Card>
@@ -127,16 +131,15 @@ export default function HomePage() {
                     <Dot tone={STATUS_DOT[a.status]} />
                     <div className="min-w-0">
                       <div className="font-semibold">{AGENT_LABEL[a.agent]}</div>
-                      <div className="truncate text-[13px] text-jano-muted">{a.summary}</div>
+                      <div className="truncate text-sm text-jano-muted">{a.summary}</div>
                     </div>
                     <span className="font-mono ml-auto shrink-0 text-xs text-jano-muted">{timeAgo(a.at)}</span>
                   </ListItem>
                 ))}
                 {d.guardrailNotice && (
-                  <ListItem>
-                    <Pill tone="r">Guardarraíl</Pill>
-                    <span className="text-[13px] text-jano-muted">{d.guardrailNotice}</span>
-                  </ListItem>
+                  <li className="mt-2 rounded-xl bg-jano-bronce-tinte px-3 py-2 text-sm text-jano-bronce-texto">
+                    <b>Regla aplicada:</b> {d.guardrailNotice}
+                  </li>
                 )}
               </ul>
             </Card>
@@ -149,11 +152,11 @@ export default function HomePage() {
                   <ListItem key={p.id}>
                     <div className="min-w-0">
                       <div className="font-semibold">{p.title}</div>
-                      <div className="truncate text-[13px] text-jano-muted">{p.subtitle}</div>
+                      <div className="truncate text-sm text-jano-muted">{p.subtitle}</div>
                     </div>
                     <Link
                       href={p.href as "/"}
-                      className={`ml-auto shrink-0 rounded-[10px] px-3.5 py-2 text-[13.5px] font-semibold ${i === 0 ? "bg-jano-cobalto text-white" : "shadow-[inset_0_0_0_1px_var(--color-jano-linea)]"}`}
+                      className={`ml-auto shrink-0 rounded-lg px-3.5 py-2 text-sm font-semibold ${i === 0 ? "bg-jano-cobalto text-white" : "shadow-[inset_0_0_0_1px_var(--color-jano-linea)]"}`}
                     >
                       {p.kind === "accounts_approval" ? "Ver" : "Revisar"}
                     </Link>
@@ -172,7 +175,7 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
-              <div className="mt-2.5 text-[13px] text-jano-muted">
+              <div className="mt-2.5 text-sm text-jano-muted">
                 {d.kpis.meetingsBooked.value} agendadas. Objetivo del mes: {d.meetingsGoal}.
               </div>
             </Card>
@@ -181,16 +184,21 @@ export default function HomePage() {
               <ul>
                 {d.upcomingMeetings.map((m) => (
                   <ListItem key={m.id}>
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-jano-cobalto-tinte text-jano-cobalto">
-                      <CalendarDays className="h-[18px] w-[18px]" aria-hidden="true" />
-                    </span>
                     <div className="min-w-0">
                       <div className="truncate font-semibold">{m.accountName}</div>
-                      <div className="text-[13px] text-jano-muted">{m.status === "draft" ? "Pendiente de tu OK" : formatShortDate(m.start)}</div>
+                      <div className="text-sm text-jano-muted">
+                        {m.status === "draft" ? "Sin fecha todavía" : formatShortDate(m.start)}
+                        {m.status === "proposed" && " · propuesta, falta que confirmen"}
+                      </div>
                     </div>
-                    <Pill tone={m.status === "confirmed" ? "g" : m.status === "proposed" ? "b" : "n"} className="ml-auto">
-                      {m.status === "confirmed" ? "Confirmada" : m.status === "proposed" ? "Propuesta" : "Borrador"}
-                    </Pill>
+                    {/* Solo lo que te necesita lleva color. */}
+                    {m.status === "draft" ? (
+                      <Pill tone="b" className="ml-auto">
+                        Pendiente de tu OK
+                      </Pill>
+                    ) : m.status === "confirmed" ? (
+                      <span className="ml-auto text-sm font-semibold text-jano-verde-texto">Confirmada</span>
+                    ) : null}
                   </ListItem>
                 ))}
               </ul>

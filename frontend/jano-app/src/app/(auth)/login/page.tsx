@@ -56,32 +56,32 @@ export default function LoginPage() {
 
   return (
     <main className="grid min-h-screen lg:grid-cols-[1fr_1fr]">
-      <section className="flex flex-col justify-between bg-jano-tinta p-10 text-white">
+      <section className="flex flex-col justify-between gap-6 bg-jano-tinta p-6 text-white lg:p-10">
         <div className="font-display flex items-center gap-3 text-3xl font-bold">
           <Logo size={40} />
           Jano
         </div>
-        <div>
+        <div className="hidden lg:block">
           <h1 className="font-display text-4xl font-semibold leading-tight">Abre la puerta correcta.</h1>
           <p className="mt-4 max-w-md text-jano-nav-texto">La IA elige a quién escribir, cuándo y por qué canal. Tú apruebas lo que sale con tu nombre.</p>
         </div>
-        <p className="text-sm text-jano-nav-muted">Entorno {ENV.entorno}{isMockMode() ? " · modo de ejemplo, sin Cognito" : ""}</p>
+        <p className="hidden text-sm text-jano-nav-muted lg:block">Entorno {ENV.entorno}{isMockMode() ? " · modo de ejemplo, sin Cognito" : ""}</p>
       </section>
 
-      <section className="flex items-center justify-center p-8">
+      <section className="flex items-center justify-center p-5 lg:p-8">
         <form onSubmit={onSubmit} className="w-full max-w-sm rounded-2xl border border-jano-linea bg-jano-papel p-7">
           <h2 className="font-display text-2xl font-bold">Entrar</h2>
           <p className="mt-1 text-sm text-jano-muted">Con tu cuenta de empresa.</p>
           <label className="mt-6 block text-sm font-semibold">
             Email
-            <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5 w-full rounded-[10px] border border-jano-linea px-3.5 py-2.5 text-[15px] outline-none focus:border-jano-cobalto focus:ring-2 focus:ring-jano-cobalto/25" />
+            <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5 w-full rounded-lg border border-jano-linea px-3.5 py-2.5 text-base outline-none placeholder:text-jano-gris-medio focus:border-jano-cobalto focus:ring-2 focus:ring-jano-cobalto/25" />
           </label>
           <label className="mt-4 block text-sm font-semibold">
             Contraseña
-            <input type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5 w-full rounded-[10px] border border-jano-linea px-3.5 py-2.5 text-[15px] outline-none focus:border-jano-cobalto focus:ring-2 focus:ring-jano-cobalto/25" />
+            <input type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5 w-full rounded-lg border border-jano-linea px-3.5 py-2.5 text-base outline-none placeholder:text-jano-gris-medio focus:border-jano-cobalto focus:ring-2 focus:ring-jano-cobalto/25" />
           </label>
           {aviso && (
-            <p role="alert" className="mt-3 rounded-[10px] bg-jano-rojo-tinte p-3 text-sm text-jano-rojo-texto">
+            <p role="alert" className="mt-3 rounded-lg bg-jano-rojo-tinte p-3 text-sm text-jano-rojo-texto">
               {aviso}
             </p>
           )}

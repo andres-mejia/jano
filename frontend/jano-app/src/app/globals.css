@@ -27,6 +27,35 @@
   --color-jano-rojo-texto: #8e2a1a;
   --color-jano-nav-texto: #c9cce0;
   --color-jano-nav-muted: #8388a8;
+  --color-jano-nav-verde: #5ee0a8;
+  --color-jano-cobalto-medio: #2c2a7a;
+  --color-jano-bronce-linea: #efd3a0;
+  --color-jano-rojo-linea: #f1c9c1;
+  --color-jano-gris-medio: #9ca0ba;
+  --color-jano-gris-linea: #b9bccf;
+  --color-jano-lienzo: #f6f6fa;
+
+  /* Escala tipográfica: siete pasos y nada más. */
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 13px;
+  --text-sm--line-height: 19px;
+  --text-base: 15px;
+  --text-base--line-height: 22px;
+  --text-lg: 18px;
+  --text-lg--line-height: 24px;
+  --text-xl: 22px;
+  --text-xl--line-height: 28px;
+  --text-2xl: 28px;
+  --text-2xl--line-height: 34px;
+  --text-3xl: 34px;
+  --text-3xl--line-height: 40px;
+
+  /* Radios: controles 10, bloques internos 14, tarjetas 18, contenedores 22. */
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-2xl: 18px;
+  --radius-3xl: 22px;
 
   --font-display: var(--font-bricolage), "Figtree", system-ui, sans-serif;
   --font-sans: var(--font-figtree), system-ui, sans-serif;
@@ -57,11 +86,6 @@ body {
     linear-gradient(120deg, var(--color-jano-cobalto-claro), var(--color-jano-cobalto) 45%, var(--color-jano-bronce)) border-box;
 }
 
-.dot-grid {
-  background-color: #fafafd;
-  background-image: radial-gradient(#d5d7e6 1px, transparent 1px);
-  background-size: 18px 18px;
-}
 
 /* Tailwind 4 deja los botones con el cursor por defecto: se recupera la mano en todo lo pulsable. */
 @layer base {

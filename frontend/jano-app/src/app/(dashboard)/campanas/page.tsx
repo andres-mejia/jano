@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { Topbar } from "@/components/layout/topbar";
-import { Button, Card, ListItem, Pill, Spark } from "@/components/ui/primitives";
+import { Button, Card, ListItem, Spark } from "@/components/ui/primitives";
 import { jano } from "@/lib/api/jano";
 
-const STATUS_LABEL = { draft: ["Borrador", "n"], active: ["Activa", "g"], paused: ["Pausada", "b"], finished: ["Cerrada", "n"] } as const;
+const STATUS_LABEL = { draft: "Borrador", active: "Activa", paused: "Pausada", finished: "Cerrada" } as const;
 
 export default function CampaignsPage() {
   const qc = useQueryClient();
@@ -41,33 +41,33 @@ export default function CampaignsPage() {
             <input
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Encuentra empresas españolas del sector agencia de viajes con facturación superior a 1 M€"
-              className="rounded-[10px] border border-jano-linea px-3.5 py-2.5 text-[15px] font-normal outline-none focus:border-jano-cobalto focus:ring-2 focus:ring-jano-cobalto/25"
+              placeholder="Por ejemplo: agencias de viajes españolas que facturen más de 1 M€"
+              className="rounded-lg border border-jano-linea px-3.5 py-2.5 text-base font-normal outline-none placeholder:text-jano-gris-medio focus:border-jano-cobalto focus:ring-2 focus:ring-jano-cobalto/25"
             />
           </label>
           <Button type="submit" size="lg" disabled={create.isPending || prompt.trim().length < 10}>
             {create.isPending ? "Estructurando el ICP…" : "Crear campaña"}
           </Button>
         </form>
+        <p className="mt-2 text-sm text-jano-muted">Jano la convierte en un perfil de cliente que puedes corregir antes de que busque cuentas.</p>
         {create.isError && <p className="mt-2 text-sm text-jano-rojo-texto">No se ha podido crear la campaña.</p>}
       </Card>
 
       <Card title="Tus campañas">
         <ul>
           {(campaigns.data ?? []).map((c) => {
-            const [label, tone] = STATUS_LABEL[c.status];
             return (
               <ListItem key={c.id}>
                 <div className="min-w-0">
                   <Link href={`/campanas/${c.id}` as "/campanas"} className="font-semibold hover:underline">
                     {c.name}
                   </Link>
-                  <div className="truncate text-[13px] text-jano-muted">{c.prompt}</div>
+                  <div className="truncate text-sm text-jano-muted">{c.prompt}</div>
                 </div>
-                <div className="font-mono ml-auto hidden shrink-0 text-xs text-jano-muted tabular md:block">
-                  {c.stats.accountsFound} cuentas · {c.stats.contacted} contactadas · {c.stats.meetings}/{c.meetingsGoal} reuniones
+                <div className="ml-auto hidden shrink-0 text-sm text-jano-muted tabular md:block">
+                  {c.stats.accountsFound} cuentas · {c.stats.contacted} contactadas · {c.stats.meetings} de {c.meetingsGoal} reuniones
                 </div>
-                <Pill tone={tone}>{label}</Pill>
+                <span className="w-16 shrink-0 text-right text-sm font-semibold">{STATUS_LABEL[c.status]}</span>
               </ListItem>
             );
           })}

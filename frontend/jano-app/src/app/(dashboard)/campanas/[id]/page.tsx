@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { Topbar } from "@/components/layout/topbar";
-import { Button, Card, DemoPill, Pill, Spark } from "@/components/ui/primitives";
+import { AiTag, Button, Card, DemoPill, Pill, Spark } from "@/components/ui/primitives";
 import { jano } from "@/lib/api/jano";
 import { formatRevenue } from "@/lib/format";
 import type { Account, Icp } from "@jano/domain";
@@ -23,7 +23,7 @@ const SIGNAL_LABEL: Record<string, string> = {
 
 function Chip({ k, v }: { k: string; v: string }) {
   return (
-    <span className="inline-flex gap-1.5 rounded-[9px] border border-jano-cobalto-linea bg-jano-papel px-2.5 py-1 text-[12.5px]">
+    <span className="inline-flex gap-1.5 rounded-lg border border-jano-cobalto-linea bg-jano-papel px-2.5 py-1 text-sm">
       <span className="text-jano-muted">{k}</span>
       <b>{v}</b>
     </span>
@@ -55,16 +55,12 @@ function IcpChips({ icp }: { icp: Icp }) {
   );
 }
 
-function FitBar({ score }: { score: number }) {
-  const level = fitLevelFromScore(score);
-  const color = level === "alto" ? "bg-jano-verde" : level === "medio" ? "bg-jano-bronce" : "bg-[#9CA0BA]";
+/** El fit lo puntúa la IA: se marca como suyo y se abre para ver por qué. */
+function Fit({ score, reasoning }: { score: number; reasoning: string }) {
   return (
-    <div className="flex items-center gap-2">
-      <div className="h-[7px] w-16 rounded-full bg-jano-gris">
-        <div className={clsx("h-[7px] rounded-full", color)} style={{ width: `${score}%` }} />
-      </div>
-      <span className="font-mono text-[12.5px] tabular">{score}</span>
-    </div>
+    <AiTag reason={reasoning}>
+      <span className="tabular">{score}</span> · {fitLevelFromScore(score)}
+    </AiTag>
   );
 }
 
@@ -131,21 +127,21 @@ export default function CampaignPage() {
         }
       />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3.5 xl:flex-row">
+      <div className="flex flex-col gap-3.5 xl:flex-row xl:items-start">
         <Card ai className="flex w-full shrink-0 flex-col gap-3 xl:w-[380px]" title={<><Spark />Define tu cliente ideal</>}>
           {(turns.data ?? []).map((t, i) =>
             t.role === "user" ? (
-              <div key={i} className="max-w-[88%] self-end rounded-[16px_16px_4px_16px] bg-jano-tinta px-3.5 py-2.5 text-[14.5px] text-white">
+              <div key={i} className="max-w-[88%] self-end rounded-[16px_16px_4px_16px] bg-jano-tinta px-3.5 py-2.5 text-base text-white">
                 {t.text}
               </div>
             ) : (
-              <div key={i} className="rounded-[16px_16px_16px_4px] bg-jano-cobalto-tinte px-3.5 py-3 text-[14.5px]">
+              <div key={i} className="rounded-[16px_16px_16px_4px] bg-jano-cobalto-tinte px-3.5 py-3 text-base">
                 <div className={t.icp ? "mb-2" : ""}>{t.text}</div>
                 {t.icp && <IcpChips icp={t.icp} />}
               </div>
             ),
           )}
-          <form onSubmit={onRefine} className="mt-auto">
+          <form onSubmit={onRefine} className="mt-1">
             {turns.data?.at(-1)?.suggestions.length ? (
               <div className="mb-2.5 flex flex-wrap gap-1.5">
                 {turns.data.at(-1)?.suggestions.map((s) => (
@@ -156,7 +152,7 @@ export default function CampaignPage() {
               </div>
             ) : null}
             <div className="flex items-center gap-2 rounded-xl bg-jano-niebla px-3 py-2">
-              <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Ajusta el ICP…" className="min-w-0 flex-1 bg-transparent text-[14.5px] outline-none placeholder:text-jano-muted" aria-label="Ajusta el ICP" />
+              <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Ajusta el ICP…" className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-jano-muted" aria-label="Ajusta el ICP" />
               <Button type="submit" size="sm" disabled={refine.isPending}>
                 Enviar
               </Button>
@@ -166,8 +162,8 @@ export default function CampaignPage() {
 
         <Card className="flex-1">
           <div className="mb-3 flex flex-wrap items-center gap-3">
-            <h2 className="font-display text-[17px] font-bold">Cuentas encontradas</h2>
-            <Pill tone="v">{c?.stats.accountsFound ?? list.length}</Pill>
+            <h2 className="font-display text-lg font-bold">Cuentas encontradas</h2>
+            <span className="text-sm text-jano-muted tabular">{c?.stats.accountsFound ?? list.length}</span>
             <DemoPill />
             <div className="ml-auto flex gap-2">
               <Button variant="outline" disabled={selected.size === 0 || discard.isPending} onClick={() => discard.mutate()}>
@@ -178,8 +174,10 @@ export default function CampaignPage() {
               </Button>
             </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] border-collapse text-[14.5px]">
+          {selected.size === 0 && <p className="-mt-1 mb-3 text-sm text-jano-muted">Marca las cuentas que quieras aprobar o descartar.</p>}
+          {/* En pantallas anchas sin scroll propio, para que el razonamiento del fit no quede recortado. */}
+          <div className="overflow-x-auto 2xl:overflow-visible">
+            <table className="w-full min-w-[720px] border-collapse text-base">
               <thead>
                 <tr className="text-left text-xs font-semibold text-jano-muted">
                   <th className="pb-2 pr-2" />
@@ -193,7 +191,7 @@ export default function CampaignPage() {
               </thead>
               <tbody>
                 {list.map((a) => (
-                  <tr key={a.id} className={clsx("border-t border-jano-linea", a.status === "discarded" && "opacity-50")}>
+                  <tr key={a.id} className={clsx("border-t border-jano-linea", a.status === "discarded" && "text-jano-muted line-through decoration-jano-gris-medio")}>
                     <td className="py-2.5 pr-2">
                       <input type="checkbox" aria-label={`Seleccionar ${a.name}`} checked={selected.has(a.id)} onChange={() => toggle(a.id)} className="h-4 w-4 accent-jano-cobalto" />
                     </td>
@@ -201,26 +199,25 @@ export default function CampaignPage() {
                       <div className="font-semibold">{a.name}</div>
                       <div className="font-mono text-xs text-jano-muted">{a.domain}</div>
                     </td>
-                    <td className="font-mono py-2.5 pr-2.5 tabular">{formatRevenue(a.revenueEur)}</td>
-                    <td className="py-2.5 pr-2.5" title={a.fitReasoning}>
-                      <FitBar score={a.fitScore} />
+                    <td className="py-2.5 pr-2.5 tabular">{formatRevenue(a.revenueEur)}</td>
+                    <td className="py-2.5 pr-2.5">
+                      <Fit score={a.fitScore} reasoning={a.fitReasoning} />
                     </td>
-                    <td className="py-2.5 pr-2.5 text-[13.5px]">{a.trigger?.summary ?? <span className="text-jano-muted">Sin señal reciente</span>}</td>
-                    <td className="py-2.5 pr-2.5 text-[13px] text-jano-muted">{[...new Set(a.fitEvidence.map((e) => e.source))].join(" + ")}</td>
+                    <td className="py-2.5 pr-2.5 text-sm">{a.trigger?.summary ?? <span className="text-jano-muted">Sin señal reciente</span>}</td>
+                    <td className="py-2.5 pr-2.5 text-sm text-jano-muted">{[...new Set(a.fitEvidence.map((e) => e.source))].join(" + ")}</td>
                     <td className="py-2.5">
-                      <Pill tone={a.status === "contacted" ? "v" : a.status === "discarded" ? "n" : a.status === "found" ? "b" : "g"}>
-                        {{ found: "Por revisar", approved: "Aprobada", discarded: "Descartada", enriching: "Buscando contacto", contacted: "Contactada" }[a.status]}
-                      </Pill>
+                      {a.status === "found" ? (
+                        <Pill tone="b">Por revisar</Pill>
+                      ) : (
+                        <span className="text-sm text-jano-muted">{{ approved: "Aprobada", discarded: "Descartada", enriching: "Buscando contacto", contacted: "Contactada" }[a.status]}</span>
+                      )}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <div className="mt-3 flex items-center gap-3 rounded-xl bg-jano-cobalto-tinte px-3.5 py-2.5 text-[13.5px] text-jano-cobalto-oscuro">
-            <Spark />
-            Cada fit enlaza con la evidencia que ha leído la IA: registro, web y prensa. Pasa el ratón por la barra para ver el razonamiento.
-          </div>
+          <p className="mt-3 text-sm text-jano-muted">Pulsa el fit de una cuenta para ver qué ha leído la IA (registro, web y prensa) y por qué la puntúa así.</p>
         </Card>
       </div>
     </>

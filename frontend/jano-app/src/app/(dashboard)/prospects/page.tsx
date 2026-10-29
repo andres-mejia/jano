@@ -4,10 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
 import { Topbar } from "@/components/layout/topbar";
-import { Card, ListItem, Pill } from "@/components/ui/primitives";
+import { Card } from "@/components/ui/primitives";
 import { jano } from "@/lib/api/jano";
 import { DEMO_IDS } from "@jano/demo";
-import { AGENT_LABEL, formatShortDate } from "@/lib/format";
+import { STAGE_LABEL, timeAgo } from "@/lib/format";
 import type { ProspectStage } from "@jano/domain";
 
 /**
@@ -34,27 +34,47 @@ export default function ProspectsPage() {
       return true;
     });
 
+  // Etapa y empresa salen de la ficha de cada prospect, no del evento.
+  const fichas = useQuery({
+    queryKey: ["prospects-fichas", latest.map((e) => e.prospectId)],
+    queryFn: async () => Object.fromEntries(await Promise.all(latest.map(async (e) => [e.prospectId, await jano.getProspect(e.prospectId)] as const))),
+    enabled: latest.length > 0,
+  });
+
   return (
     <>
       <Topbar title="Prospects" subtitle="Cada prospect es una cuenta con contacto dentro de una campaña" />
-      <Card title="Con actividad reciente">
-        <ul>
-          {latest.map((e) => {
-            const [name, ...rest] = e.summary.split(":");
-            return (
-              <ListItem key={e.prospectId}>
-                <div className="min-w-0">
-                  <Link href={`/prospects/${e.prospectId}` as "/prospects"} className="font-semibold hover:underline">
-                    {name}
-                  </Link>
-                  <div className="truncate text-[13px] text-jano-muted">{rest.join(":").trim() || e.summary}</div>
-                </div>
-                <span className="font-mono ml-auto shrink-0 text-xs text-jano-muted">{formatShortDate(e.at)}</span>
-                <Pill tone="n">{AGENT_LABEL[e.agent]}</Pill>
-              </ListItem>
-            );
-          })}
-        </ul>
+      <Card title="Con actividad reciente" action={<span className="text-sm font-normal text-jano-muted tabular">{latest.length} prospects</span>}>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] border-collapse text-base">
+            <thead>
+              <tr className="text-left text-xs font-semibold text-jano-muted">
+                <th className="pb-2 pr-3">Empresa</th>
+                <th className="pb-2 pr-3">Etapa</th>
+                <th className="pb-2 pr-3">Último paso</th>
+                <th className="pb-2 text-right">Cuándo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {latest.map((e) => {
+                const [name, ...rest] = e.summary.split(":");
+                const ficha = fichas.data?.[e.prospectId];
+                return (
+                  <tr key={e.prospectId} className="border-t border-jano-linea">
+                    <td className="py-2.5 pr-3">
+                      <Link href={`/prospects/${e.prospectId}` as "/prospects"} className="font-semibold hover:underline">
+                        {ficha?.account.name ?? (rest.length ? name : "Ver prospect")}
+                      </Link>
+                    </td>
+                    <td className="whitespace-nowrap py-2.5 pr-3 text-sm">{ficha ? STAGE_LABEL[ficha.prospect.stage] : "…"}</td>
+                    <td className="py-2.5 pr-3 text-sm text-jano-muted">{rest.join(":").trim() || e.summary}</td>
+                    <td className="whitespace-nowrap py-2.5 text-right text-sm text-jano-muted">{timeAgo(e.at)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
         {latest.length === 0 && <p className="py-6 text-center text-sm text-jano-muted">Todavía no hay prospects con actividad.</p>}
       </Card>
     </>
