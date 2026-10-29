@@ -15,3 +15,6 @@ output "cognito_issuer" { value = module.cognito.issuer }
 output "waitlist_endpoint_url" { value = module.waitlist.endpoint_url }
 output "waitlist_table" { value = module.waitlist.table_name }
 output "ses_configuration_set" { value = module.email.configuration_set_name }
+
+output "api_base_url" { value = module.api_gateway.api_base_url }
+output "api_id" { value = module.api_gateway.api_id }

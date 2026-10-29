@@ -2,7 +2,7 @@
 #
 #   data.tf      lo que Jano lee y no gestiona (cuenta, zona tekhos.com)
 #   network.tf   VPC mínima y Aurora con Data API
-#   identity.tf  Cognito y trigger pre-token
+#   identity.tf  Cognito, trigger pre-token y HTTP API con autorizador
 #   platform.tf  bucket de assets, presupuesto y correo saliente
 #   web.tf       formulario de acceso anticipado (y Amplify en la fase 5)
 #   outputs.tf   lo que consumen 001 y 003
