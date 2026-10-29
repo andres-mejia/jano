@@ -5,6 +5,7 @@ import { type FormEvent, useState, useSyncExternalStore } from "react";
 
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/primitives";
+import { GoogleLogo } from "@/components/ui/google-logo";
 import { mensajeDeRetorno } from "@/lib/auth/oauth-retorno";
 import { signIn, signInWithGoogle } from "@/lib/auth/session";
 import { ENV, isMockMode } from "@/lib/config/env";
@@ -92,7 +93,8 @@ export default function LoginPage() {
               <div className="my-4 flex items-center gap-3 text-xs text-jano-muted" aria-hidden="true">
                 <span className="h-px flex-1 bg-jano-linea" />o<span className="h-px flex-1 bg-jano-linea" />
               </div>
-              <Button type="button" variant="outline" size="lg" disabled={busy} onClick={onGoogle} className="w-full">
+              <Button type="button" variant="outline" size="lg" disabled={busy} onClick={onGoogle} className="w-full gap-2.5">
+                <GoogleLogo />
                 Continuar con Google
               </Button>
             </>

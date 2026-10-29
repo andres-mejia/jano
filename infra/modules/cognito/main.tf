@@ -291,10 +291,10 @@ resource "aws_cognito_user_pool_client" "app" {
   access_token_validity                = 1
   id_token_validity                    = 1
   refresh_token_validity               = 30
-  read_attributes                      = ["email", "email_verified", "name", "custom:tenant_id", "custom:role"]
+  read_attributes                      = ["email", "email_verified", "name", "picture", "custom:tenant_id", "custom:role"]
   # El mapeo de atributos de Google solo escribe lo que el cliente puede escribir: sin
   # `email` aquí, el trigger PreSignUp no lo recibe (Cognito no deja escribir `email_verified`).
-  write_attributes = ["name", "email"]
+  write_attributes = ["name", "email", "picture"]
 
   token_validity_units {
     access_token  = "hours"
@@ -331,6 +331,7 @@ resource "aws_cognito_identity_provider" "google" {
     email          = "email"
     email_verified = "email_verified"
     name           = "name"
+    picture        = "picture"
     username       = "sub"
   }
 }

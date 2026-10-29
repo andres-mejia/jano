@@ -13,6 +13,8 @@ export interface SessionUser {
   readonly name: string;
   readonly tenantId: string;
   readonly role: "owner" | "member";
+  /** Foto de perfil de Google (claim `picture`), si entró alguna vez con Google. */
+  readonly picture: string | null;
 }
 
 const MOCK_USER: SessionUser = {
@@ -20,6 +22,7 @@ const MOCK_USER: SessionUser = {
   name: "Lucía Marín",
   tenantId: "tenant-demo",
   role: "owner",
+  picture: null,
 };
 
 let configured = false;
@@ -91,6 +94,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
       name: str("name") || str("email"),
       tenantId: str("custom:tenant_id"),
       role: str("custom:role") === "owner" ? "owner" : "member",
+      picture: /^https:\/\//.test(str("picture")) ? str("picture") : null,
     };
   } catch {
     return null;
