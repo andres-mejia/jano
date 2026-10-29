@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
 import { Topbar } from "@/components/layout/topbar";
-import { AiTag, Button, Card, DemoPill, Dot, ListItem, Meter, Pill, Skeleton, Spark } from "@/components/ui/primitives";
+import { AiTag, Card, DemoPill, Dot, ListItem, Meter, Pill, Skeleton } from "@/components/ui/primitives";
 import { jano } from "@/lib/api/jano";
 import { useAuth } from "@/lib/auth/use-auth";
 import { AGENT_LABEL, formatLongDate, formatShortDate, timeAgo } from "@/lib/format";
@@ -50,8 +50,27 @@ export default function HomePage() {
         </div>
       ) : (
         <>
-          {/* Una métrica manda: reuniones contra el objetivo. El resto es contexto. */}
-          <div className="grid gap-3.5 lg:grid-cols-[1fr_2fr]">
+          {/* Lo primero, lo que te necesita; después, la métrica que manda (reuniones) y el contexto. */}
+          <div className="grid gap-3.5 lg:grid-cols-[2fr_1fr]">
+            <Card title="Requiere tu decisión" action={<Pill tone="b">{d.pending.length}</Pill>}>
+              <ul>
+                {d.pending.map((p, i) => (
+                  <ListItem key={p.id}>
+                    <div className="min-w-0">
+                      <div className="font-semibold">{p.title}</div>
+                      <div className="truncate text-sm text-jano-muted">{p.subtitle}</div>
+                    </div>
+                    <Link
+                      href={p.href as "/"}
+                      className={`ml-auto shrink-0 rounded-lg px-3.5 py-2 text-sm font-semibold ${i === 0 ? "bg-jano-cobalto text-white" : "shadow-[inset_0_0_0_1px_var(--color-jano-linea)]"}`}
+                    >
+                      {p.kind === "accounts_approval" ? "Ver" : "Revisar"}
+                    </Link>
+                  </ListItem>
+                ))}
+              </ul>
+            </Card>
+
             <Card className="flex flex-col justify-between">
               <div className="text-sm font-semibold text-jano-muted">Reuniones agendadas este mes</div>
               <div className="my-2 flex items-baseline gap-2">
@@ -65,6 +84,9 @@ export default function HomePage() {
                   : "Objetivo cumplido"}
               </div>
             </Card>
+          </div>
+
+          <div className="grid gap-3.5">
             <Card className="grid grid-cols-1 divide-y divide-jano-linea sm:grid-cols-3 sm:divide-x sm:divide-y-0">
               {(
                 [
@@ -111,20 +133,16 @@ export default function HomePage() {
                 <div className="ai-border mt-3 flex flex-wrap items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm">
                   <AiTag>Lectura de Jano</AiTag>
                   <span className="min-w-0 basis-full sm:basis-0 sm:flex-1">{d.insight.text}</span>
-                  {d.insight.action && <Button size="sm">{d.insight.action}</Button>}
+                  {d.insight.action && (
+                    <Link href={`/campanas/${d.campaignId}` as "/campanas"} className="rounded-lg bg-jano-cobalto px-3 py-1.5 text-sm font-semibold text-white hover:bg-jano-cobalto-oscuro">
+                      Ver esas cuentas
+                    </Link>
+                  )}
                 </div>
               )}
             </Card>
 
-            <Card
-              ai
-              title={
-                <>
-                  <Spark />
-                  Agentes en vivo
-                </>
-              }
-            >
+            <Card title="Agentes en vivo">
               <ul>
                 {d.agents.map((a) => (
                   <ListItem key={a.agent}>
@@ -145,26 +163,7 @@ export default function HomePage() {
             </Card>
           </div>
 
-          <div className="grid gap-3.5 lg:grid-cols-3">
-            <Card title="Requiere tu decisión" action={<Pill tone="b">{d.pending.length}</Pill>}>
-              <ul>
-                {d.pending.map((p, i) => (
-                  <ListItem key={p.id}>
-                    <div className="min-w-0">
-                      <div className="font-semibold">{p.title}</div>
-                      <div className="truncate text-sm text-jano-muted">{p.subtitle}</div>
-                    </div>
-                    <Link
-                      href={p.href as "/"}
-                      className={`ml-auto shrink-0 rounded-lg px-3.5 py-2 text-sm font-semibold ${i === 0 ? "bg-jano-cobalto text-white" : "shadow-[inset_0_0_0_1px_var(--color-jano-linea)]"}`}
-                    >
-                      {p.kind === "accounts_approval" ? "Ver" : "Revisar"}
-                    </Link>
-                  </ListItem>
-                ))}
-              </ul>
-            </Card>
-
+          <div className="grid gap-3.5 lg:grid-cols-2">
             <Card title="Reuniones por semana">
               <div className="flex h-[170px] items-end gap-1.5">
                 {d.meetingsByWeek.map((w, i) => (

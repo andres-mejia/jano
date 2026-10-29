@@ -2,17 +2,15 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { Activity, Inbox, LayoutGrid, Plug, ShieldCheck, Target, UserCog, Users, Workflow } from "lucide-react";
+import { Inbox, LayoutGrid, Plug, ShieldCheck, Target, UserCog, Users, Workflow } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
 import { Logo } from "@/components/ui/logo";
-import { Dot } from "@/components/ui/primitives";
 import { ApiError } from "@/lib/api/client";
 import { jano } from "@/lib/api/jano";
 import { signOutAndRedirect, type SessionUser } from "@/lib/auth/session";
-import { AGENT_LABEL } from "@/lib/format";
 
 const NAV = [
   {
@@ -40,12 +38,10 @@ const NAV = [
   },
 ] as const;
 
-const STATUS_DOT = { working: "g", deciding: "c", waiting_human: "w", idle: "n" } as const;
 
 /** `rail`: columna fija en escritorio. `drawer`: el mismo menú dentro del panel móvil. */
 export function Sidebar({ user, variant = "rail" }: { user: SessionUser; variant?: "rail" | "drawer" }) {
   const pathname = usePathname();
-  const dashboard = useQuery({ queryKey: ["dashboard"], queryFn: jano.getDashboardSummary });
   const inbox = useQuery({ queryKey: ["inbox"], queryFn: jano.listInbox });
   const tenant = useQuery({ queryKey: ["tenant"], queryFn: jano.getCurrentTenant, staleTime: 5 * 60_000, retry: false });
   // Usuario desactivado o empresa suspendida (spec 007, FR-006): la API responde 403 y se cierra la sesión.
@@ -102,28 +98,13 @@ export function Sidebar({ user, variant = "rail" }: { user: SessionUser; variant
         ))}
       </nav>
 
-      <div className="mt-auto rounded-xl bg-jano-tinta-2 p-3 text-sm">
-        <div className="mb-2 flex justify-between font-semibold text-white">
-          Agentes
-          <span className="text-jano-nav-verde tabular">{dashboard.data ? `${dashboard.data.agents.length} activos` : "…"}</span>
-        </div>
-        {(dashboard.data?.agents ?? []).map((a) => (
-          <div key={a.agent} className="flex items-center gap-2 py-[3px]">
-            <Dot tone={STATUS_DOT[a.status]} />
-            <Activity className="hidden" aria-hidden="true" />
-            {AGENT_LABEL[a.agent]}
-            {a.status === "waiting_human" && <span className="text-jano-nav-muted">· te espera</span>}
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-2.5 flex items-center gap-2.5 rounded-xl p-2">
+      <div className="mt-auto flex items-center gap-2.5 rounded-xl p-2">
         {user.picture ? (
           // Avatar de Google (lh3.googleusercontent.com): sin referrer, que Google a veces rechaza.
           // eslint-disable-next-line @next/next/no-img-element
           <img src={user.picture} alt="" referrerPolicy="no-referrer" className="h-[34px] w-[34px] shrink-0 rounded-full object-cover" />
         ) : (
-          <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--color-jano-cobalto-claro),var(--color-jano-bronce))] text-sm font-bold text-white">
+          <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-jano-cobalto text-sm font-bold text-white">
             {initials}
           </div>
         )}

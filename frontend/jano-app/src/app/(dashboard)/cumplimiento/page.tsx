@@ -163,7 +163,6 @@ export default function CompliancePage() {
                   <input type="number" min={1} max={200} value={g.maxSendsPerMailboxPerDay} onChange={(e) => set({ maxSendsPerMailboxPerDay: Number(e.target.value) })} className="font-mono ml-auto w-16 rounded-lg border border-jano-linea px-2 py-1 text-right text-sm tabular" aria-label="Máximo de envíos por buzón y día" />
                 </ListItem>
                 <Toggle label="No enviar a emails sin verificar" help="Si el verificador no lo confirma, no sale" checked={g.requireVerifiedEmail} onChange={(v) => set({ requireVerifiedEmail: v })} />
-                <Toggle label="WhatsApp solo tras una respuesta" help="Nunca en frío" checked={g.whatsappOnlyAfterReply} onChange={(v) => set({ whatsappOnlyAfterReply: v })} />
                 <Toggle label="Detener la secuencia al responder" help="Sin seguimientos de más" checked={g.stopSequenceOnReply} onChange={(v) => set({ stopSequenceOnReply: v })} />
                 <Toggle label="Piloto automático" help="La IA envía sin aprobación. Queda en auditoría." checked={g.autopilot} onChange={(v) => set({ autopilot: v })} />
               </ul>

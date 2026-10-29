@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 
 import { Topbar } from "@/components/layout/topbar";
+import { AvisoDeshacer, useConDeshacer } from "@/components/ui/deshacer";
 import { AiTag, Button, Card, Pill, Skeleton, Spark, Tabs } from "@/components/ui/primitives";
 import { jano } from "@/lib/api/jano";
 import { STAGE_LABEL, formatRevenue, formatShortDate } from "@/lib/format";
@@ -27,6 +28,8 @@ function EstadoPaso({ status }: { status: StepStatus }) {
   if (status === "blocked") return <Pill tone="r">{STEP_LABEL[status]}</Pill>;
   return <span className="text-xs font-semibold text-jano-muted">{STEP_LABEL[status]}</span>;
 }
+
+const SECUENCIA: Record<string, string> = { consultiva: "Consultiva", trigger: "Por señal de compra" };
 
 const TABS = [
   { id: "mensaje", label: "Mensaje" },
@@ -72,6 +75,7 @@ export default function ProspectPage() {
     },
   });
 
+  const envio = useConDeshacer(10);
   const d = detail.data;
   const seq = d?.prospect.sequence ?? null;
   const steps = seq?.steps ?? [];
@@ -105,7 +109,7 @@ export default function ProspectPage() {
                   setTab("mensaje");
                 }}
               >
-                Revisar {awaiting.title}
+                Revisar el borrador
               </Button>
             )}
           </>
@@ -125,7 +129,7 @@ export default function ProspectPage() {
           ) : (
             <div className="bg-jano-lienzo grid gap-4 rounded-xl p-3 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
-                <div className="font-mono text-xs text-jano-muted">SECUENCIA A · {seq.switchedFrom ? seq.switchedFrom.toUpperCase() : seq.kind.toUpperCase()}</div>
+                <div className="text-xs font-semibold text-jano-muted">Secuencia A · {SECUENCIA[seq.switchedFrom ?? seq.kind] ?? seq.switchedFrom ?? seq.kind}</div>
                 {consultiva.map((s) => (
                   <StepNode key={s.id} step={s} selected={s.id === stepId} onSelect={() => setSelectedStep(s.id)} dim={s.status === "skipped"} />
                 ))}
@@ -135,12 +139,12 @@ export default function ProspectPage() {
                       <Spark />
                       Decisión de la IA · {formatShortDate(seq.switchedAt)}
                     </div>
-                    <div className="text-sm">Trigger detectado: cambia de rama</div>
+                    <div className="text-sm">Señal de compra detectada: cambia de secuencia</div>
                   </div>
                 )}
               </div>
               <div className="flex flex-col gap-2 sm:pt-16">
-                {seq.switchedFrom && <div className="font-mono text-xs text-jano-cobalto">SECUENCIA B · {seq.kind.toUpperCase()}</div>}
+                {seq.switchedFrom && <div className="text-xs font-semibold text-jano-cobalto">Secuencia B · {SECUENCIA[seq.kind] ?? seq.kind}</div>}
                 {triggerBranch.map((s) => (
                   <StepNode key={s.id} step={s} selected={s.id === stepId} onSelect={() => setSelectedStep(s.id)} dim={s.status === "cancelled" || s.status === "planned"} />
                 ))}
@@ -186,8 +190,19 @@ export default function ProspectPage() {
                   <div className="whitespace-pre-line">{focus.message.body}</div>
                   {pendiente && (
                     <div className="mt-3 flex gap-2">
-                      <Button size="sm" disabled={approveStep.isPending} onClick={() => approveStep.mutate(pendiente.id)}>
-                        Aprobar y enviar
+                      <Button
+                        size="sm"
+                        disabled={approveStep.isPending || envio.pendiente?.id === pendiente.id}
+                        onClick={() =>
+                          envio.programar({
+                            id: pendiente.id,
+                            texto: `Enviando «${pendiente.title}» a ${d?.contact?.name ?? "el contacto"}`,
+                            hecho: "Enviado desde tu buzón y registrado en la auditoría",
+                            ejecutar: () => approveStep.mutate(pendiente.id),
+                          })
+                        }
+                      >
+                        {envio.pendiente?.id === pendiente.id ? `Se envía en ${envio.pendiente.restante} s` : "Aprobar y enviar"}
                       </Button>
                       <Button size="sm" variant="outline" disabled={stop.isPending} onClick={() => stop.mutate()}>
                         No enviar y detener
@@ -224,7 +239,7 @@ export default function ProspectPage() {
             </div>
           </Card>
 
-          <Card ai title={<><Spark />Por qué lo hizo</>}>
+          <Card ai title="Por qué lo hizo">
             {decision ? (
               <>
                 <p className="mb-2 text-sm leading-relaxed">{decision.reasoning ?? decision.summary}</p>
@@ -262,6 +277,7 @@ export default function ProspectPage() {
           </Card>
         </div>
       </div>
+      <AvisoDeshacer estado={envio} />
     </>
   );
 }

@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 
 import { Topbar } from "@/components/layout/topbar";
+import { AvisoDeshacer, useConDeshacer } from "@/components/ui/deshacer";
 import { AiTag, Button, Card, ListItem, Pill, Spark } from "@/components/ui/primitives";
 import { jano } from "@/lib/api/jano";
 import { INTENT_LABEL, formatShortDate } from "@/lib/format";
@@ -45,8 +46,10 @@ function InboxView() {
   const setEditing = (body: string | null) => setEditingState(body === null || !item ? null : { id: item.id, body });
 
   const refresh = () => void qc.invalidateQueries({ queryKey: ["inbox"] });
-  const approve = useMutation({ mutationFn: (i: InboxItem) => jano.approveDraft(i.id, editing !== null ? { body: editing } : {}), onSuccess: refresh });
+  const approve = useMutation({ mutationFn: ({ i, body }: { i: InboxItem; body: string | null }) => jano.approveDraft(i.id, body !== null ? { body } : {}), onSuccess: refresh });
   const discard = useMutation({ mutationFn: (i: InboxItem) => jano.discardDraft(i.id), onSuccess: refresh });
+  const envio = useConDeshacer(10);
+  const enCurso = envio.pendiente?.id === item?.id;
   const regenerate = useMutation({ mutationFn: (i: InboxItem) => jano.regenerateDraft(i.id, { tone: "otra_propuesta" }), onSuccess: refresh });
 
   const counts = items.reduce<Record<string, number>>((acc, i) => ({ ...acc, [i.intent]: (acc[i.intent] ?? 0) + 1 }), {});
@@ -57,7 +60,7 @@ function InboxView() {
     <>
       <Topbar title="Bandeja" subtitle="La IA clasifica y redacta. Tú decides qué sale." />
       <div className="flex flex-col gap-3.5 xl:flex-row xl:items-start">
-        <Card className="w-full shrink-0 xl:w-[310px]" title="Respuestas" action={pending > 0 && <Pill tone="b">{pending} nuevas</Pill>}>
+        <Card className="w-full shrink-0 xl:w-[310px]" title="Respuestas" action={pending > 0 && <Pill tone="b">{pending === 1 ? "1 por aprobar" : `${pending} por aprobar`}</Pill>}>
           <ul className="-mx-2 flex flex-col">
             {items.map((i) => (
               <li key={i.id}>
@@ -133,8 +136,21 @@ function InboxView() {
               )}
               {item.draft?.status === "pending_approval" && (
                 <div className="flex flex-wrap gap-2">
-                  <Button size="lg" disabled={approve.isPending} onClick={() => approve.mutate(item)}>
-                    {editing !== null ? "Aprobar y enviar la edición" : "Aprobar y enviar"}
+                  <Button
+                    size="lg"
+                    disabled={approve.isPending || enCurso}
+                    onClick={() => {
+                      const body = editing;
+                      envio.programar({
+                        id: item.id,
+                        texto: `Enviando la respuesta a ${item.contactName}`,
+                        hecho: `Enviada a ${item.contactName} desde tu buzón`,
+                        ejecutar: () => approve.mutate({ i: item, body }),
+                      });
+                      setEditing(null);
+                    }}
+                  >
+                    {enCurso ? `Se envía en ${envio.pendiente?.restante} s` : editing !== null ? "Aprobar y enviar la edición" : "Aprobar y enviar"}
                   </Button>
                   <Button variant="outline" onClick={() => setEditing(editing === null ? item.draft?.body ?? "" : null)}>
                     {editing === null ? "Editar" : "Cancelar edición"}
@@ -142,7 +158,14 @@ function InboxView() {
                   <Button variant="outline" disabled={regenerate.isPending} onClick={() => regenerate.mutate(item)}>
                     Pedir otro tono
                   </Button>
-                  <Button variant="outline" className="ml-auto" disabled={discard.isPending} onClick={() => discard.mutate(item)}>
+                  <Button
+                    variant="outline"
+                    className="ml-auto"
+                    disabled={discard.isPending || enCurso}
+                    onClick={() =>
+                      envio.programar({ id: item.id, texto: "Descartando el borrador", hecho: "Borrador descartado: no se envía nada", ejecutar: () => discard.mutate(item) })
+                    }
+                  >
                     Descartar
                   </Button>
                 </div>
@@ -178,6 +201,7 @@ function InboxView() {
           </Card>
         </div>
       </div>
+      <AvisoDeshacer estado={envio} />
     </>
   );
 }

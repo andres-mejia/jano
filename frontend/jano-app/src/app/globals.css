@@ -26,7 +26,7 @@
   --color-jano-rojo-tinte: #fbe9e5;
   --color-jano-rojo-texto: #8e2a1a;
   --color-jano-nav-texto: #c9cce0;
-  --color-jano-nav-muted: #8388a8;
+  --color-jano-nav-muted: #9599b8;
   --color-jano-nav-verde: #5ee0a8;
   --color-jano-cobalto-medio: #2c2a7a;
   --color-jano-bronce-linea: #efd3a0;
@@ -86,6 +86,22 @@ body {
     linear-gradient(120deg, var(--color-jano-cobalto-claro), var(--color-jano-cobalto) 45%, var(--color-jano-bronce)) border-box;
 }
 
+
+/* Lo que no se dibuja también lleva la marca: selección, foco y barras de scroll. */
+::selection {
+  background: var(--color-jano-cobalto-tinte);
+  color: var(--color-jano-tinta);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-jano-cobalto);
+  outline-offset: 2px;
+}
+
+html {
+  scrollbar-color: var(--color-jano-gris-linea) transparent;
+  caret-color: var(--color-jano-cobalto);
+}
 
 /* Tailwind 4 deja los botones con el cursor por defecto: se recupera la mano en todo lo pulsable. */
 @layer base {

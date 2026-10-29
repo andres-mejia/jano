@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { Topbar } from "@/components/layout/topbar";
-import { Button, Card, ListItem, Spark } from "@/components/ui/primitives";
+import { Button, Card, ListItem } from "@/components/ui/primitives";
 import { jano } from "@/lib/api/jano";
 
 const STATUS_LABEL = { draft: "Borrador", active: "Activa", paused: "Pausada", finished: "Cerrada" } as const;
@@ -34,7 +34,7 @@ export default function CampaignsPage() {
     <>
       <Topbar title="Campañas" subtitle="Cada campaña nace de una frase" />
 
-      <Card ai title={<><Spark />Nueva campaña</>}>
+      <Card title="Nueva campaña">
         <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-2.5">
           <label className="flex min-w-[280px] flex-1 flex-col gap-1.5 text-sm font-semibold">
             Describe tu cliente ideal
