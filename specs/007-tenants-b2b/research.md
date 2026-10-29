@@ -22,7 +22,7 @@
 - **Decisión**: `importar-tenant.ts --tenant tenant-rumbonorte --nombre "Rumbo Norte"` crea el tenant si falta y copia a `tenant_users` los usuarios de Cognito con ese `custom:tenant_id`. Nada de datos reales en migraciones ni en el repo.
 
 ## 6. Tests contra Postgres
-- **Decisión**: Docker `postgres:16` efímero por ejecución de tests (`backend/test/pg.ts`), las mismas migraciones y el mismo rol `jano_api`; en CI, servicio `postgres` del job.
+- **Decisión**: Docker `postgres:16` efímero por ejecución de tests (`backend/test/pg.ts`), las mismas migraciones y el mismo rol `jano_api`; en CI corre igual dentro de `pnpm test` (frontend-ci), que tiene Docker en `ubuntu-latest`.
 - **Alternativas**: PGlite (corre como superusuario y RLS no aplica sin más juego de roles); mocks de la base de datos (no prueban RLS).
 
 ## Evidencia (2026-10-29)
