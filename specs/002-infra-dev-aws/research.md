@@ -90,3 +90,12 @@ Gmail (redirección del catch-all)                 -> aviso de jano@tekhos.com a
 ```
 
 Se prueba con el simulador de SES y no con `prueba@example.com`: `example.com` no acepta correo y el rebote contaría en la reputación de SES, que es de toda la cuenta. El 429 se cubre con el test unitario para no generar cinco avisos reales; el item de prueba se borró después.
+
+### Fase 4 · API vacía con autorizador (2026-10-29)
+
+```
+terraform apply tfplan                                   -> Apply complete! Resources: 11 added, 0 changed, 0 destroyed.
+curl $API/v1/dashboard/summary                           -> {"message":"Unauthorized"} 401
+curl ... -H "authorization: Bearer abc.def.ghi"          -> {"message":"Unauthorized"} 401
+curl ... -H "authorization: Bearer <ID token del piloto>" -> {"error":"not_implemented","route":"GET /v1/dashboard/summary"} 501
+```

@@ -28,8 +28,8 @@ Convención: `[Tn] [P?] descripción · verificación`. `[P]` = paralelizable. C
 - [X] T033 `apply`; `curl -X POST $WAITLIST_URL -d '{"email":"prueba@example.com"}'` · 201, item en DynamoDB, correo recibido; segundo POST → 409.
 
 ## Fase 4 · API vacía con autorizador
-- [ ] T040 `infra/modules/api-gateway`: HTTP API `jano-dev`, autorizador JWT (issuer del pool, audience del cliente), CORS para app y localhost, stage `$default` con throttling · `validate` OK.
-- [ ] T041 Ruta `GET /v1/dashboard/summary` (la del contrato) con autorizador apuntando a una Lambda placeholder que devuelve 501, log group con retención de 30 d · `curl` sin token → 401; con token → 501.
+- [X] T040 `infra/modules/api-gateway`: HTTP API `jano-dev`, autorizador JWT (issuer del pool, audience del cliente), CORS para app y localhost, stage `$default` con throttling · `validate` OK.
+- [X] T041 Ruta `GET /v1/dashboard/summary` (la del contrato) con autorizador apuntando a una Lambda placeholder que devuelve 501, log group con retención de 30 d · `curl` sin token → 401; con token → 501.
 
 ## Fase 5 · Hosting
 - [ ] T050 `infra/modules/landing`: Amplify WEB, build_spec igual al `amplify.yml`, variables `PUBLIC_*`, `AMPLIFY_MONOREPO_APP_ROOT=frontend/jano-web`, dominio `jano.tekhos.com` sobre la zona de `tekhos.com`, auto-build solo en `main` y sin previews de PR (US1.3) · `validate` OK.
