@@ -6,6 +6,7 @@
 
 import { isMockMode } from "@/lib/config/env";
 import { buildAmplifyConfig, isAmplifyConfigured } from "./amplify-config";
+import { clasificarRetorno, type ErrorRetorno } from "./oauth-retorno";
 
 export interface SessionUser {
   readonly email: string;
@@ -22,12 +23,45 @@ const MOCK_USER: SessionUser = {
 };
 
 let configured = false;
+let errorDeRetorno: ErrorRetorno | null = null;
+
+const CLAVE_REINTENTO = "jano:google-reintento";
 
 async function ensureAmplify(): Promise<void> {
   if (configured || !isAmplifyConfigured()) return;
+  // El error del retorno de Google se lee antes de configurar: Amplify limpia la URL.
+  if (typeof window !== "undefined") errorDeRetorno = clasificarRetorno(window.location.search);
   const { Amplify } = await import("aws-amplify");
+  // Sin el listener, el `code` del retorno de Cognito no se canjea por tokens.
+  await import("aws-amplify/auth/enable-oauth-listener");
   Amplify.configure(buildAmplifyConfig(), { ssr: false });
   configured = true;
+}
+
+/** El error con el que volvió el último «Continuar con Google», una sola vez. */
+export function consumirErrorDeRetorno(): ErrorRetorno | null {
+  const error = errorDeRetorno;
+  errorDeRetorno = null;
+  return error;
+}
+
+export async function signInWithGoogle(): Promise<void> {
+  if (isMockMode()) return;
+  await ensureAmplify();
+  const { signInWithRedirect } = await import("aws-amplify/auth");
+  await signInWithRedirect({ provider: "Google" });
+}
+
+/**
+ * Primer login tras enlazar la identidad de Google: Cognito falla una vez
+ * («Already found an entry for username») y el segundo intento entra sin pedir
+ * nada, porque la sesión de Google sigue abierta. Solo se reintenta una vez.
+ */
+export async function reintentarGoogleUnaVez(): Promise<boolean> {
+  if (typeof window === "undefined" || window.sessionStorage.getItem(CLAVE_REINTENTO)) return false;
+  window.sessionStorage.setItem(CLAVE_REINTENTO, "1");
+  await signInWithGoogle();
+  return true;
 }
 
 export async function getIdToken(forceRefresh = false): Promise<string | null> {
@@ -50,6 +84,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     const session = await fetchAuthSession();
     const payload = session.tokens?.idToken?.payload;
     if (!payload) return null;
+    if (typeof window !== "undefined") window.sessionStorage.removeItem(CLAVE_REINTENTO);
     const str = (k: string): string => (typeof payload[k] === "string" ? (payload[k] as string) : "");
     return {
       email: str("email"),

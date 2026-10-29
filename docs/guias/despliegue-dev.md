@@ -12,6 +12,8 @@ Runbook de `infra/` (spec 002). Cuenta `966378755474`, región `eu-west-1`, comp
 | Recepción de `tekhos.com` (us-east-1) | Stack `tekhos-email-receiving`: rule set `tekhos-inbound`, catch-all a S3 y Lambda `tekhos-email-forwarder` | Nada: ya redirige `jano@tekhos.com` a `ramejiafernandez@gmail.com` |
 | Proveedor OIDC de GitHub | Estado de Fenora | Lo lee (`data`) |
 | Etiqueta de costes `Project` | Activada por CLI el 2026-10-29 | El presupuesto `jano-dev-monthly` filtra por `Project=jano` |
+| Secreto `jano/dev/google-oauth` | Cargado por CLI desde el JSON del client de Google el 2026-10-29 (spec 006) | Terraform lo lee para el IdP de Google de Cognito |
+| Client OAuth de Google | Proyecto de Google Cloud «Jano», en modo Testing | Su única URI de redirección es la de Cognito de Jano |
 | Política de arranque del rol de CI | `infra/bootstrap/`, pegada por CLI | Ver `infra/bootstrap/README.md` |
 
 ## Desplegar a mano
@@ -55,7 +57,21 @@ Variables: los valores por defecto de `infra/environments/dev/variables.tf` son 
    ```
    Un usuario sin `custom:tenant_id` o con un rol distinto de `owner`/`member` no recibe token: el trigger pre-token lo rechaza.
 3. **Política de arranque del rol de CI**: `infra/bootstrap/README.md`.
-4. **Secretos de GitHub** con los dos ARN de los roles:
+4. **Google (spec 006).** En Google Cloud Console, proyecto «Jano» → Google Auth Platform:
+   - **Clients**: client «Web application» sin orígenes JavaScript y con la URI de redirección `https://jano-dev.auth.eu-west-1.amazoncognito.com/oauth2/idpresponse`. Se descarga el JSON a `.credentials/` (ignorado por git).
+   - **Audience**: External y en Testing; solo entran las cuentas de «Test users» hasta publicar la app.
+   - **Branding**: nombre Jano, página `https://jano.tekhos.com`, dominio autorizado `tekhos.com`.
+   - **Data Access**: `openid`, `email`, `profile`.
+
+   El secreto se carga desde el JSON sin imprimir el valor (`create-secret` la primera vez, `put-secret-value` al rotar) y después `deploy-dev.sh`:
+   ```bash
+   ( umask 077; jq -c '{client_id: .web.client_id, client_secret: .web.client_secret}' .credentials/client_secret_*.json > /tmp/g.json )
+   aws secretsmanager put-secret-value --secret-id jano/dev/google-oauth --secret-string file:///tmp/g.json --profile fintrack-dev
+   shred -u /tmp/g.json
+   ```
+
+   Google solo da acceso a usuarios dados de alta (paso 2) con el mismo email, en minúsculas: el trigger PreSignUp enlaza la identidad de Google con ese usuario, que conserva tenant y rol. Un email sin alta vuelve a `/login` con «Tu cuenta de Google no tiene acceso a Jano».
+5. **Secretos de GitHub** con los dos ARN de los roles:
    ```bash
    gh secret set AWS_GITHUB_OIDC_ROLE_ARN --body "$(terraform -chdir=infra/environments/dev output -raw github_actions_role_arn)"
    gh secret set AWS_GITHUB_OIDC_PLAN_ROLE_ARN --body "$(terraform -chdir=infra/environments/dev output -raw github_actions_plan_role_arn)"
