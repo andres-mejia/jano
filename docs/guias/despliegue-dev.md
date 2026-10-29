@@ -12,6 +12,8 @@ Runbook de `infra/` (spec 002). Cuenta `966378755474`, región `eu-west-1`, comp
 | Recepción de `tekhos.com` (us-east-1) | Stack `tekhos-email-receiving`: rule set `tekhos-inbound`, catch-all a S3 y Lambda `tekhos-email-forwarder` | Nada: ya redirige `jano@tekhos.com` a `ramejiafernandez@gmail.com` |
 | Proveedor OIDC de GitHub | Estado de Fenora | Lo lee (`data`) |
 | Etiqueta de costes `Project` | Activada por CLI el 2026-10-29 | El presupuesto `jano-dev-monthly` filtra por `Project=jano` |
+| Secreto `jano/dev/google-oauth` | Copiado por CLI de `fenora/dev/google-oauth` el 2026-10-29 (spec 006) | Terraform lo lee para el IdP de Google de Cognito |
+| Client OAuth de Google | Proyecto de Google Cloud de Fenora | Su lista de URI de redirección incluye la de Cognito de Jano |
 | Política de arranque del rol de CI | `infra/bootstrap/`, pegada por CLI | Ver `infra/bootstrap/README.md` |
 
 ## Desplegar a mano
@@ -55,7 +57,18 @@ Variables: los valores por defecto de `infra/environments/dev/variables.tf` son 
    ```
    Un usuario sin `custom:tenant_id` o con un rol distinto de `owner`/`member` no recibe token: el trigger pre-token lo rechaza.
 3. **Política de arranque del rol de CI**: `infra/bootstrap/README.md`.
-4. **Secretos de GitHub** con los dos ARN de los roles:
+4. **Google (spec 006).** El secreto se copia sin imprimir el valor y, si se rota en Google, se actualizan las dos copias:
+   ```bash
+   ( umask 077; aws secretsmanager get-secret-value --secret-id fenora/dev/google-oauth --profile fintrack-dev \
+       --query SecretString --output text > /tmp/g.json )
+   aws secretsmanager create-secret --name jano/dev/google-oauth --secret-string file:///tmp/g.json \
+     --tags Key=Project,Value=jano Key=Environment,Value=dev --profile fintrack-dev     # put-secret-value al rotar
+   shred -u /tmp/g.json
+   ```
+   En Google Cloud Console (proyecto de Fenora → APIs y servicios → Credenciales → el client OAuth), añadir a **URI de redirección autorizados**: `https://jano-dev.auth.eu-west-1.amazoncognito.com/oauth2/idpresponse`. La pantalla de consentimiento muestra el nombre del proyecto de Fenora: aceptado en dev.
+
+   Google solo da acceso a usuarios dados de alta (paso 2) con el mismo email, en minúsculas: el trigger PreSignUp enlaza la identidad de Google con ese usuario, que conserva tenant y rol. Un email sin alta vuelve a `/login` con «Tu cuenta de Google no tiene acceso a Jano».
+5. **Secretos de GitHub** con los dos ARN de los roles:
    ```bash
    gh secret set AWS_GITHUB_OIDC_ROLE_ARN --body "$(terraform -chdir=infra/environments/dev output -raw github_actions_role_arn)"
    gh secret set AWS_GITHUB_OIDC_PLAN_ROLE_ARN --body "$(terraform -chdir=infra/environments/dev output -raw github_actions_plan_role_arn)"
