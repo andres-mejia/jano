@@ -63,6 +63,7 @@ __pycache__/
 # Credenciales locales (OAuth de Google, etc.): nunca al repo
 .credentials/
 infra/modules/backend-api/api.zip
+infra/modules/backend-api/motor.zip
 
 # Copias de trabajo de agentes de Claude Code
 .claude/worktrees/

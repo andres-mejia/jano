@@ -1,16 +1,18 @@
-// Empaqueta la Lambda de la API en un solo módulo ESM. El SDK v3 de AWS ya viene en
-// el runtime de Node 22, así que queda fuera del paquete.
+// Empaqueta las Lambdas (API y motor, ADR-003) en un módulo ESM cada una. El SDK v3
+// de AWS ya viene en el runtime de Node 22, así que queda fuera del paquete.
 import { build } from "esbuild";
 
-await build({
-  entryPoints: ["src/entrypoints/api.ts"],
-  outfile: "dist/api/index.mjs",
-  bundle: true,
-  platform: "node",
-  target: "node22",
-  format: "esm",
-  external: ["@aws-sdk/*"],
-  sourcemap: false,
-  legalComments: "none",
-  banner: { js: "import { createRequire } from 'module'; const require = createRequire(import.meta.url);" },
-});
+for (const nombre of ["api", "motor"]) {
+  await build({
+    entryPoints: [`src/entrypoints/${nombre}.ts`],
+    outfile: `dist/${nombre}/index.mjs`,
+    bundle: true,
+    platform: "node",
+    target: "node22",
+    format: "esm",
+    external: ["@aws-sdk/*"],
+    sourcemap: false,
+    legalComments: "none",
+    banner: { js: "import { createRequire } from 'module'; const require = createRequire(import.meta.url);" },
+  });
+}

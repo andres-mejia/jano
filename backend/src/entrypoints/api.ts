@@ -3,20 +3,24 @@ import { resolverDemo } from "@jano/demo";
 import { CognitoDirectorio } from "../adapters/cognito-directorio";
 import { DataApiDb } from "../adapters/data-api-db";
 import { crearManejador } from "../adapters/http";
+import { requerida, serviciosDesdeEntorno } from "./servicios";
 
-function requerida(nombre: string): string {
-  const v = process.env[nombre];
-  if (!v) throw new Error(`falta la variable de entorno ${nombre}`);
-  return v;
-}
+const env = process.env;
 
 export const handler = crearManejador({
   db: new DataApiDb({
-    clusterArn: requerida("CLUSTER_ARN"),
-    secretArn: requerida("DB_SECRET_ARN"),
-    database: requerida("DB_NAME"),
+    clusterArn: requerida(env, "CLUSTER_ARN"),
+    secretArn: requerida(env, "DB_SECRET_ARN"),
+    database: requerida(env, "DB_NAME"),
   }),
-  directorio: new CognitoDirectorio(requerida("USER_POOL_ID")),
-  // DEMO_DATA=on solo en dev: el resto del contrato con datos de ejemplo hasta la spec 003.
-  ...(process.env["DEMO_DATA"] === "on" ? { demo: (m: string, p: string, b: unknown) => resolverDemo(m, p, b, 0) } : {}),
+  directorio: new CognitoDirectorio(requerida(env, "USER_POOL_ID")),
+  servicios: serviciosDesdeEntorno(env),
+  // DEMO_DATA=on solo en dev: las rutas del contrato que el backend aún no sirve, con datos de ejemplo.
+  // DEMO_TENANTS: tenants que ven datos de ejemplo en todo el contrato (la demo comercial).
+  ...(env["DEMO_DATA"] === "on"
+    ? {
+        demo: (m: string, p: string, b: unknown) => resolverDemo(m, p, b, 0),
+        tenantsDemo: new Set((env["DEMO_TENANTS"] ?? "").split(",").map((t) => t.trim()).filter(Boolean)),
+      }
+    : {}),
 });

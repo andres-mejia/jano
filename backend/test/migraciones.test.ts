@@ -36,7 +36,23 @@ test("todas las tablas de negocio tienen RLS forzado", async () => {
   );
   assert.deepEqual(
     filas.map((f) => f.relname),
-    ["tenant_users", "tenants", "user_activity"],
+    [
+      "accounts",
+      "campaign_reviews",
+      "campaigns",
+      "contacts",
+      "guardrails",
+      "icp_turns",
+      "inbox_items",
+      "opportunities",
+      "prospect_events",
+      "prospects",
+      "sequence_steps",
+      "suppression_list",
+      "tenant_users",
+      "tenants",
+      "user_activity",
+    ],
   );
   for (const f of filas) assert.ok(f.relrowsecurity && f.relforcerowsecurity, `${f.relname} sin RLS forzado`);
 });

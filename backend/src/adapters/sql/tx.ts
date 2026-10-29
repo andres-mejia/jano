@@ -12,6 +12,9 @@ export interface Tx {
 /** Fija el tenant de la transacción para las políticas de RLS. Va siempre lo primero. */
 export const FIJAR_TENANT = "select set_config('app.tenant_id', :tenant_id, true)";
 
+/** Sesión sin tenant que solo ve el prospect de un token (política por_token). */
+export const FIJAR_TOKEN = "select set_config('app.token', :token, true)";
+
 export function esViolacionDeUnicidad(e: unknown): boolean {
   if (typeof e !== "object" || e === null) return false;
   const { code, message } = e as { code?: unknown; message?: unknown };

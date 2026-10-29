@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { fitLevelFromScore } from "./account";
+import { CandidateRequestSchema, fitLevelFromScore } from "./account";
 import { DEFAULT_GUARDRAILS, GuardrailsSchema } from "./compliance";
 import { PROSPECT_TRANSITIONS, ProspectStageSchema, canTransition } from "./prospect";
 
@@ -34,6 +34,21 @@ test("el fit se clasifica en tres niveles con umbrales cerrados", () => {
   assert.equal(fitLevelFromScore(74), "medio");
   assert.equal(fitLevelFromScore(50), "medio");
   assert.equal(fitLevelFromScore(49), "bajo");
+});
+
+test("una baja es inmediata también desde «ahora no»", () => {
+  assert.equal(canTransition("not_now", "opted_out"), true);
+});
+
+test("candidatas: una región o de 1 a 25 dominios, normalizados", () => {
+  assert.deepEqual(CandidateRequestSchema.parse({ region: "Comunitat Valenciana" }), { region: "Comunitat Valenciana" });
+  assert.deepEqual(CandidateRequestSchema.parse({ domains: ["https://www.Viajes-Faro.example/quienes", "brisa.example"] }), {
+    domains: ["viajes-faro.example", "brisa.example"],
+  });
+  assert.equal(CandidateRequestSchema.safeParse({ domains: [] }).success, false);
+  assert.equal(CandidateRequestSchema.safeParse({ domains: Array.from({ length: 26 }, (_, i) => `a${i}.example`) }).success, false);
+  assert.equal(CandidateRequestSchema.safeParse({ domains: ["no es un dominio"] }).success, false);
+  assert.equal(CandidateRequestSchema.safeParse({ region: "Murcia", domains: ["a.example"] }).success, false);
 });
 
 test("los guardarraíles por defecto son los conservadores y validan", () => {

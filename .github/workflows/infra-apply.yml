@@ -65,7 +65,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: pnpm
-      - name: Construir el backend (Terraform empaqueta backend/dist/api)
+      - name: Construir el backend (Terraform empaqueta backend/dist/api y dist/motor)
         run: |
           pnpm install --frozen-lockfile
           pnpm --filter @jano/backend build
@@ -80,6 +80,10 @@ jobs:
         run: terraform validate
       - name: terraform plan
         working-directory: infra/environments/dev
+        env:
+          # Lista blanca del motor (spec 008 FR-021): variable del repo, fuera del código.
+          TF_VAR_mail_allowlist: ${{ vars.MAIL_ALLOWLIST }}
+          TF_VAR_demo_day_minutes: ${{ vars.DEMO_DAY_MINUTES || '1440' }}
         run: |
           terraform plan -input=false -lock-timeout=5m -out=tfplan -var 'aws_profile='
           terraform show -json tfplan > tfplan.json
