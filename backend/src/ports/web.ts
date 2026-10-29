@@ -21,6 +21,12 @@ export interface WebReader {
   leer(dominio: string): Promise<LecturaWeb>;
 }
 
+/** Un enlace de la portada a otra página del mismo sitio, con su texto visible. */
+export interface EnlaceInterno {
+  readonly url: string;
+  readonly texto: string;
+}
+
 /** Una empresa candidata antes de leer su web. `origen`: `osm:<tipo>/<id>` o `manual`. */
 export interface EmpresaCandidata {
   readonly nombre: string;
@@ -30,5 +36,9 @@ export interface EmpresaCandidata {
 }
 
 export interface CompanySource {
+  /** Si sabe buscar en esa región; la API rechaza la petición si no. */
+  admite(region: string): boolean;
   buscar(region: string, limite: number): Promise<EmpresaCandidata[]>;
+  /** Atribución que exige la licencia de los datos (ODbL en OpenStreetMap), para mostrarla en la app. */
+  readonly atribucion: string | null;
 }
