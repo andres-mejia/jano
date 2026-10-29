@@ -12,7 +12,8 @@
     "migrar": "tsx scripts/migrar.ts",
     "alta-tenant": "tsx scripts/alta-tenant.ts",
     "importar-tenant": "tsx scripts/importar-tenant.ts",
-    "suspender-tenant": "tsx scripts/suspender-tenant.ts"
+    "suspender-tenant": "tsx scripts/suspender-tenant.ts",
+    "probar-agentes": "tsx scripts/probar-agentes.ts"
   },
   "dependencies": {
     "@jano/demo": "workspace:*",
