@@ -34,3 +34,9 @@ resource "aws_budgets_budget" "monthly" {
     subscriber_email_addresses = [var.ses_notify_address]
   }
 }
+
+module "email" {
+  source      = "../../modules/email"
+  environment = var.environment
+  alert_email = var.ses_notify_address
+}

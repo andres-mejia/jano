@@ -11,3 +11,7 @@ output "cognito_user_pool_id" { value = module.cognito.user_pool_id }
 output "cognito_client_id" { value = module.cognito.app_client_id }
 output "cognito_domain" { value = module.cognito.hosted_ui_domain }
 output "cognito_issuer" { value = module.cognito.issuer }
+
+output "waitlist_endpoint_url" { value = module.waitlist.endpoint_url }
+output "waitlist_table" { value = module.waitlist.table_name }
+output "ses_configuration_set" { value = module.email.configuration_set_name }
