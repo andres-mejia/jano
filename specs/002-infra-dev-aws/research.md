@@ -67,7 +67,7 @@ T015 (coste en reposo a las 24 h) queda pendiente: se mide el 2026-10-30 en Cost
 ### Fase 2 · Identidad (2026-10-29)
 
 ```
-node --test infra/modules/cognito/lambda/pre-token   -> tests 4, pass 4, fail 0
+node --test infra/modules/cognito/lambda/pre-token/index.test.mjs -> tests 4, pass 4, fail 0
 terraform apply tfplan                               -> Apply complete! Resources: 8 added, 0 changed, 0 destroyed.
 aws cognito-idp initiate-auth --auth-flow USER_AUTH (piloto@rumbonorte.example, tenant-rumbonorte, owner)
   ID token -> {'aud': 'npfu3ule0vnct9lhup6b7438o', 'token_use': 'id', 'custom:tenant_id': 'tenant-rumbonorte',
@@ -79,7 +79,7 @@ initiate-auth de un usuario sin tenant (borrado después)
 ### Fase 3 · Correo y acceso anticipado (2026-10-29)
 
 ```
-node --test infra/modules/waitlist/lambda/handler -> tests 6, pass 6, fail 0 (201, 409, 429, honeypot, 400, 405)
+node --test infra/modules/waitlist/lambda/handler/index.test.mjs -> tests 6, pass 6, fail 0 (201, 409, 429, honeypot, 400, 405)
 terraform apply tfplan                            -> Apply complete! Resources: 16 added, 0 changed, 0 destroyed.
 curl -X POST $WAITLIST_URL -d '{"email":"success@simulator.amazonses.com"}'  -> {"ok":true} 201
 mismo POST otra vez                               -> {"ok":false,"error":"already_registered"} 409
