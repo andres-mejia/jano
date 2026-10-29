@@ -8,3 +8,8 @@ data "aws_route53_zone" "parent" {
   name         = var.parent_zone_name
   private_zone = false
 }
+
+locals {
+  landing_url = "https://${var.landing_fqdn}"
+  app_url     = "https://${var.app_fqdn}"
+}
