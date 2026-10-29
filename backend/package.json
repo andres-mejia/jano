@@ -1,0 +1,33 @@
+{
+  "name": "@jano/backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend de Jano (spec 003; primer trozo en 007): monolito hexagonal sobre Aurora Data API.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "type-check": "tsc --noEmit",
+    "test": "node test/con-postgres.mjs node --import tsx --test --test-concurrency=1 test/*.test.ts",
+    "lint": "echo 'sin lint propio: lo cubre tsc'",
+    "migrar": "tsx scripts/migrar.ts",
+    "alta-tenant": "tsx scripts/alta-tenant.ts",
+    "importar-tenant": "tsx scripts/importar-tenant.ts",
+    "suspender-tenant": "tsx scripts/suspender-tenant.ts"
+  },
+  "dependencies": {
+    "@jano/domain": "workspace:*",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.700.0",
+    "@aws-sdk/client-rds-data": "^3.700.0",
+    "@aws-sdk/client-secrets-manager": "^3.700.0",
+    "@aws-sdk/credential-providers": "^3.700.0",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.0",
+    "esbuild": "^0.25.0",
+    "pg": "^8.13.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.0"
+  }
+}
