@@ -10,6 +10,9 @@ aws lambda invoke jano-dev-pre-signup (PreSignUp_ExternalProvider sintético)
   piloto@rumbonorte.example                         -> sin error; identities del piloto = Google 999000111
 aws cognito-idp admin-disable-provider-for-user     -> enlace de prueba deshecho; el pool sigue con 1 usuario
 pnpm type-check && pnpm build && pnpm test && pnpm lint (jano-app) -> verde; app 7 pass (5 de oauth-retorno)
+aws secretsmanager put-secret-value jano/dev/google-oauth (client del proyecto de Google «Jano», desde .credentials/)
+terraform apply                                     -> Apply complete! Resources: 0 added, 1 changed, 0 destroyed. (provider_details del IdP)
+aws cognito-idp describe-identity-provider Google   -> client_id 37030998588-… (proyecto Jano)
 ```
 
-Pendiente (T030, Andrés): URI de redirección en Google Cloud Console y prueba en el navegador.
+Pendiente (T030, Andrés): prueba en el navegador con una cuenta de «Test users».

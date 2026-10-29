@@ -3,7 +3,7 @@
 **Rama**: `feat/login-google` · **Estado**: especificada · **Fecha**: 2026-10-29 · **Depende de**: 002
 
 ## Objetivo
-Que un usuario que el administrador ya dio de alta pueda entrar en la app con su cuenta de Google, además de con email y contraseña, sin perder su tenant ni su rol y sin abrir el registro: Jano sigue siendo B2B con alta solo por administrador. Se reutiliza la aplicación OAuth de Google que ya usa Fenora en la misma cuenta.
+Que un usuario que el administrador ya dio de alta pueda entrar en la app con su cuenta de Google, además de con email y contraseña, sin perder su tenant ni su rol y sin abrir el registro: Jano sigue siendo B2B con alta solo por administrador. La aplicación OAuth de Google es propia de Jano (proyecto de Google Cloud «Jano»).
 
 ## Escenarios de usuario
 
@@ -34,7 +34,7 @@ Que un usuario que el administrador ya dio de alta pueda entrar en la app con su
 - **FR-002** Una identidad de Google solo da acceso si su email (sin distinguir mayúsculas) coincide con un usuario existente, habilitado y creado por el administrador; en ese caso queda enlazada a ese usuario y hereda su tenant y su rol.
 - **FR-003** Una identidad de Google sin usuario existente se rechaza y no crea usuario (alta solo por administrador, AGENTS.md §4 y spec 002).
 - **FR-004** Toda sesión, entre por donde entre, lleva tenant y rol; sin ellos no hay sesión (como en la spec 002).
-- **FR-005** Las credenciales de la aplicación OAuth de Google se guardan en un secreto propio de Jano (`jano/dev/google-oauth`), copiado una vez del de Fenora; Jano no lee secretos de Fenora ni se abren excepciones en la política de CI.
+- **FR-005** Las credenciales de la aplicación OAuth de Google se guardan en un secreto propio de Jano (`jano/dev/google-oauth`); Jano no lee secretos de Fenora.
 - **FR-006** Las credenciales de Google nunca llegan al frontend ni a los logs (AGENTS.md §4).
 - **FR-007** El rechazo de US2 se muestra en `/login` con un mensaje comprensible, sin códigos internos.
 
@@ -49,15 +49,14 @@ Que un usuario que el administrador ya dio de alta pueda entrar en la app con su
 - **SC-004** El login con contraseña de la spec 002 sigue funcionando sin cambios.
 
 ## Supuestos y dependencias
-- Andrés añade, en Google Cloud Console, la URL de retorno de Cognito de Jano al client OAuth de Fenora; sin ese paso Google rechaza el inicio de sesión.
-- La pantalla de consentimiento de Google muestra el nombre del proyecto de Fenora. Aceptado en dev; antes de clientes piloto hará falta una aplicación OAuth propia de Jano.
-- Si se rota el secreto en Google, hay que actualizar las dos copias (Fenora y Jano).
+- Andrés crea en Google Cloud Console el proyecto «Jano» y su client OAuth con la URL de retorno de Cognito de Jano; sin ella Google rechaza el inicio de sesión.
+- Mientras la app de Google esté en modo Testing, solo entran las cuentas de «Test users». Antes de clientes piloto se completa el branding y se publica.
 - Tras cerrar sesión, quien tenga una sola cuenta de Google en el navegador vuelve a entrar sin elegir cuenta (limitación ya documentada en Fenora); se acepta.
 - Enmienda ADR-001 §3, que excluía los IdP sociales: Google entra solo como método de acceso de usuarios ya dados de alta.
 
 ## Fuera de alcance
-Registro abierto con Google, otros proveedores (Apple, Microsoft), passkeys, aplicación OAuth propia de Jano y dominio propio para la página de login.
+Registro abierto con Google, otros proveedores (Apple, Microsoft), passkeys, publicación de la app de Google y dominio propio para la página de login.
 
 ## Decisiones tomadas (Andrés, 2026-10-29)
-- **Credenciales**: copia propia `jano/dev/google-oauth` en vez de leer `fenora/dev/google-oauth`.
+- **Credenciales**: copia propia `jano/dev/google-oauth` en vez de leer `fenora/dev/google-oauth`. *Cambio (2026-10-29)*: Andrés crea un proyecto de Google propio de Jano y el secreto pasa a guardar su client.
 - **Acceso**: Google solo enlaza con usuarios existentes (forma del trigger de enlace de Fenora); un email desconocido se rechaza.

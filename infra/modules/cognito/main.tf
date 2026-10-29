@@ -35,7 +35,7 @@ variable "log_retention_days" {
 variable "google_client_id" {
   type        = string
   default     = ""
-  description = "Client OAuth de Google (el de Fenora, copiado a jano/<env>/google-oauth). Vacío = sin Google."
+  description = "Client OAuth del proyecto de Google de Jano (secreto jano/<env>/google-oauth). Vacío = sin Google."
 }
 
 variable "google_client_secret" {
