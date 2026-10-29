@@ -13,6 +13,10 @@ next-env.d.ts
 frontend/jano-web/dist/
 frontend/jano-web/.astro/
 
+# Remotion: salidas locales del vídeo (lo publicado va en frontend/jano-web/public/media)
+frontend/jano-video/out/
+frontend/jano-video/.remotion/
+
 # Paquetes compilados
 packages/*/dist/
 backend/dist/

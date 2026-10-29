@@ -1,0 +1,51 @@
+---
+import { pathFor, t, type Lang, type LegalKey, type RouteKey } from "../i18n";
+import LangSwitch from "./LangSwitch.astro";
+import Logo from "./Logo.astro";
+
+interface Props {
+  lang: Lang;
+  routeKey: RouteKey;
+}
+
+const { lang, routeKey } = Astro.props;
+const d = t(lang);
+const legal: LegalKey[] = ["privacy", "terms", "cookies", "notice"];
+---
+
+<footer class="border-t border-jano-linea bg-jano-papel">
+  <div class="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-5 md:grid-cols-[1fr_auto] md:items-end">
+    <div>
+      <a href={pathFor("home", lang)} class="inline-flex items-center gap-2" aria-label={d.brand.homeLabel}>
+        <Logo size={24} />
+        <span class="font-display text-xl font-bold text-jano-tinta">Jano</span>
+      </a>
+      <p class="mt-2 text-sm text-jano-muted">
+        {d.brand.tagline}. <a href="https://tekhos.com" class="underline decoration-jano-linea underline-offset-4 hover:text-jano-tinta hover:decoration-jano-tinta">{d.brand.byline}</a>.
+      </p>
+    </div>
+    <div class="flex flex-col gap-4 md:items-end">
+      <nav aria-label={d.footer.legalLabel}>
+        <ul class="flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium text-jano-muted">
+          {
+            legal.map((k) => (
+              <li>
+                <a
+                  href={pathFor(k, lang)}
+                  aria-current={k === routeKey ? "page" : undefined}
+                  class="hover:text-jano-tinta aria-[current=page]:text-jano-tinta"
+                >
+                  {d.footer.links[k]}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+      <div class="flex items-center gap-4 text-sm text-jano-muted">
+        <span class="tabular">{d.footer.rights}</span>
+        <LangSwitch lang={lang} routeKey={routeKey} />
+      </div>
+    </div>
+  </div>
+</footer>
