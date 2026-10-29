@@ -112,9 +112,15 @@ export function Sidebar({ user }: { user: SessionUser }) {
       </div>
 
       <div className="mt-2.5 flex items-center gap-2.5 rounded-xl p-2">
-        <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--color-jano-cobalto-claro),var(--color-jano-bronce))] text-[13px] font-bold text-white">
-          {initials}
-        </div>
+        {user.picture ? (
+          // Avatar de Google (lh3.googleusercontent.com): sin referrer, que Google a veces rechaza.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={user.picture} alt="" referrerPolicy="no-referrer" className="h-[34px] w-[34px] shrink-0 rounded-full object-cover" />
+        ) : (
+          <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--color-jano-cobalto-claro),var(--color-jano-bronce))] text-[13px] font-bold text-white">
+            {initials}
+          </div>
+        )}
         <div className="min-w-0">
           <div className="truncate text-[13.5px] font-semibold text-white">{user.name}</div>
           <div className="truncate text-xs">
