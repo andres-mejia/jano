@@ -12,6 +12,12 @@ const NOMBRES = ["Viajes", "Rutas", "Destinos", "Horizonte", "Brújula", "Traves
 const APELLIDOS = ["Azahar", "Albufera", "del Turia", "Mediterráneo", "Norte", "Levante", "Costa", "Sol"] as const;
 
 export class DeterministicCompanySource implements CompanySource {
+  readonly atribucion = null;
+
+  admite(region: string): boolean {
+    return region.trim().length >= 2;
+  }
+
   async buscar(region: string, limite: number): Promise<EmpresaCandidata[]> {
     const h = huella(region);
     const total = Math.min(limite, 30 + (h % 21));

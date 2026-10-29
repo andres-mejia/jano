@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Jano — despliegue del entorno dev (forma de fintrack/infra/deploy-dev.sh).
 #
-# Construye el backend (Terraform empaqueta backend/dist/api y dist/motor), init con el bucket de
+# Construye el backend (Terraform empaqueta backend/dist/api, dist/motor y dist/cuentas), init con el bucket de
 # estado de Fenora (FR-001), validate, plan a fichero y apply de ese mismo plan tras
 # confirmar; después aplica las migraciones de Aurora (spec 007). Nada se aplica sin
 # plan revisado (AGENTS.md §8).

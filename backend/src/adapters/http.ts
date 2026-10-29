@@ -6,8 +6,8 @@ import {
   AuditEntrySchema,
   CampaignSchema,
   CampaignStatusSchema,
+  CandidateJobSchema,
   CandidateRequestSchema,
-  CandidateResultSchema,
   ComplianceSummarySchema,
   ConnectionSchema,
   CreateCampaignSchema,
@@ -31,7 +31,8 @@ import { z } from "zod";
 import { cargarActor, type Sesion } from "../application/acceso";
 import { aprobarBorrador, descartarBorrador, elementoBandeja, listarBandeja, regenerarBorrador } from "../application/bandeja";
 import { afinarIcp, cambiarEstadoCampana, cargarCampana, crearCampana, turnosIcp } from "../application/campanas";
-import { aprobarCuentas, buscarCandidatas, descartarCuentas, listarCuentas } from "../application/cuentas";
+import { conTenant } from "../application/contexto-tenant";
+import { aprobarCuentas, descartarCuentas, encolarCandidatas, listarCuentas } from "../application/cuentas";
 import { desactivar, invitar, listarEquipo, reactivar, reenviarInvitacion } from "../application/equipo";
 import { aprobarPaso, detalleProspect, detenerProspect, eventosProspect } from "../application/prospects";
 import { darDeBaja } from "../application/respuestas";
@@ -106,7 +107,7 @@ export interface Dependencias {
   readonly tenantsDemo?: ReadonlySet<string>;
 }
 
-const ESTADO: Record<TipoDeError, number> = { prohibido: 403, no_encontrado: 404, conflicto: 409, invalido: 400 };
+const ESTADO: Record<TipoDeError, number> = { prohibido: 403, no_encontrado: 404, conflicto: 409, invalido: 400, no_disponible: 503 };
 
 const json = (statusCode: number, body: unknown, problema = statusCode >= 400): RespuestaHttp => ({
   statusCode,
@@ -213,9 +214,9 @@ export const RUTAS: Readonly<Record<string, Ruta>> = {
     const status = filtro(AccountStatusSchema, query(evento).get("status"));
     return ok(z.array(AccountSchema), await listarCuentas(uow, id(evento, "campaignId"), { status, limite: limite(evento) }));
   },
-  "POST /v1/campaigns/{campaignId}/accounts/candidates": async ({ uow, evento }, { servicios }) => {
+  "POST /v1/campaigns/{campaignId}/accounts/candidates": async ({ uow, actor, evento }, { servicios }) => {
     const peticion = leer(CandidateRequestSchema, evento, "Indica una región o entre 1 y 25 dominios válidos.");
-    return ok(CandidateResultSchema, await buscarCandidatas(uow, servicios, id(evento, "campaignId"), peticion));
+    return ok(CandidateJobSchema, await encolarCandidatas(uow, servicios, actor.tenantId, id(evento, "campaignId"), peticion), 202);
   },
   "POST /v1/campaigns/{campaignId}/accounts/approve": async ({ uow, evento }, { servicios }) => {
     const { accountIds } = leer(AccountSelectionSchema, evento);
@@ -278,7 +279,7 @@ export const RUTAS_PUBLICAS: Readonly<Record<string, (evento: EventoHttp, deps: 
   "GET /v1/baja/{token}": async (evento, { db }) => {
     const token = evento.pathParameters?.["token"] ?? "";
     const destino = await db.resolverToken(token);
-    if (destino) await db.enTenant(destino.tenantId, (uow) => darDeBaja(uow, destino.prospectId));
+    if (destino) await conTenant(destino.tenantId, () => db.enTenant(destino.tenantId, (uow) => darDeBaja(uow, destino.prospectId)));
     console.log(JSON.stringify({ msg: "baja", request_id: evento.requestContext.requestId, tenant_id: destino?.tenantId ?? null, prospect_id: destino?.prospectId ?? null }));
     return { statusCode: 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }, body: PAGINA_BAJA };
   },
@@ -342,10 +343,13 @@ export function crearManejador(deps: Dependencias) {
       );
 
     try {
-      const r = await deps.db.enTenant(sesion.tenantId, async (uow) => {
-        const actor = await cargarActor(uow, sesion);
-        return ruta({ uow, actor, evento }, deps);
-      });
+      // El tenant en curso, para cargar al tenant las llamadas al modelo (FR-016).
+      const r = await conTenant(sesion.tenantId, () =>
+        deps.db.enTenant(sesion.tenantId, async (uow) => {
+          const actor = await cargarActor(uow, sesion);
+          return ruta({ uow, actor, evento }, deps);
+        }),
+      );
       log("ok", { status: r.status, ...prospectDe(evento) });
       if (r.texto) return { statusCode: r.status, headers: { "content-type": r.texto.tipo, ...r.texto.cabeceras }, body: String(r.body) };
       const problema = r.status >= 400 && typeof r.body === "object" && r.body !== null && "title" in r.body;

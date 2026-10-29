@@ -1,11 +1,12 @@
 import type { Connection } from "@jano/domain";
 
 import type { ListaBlanca } from "../domain/motor/lista-blanca";
+import type { ColaDeCuentas } from "../ports/cola";
 import type { MailSender } from "../ports/correo";
 import type { Despertador } from "../ports/despertador";
 import type { Agentes } from "../ports/ia";
 import type { Reloj } from "../ports/reloj";
-import type { CompanySource, WebReader } from "../ports/web";
+import type { CompanySource, FuenteManual, WebReader } from "../ports/web";
 
 /** Lo que el motor necesita además de la base de datos. Lo montan los entrypoints. */
 export interface Servicios {
@@ -13,6 +14,9 @@ export interface Servicios {
   readonly correo: MailSender;
   readonly web: WebReader;
   readonly empresas: CompanySource;
+  readonly manual: FuenteManual;
+  /** Análisis de cuentas en segundo plano (trabajador `jano-<env>-cuentas`). */
+  readonly cola: ColaDeCuentas;
   readonly reloj: Reloj;
   readonly despertador: Despertador;
   readonly config: ConfigMotor;

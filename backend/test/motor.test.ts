@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { after, before, test } from "node:test";
 
-import type { Account, InboxItem, Prospect, ProspectDetail, ProspectEvent } from "@jano/domain";
+import type { Account, CandidateJob, InboxItem, Prospect, ProspectDetail, ProspectEvent } from "@jano/domain";
 
 import { RelojFijo } from "../src/adapters/deterministas/reloj";
 import { crearManejador, type EventoHttp, RUTAS, RUTAS_PUBLICAS } from "../src/adapters/http";
+import { procesarMensaje } from "../src/application/analizar-cuentas";
 import { ejecutarMotor } from "../src/application/ejecutar-motor";
 import { registrarRespuesta } from "../src/application/respuestas";
 import { REGLA } from "../src/domain/motor/reglas";
@@ -27,7 +28,9 @@ let ids: Record<string, string>;
 let idsB: Record<string, string>;
 const reloj = new RelojFijo(new Date());
 const prueba = serviciosDePrueba({ reloj, minutosPorDia: 1 });
-const { servicios, correo, despertador } = prueba;
+const { servicios, correo, despertador, cola } = prueba;
+/** El trabajador de cuentas, como lo haría SQS: hasta que la cola queda vacía. */
+const vaciarCola = () => cola.vaciar(async (m) => void (await procesarMensaje(base.db, servicios, m)));
 let manejar: ReturnType<typeof crearManejador>;
 
 before(async () => {
@@ -91,13 +94,23 @@ test("US1: una frase crea la campaña con ICP y una corrección cambia solo lo p
   assert.equal((activa.body as unknown as { status: string }).status, "active");
 });
 
-test("US2: candidatas de la región puntuadas con evidencia; las ilegibles, descartadas con motivo", async () => {
+test("US2: candidatas de la región puntuadas con evidencia en segundo plano; las ilegibles, descartadas con motivo", async () => {
   const r = await pedir("POST /v1/campaigns/{campaignId}/accounts/candidates", conCuerpo({ region: "Comunitat Valenciana" }, { campaignId: campana }));
-  assert.equal(r.status, 200);
-  const res = r.body as unknown as { added: number; discarded: number; skipped: number; accounts: Account[] };
-  assert.ok(res.accounts.length >= 30 && res.accounts.length <= 50);
-  assert.ok(res.discarded > 0);
-  for (const a of res.accounts) {
+  assert.equal(r.status, 202);
+  const job = r.body as unknown as CandidateJob;
+  assert.equal(job.mode, "region");
+  assert.equal(job.queued, 0);
+  // Nada se lee dentro de la petición: la búsqueda queda en la cola.
+  assert.equal((await pedir("GET /v1/campaigns/{campaignId}/accounts", { pathParameters: { campaignId: campana } })).body.length, 0);
+  assert.deepEqual(cola.pendientes.map((m) => m.tipo), ["region"]);
+  const mensajes = await vaciarCola();
+  assert.ok(mensajes > 30 && mensajes <= 51);
+  assert.ok(cola.entregados.every((m) => m.jobId === job.jobId && m.tenantId === A.id));
+
+  const cuentas = (await pedir("GET /v1/campaigns/{campaignId}/accounts", { pathParameters: { campaignId: campana }, rawQueryString: "limit=200" })).body as unknown as Account[];
+  assert.ok(cuentas.length >= 30 && cuentas.length <= 50);
+  assert.ok(cuentas.some((a) => a.status === "discarded"));
+  for (const a of cuentas) {
     if (a.status === "discarded") {
       assert.equal(a.fitScore, 0);
       assert.equal(a.fitEvidence.length, 0);
@@ -107,10 +120,25 @@ test("US2: candidatas de la región puntuadas con evidencia; las ilegibles, desc
       assert.equal(a.revenueEur, null);
     }
   }
-  const otra = await pedir("POST /v1/campaigns/{campaignId}/accounts/candidates", conCuerpo({ region: "Comunitat Valenciana" }, { campaignId: campana }));
-  assert.equal((otra.body as unknown as { skipped: number; added: number }).added, 0);
-  const manual = await pedir("POST /v1/campaigns/{campaignId}/accounts/candidates", conCuerpo({ domains: ["https://www.viajes-faro.example/"] }, { campaignId: campana }));
-  assert.equal((manual.body as unknown as { accounts: Account[] }).accounts[0]?.domain, "viajes-faro.example");
+  // La segunda búsqueda sale de la caché y no repite dominios.
+  await pedir("POST /v1/campaigns/{campaignId}/accounts/candidates", conCuerpo({ region: "Comunitat Valenciana" }, { campaignId: campana }));
+  assert.equal(await vaciarCola(), 1);
+
+  const manual = await pedir("POST /v1/campaigns/{campaignId}/accounts/candidates", conCuerpo({ domains: ["https://www.viajes-faro.example/", "viajes-faro.example", cuentas[0]?.domain ?? ""] }, { campaignId: campana }));
+  assert.equal(manual.status, 202);
+  assert.deepEqual({ ...(manual.body as unknown as CandidateJob), jobId: "", acceptedAt: "" }, {
+    jobId: "",
+    campaignId: campana,
+    mode: "domains",
+    region: null,
+    queued: 1,
+    skipped: 2,
+    attribution: null,
+    acceptedAt: "",
+  });
+  assert.equal(await vaciarCola(), 1);
+  const faro = (await pedir("GET /v1/campaigns/{campaignId}/accounts", { pathParameters: { campaignId: campana }, rawQueryString: "limit=200" })).body as unknown as Account[];
+  assert.ok(faro.some((a) => a.domain === "viajes-faro.example"));
   assert.equal((await pedir("POST /v1/campaigns/{campaignId}/accounts/candidates", conCuerpo({ domains: [] }, { campaignId: campana }))).status, 400);
 
   const lista = (await pedir("GET /v1/campaigns/{campaignId}/accounts", { pathParameters: { campaignId: campana }, rawQueryString: "status=found" })).body as unknown as Account[];

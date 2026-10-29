@@ -40,22 +40,25 @@ module "api_gateway" {
   placeholder_routes = []
 }
 
-# Backend de la API (spec 007): tenant y equipo. Antes del plan hay que construirlo
+# Backend (specs 007 y 008): la API, el motor y el trabajador de cuentas. Antes del plan hay que construirlo
 # (`pnpm --filter @jano/backend build`); deploy-dev.sh y CI lo hacen.
 module "backend_api" {
-  source            = "../../modules/backend-api"
-  environment       = var.environment
-  cluster_arn       = module.aurora.cluster_arn
-  database_name     = module.aurora.database_name
-  user_pool_id      = module.cognito.user_pool_id
-  user_pool_arn     = module.cognito.user_pool_arn
-  api_id            = module.api_gateway.api_id
-  authorizer_id     = module.api_gateway.authorizer_id
-  api_execution_arn = module.api_gateway.execution_arn
-  codigo_dir        = "${path.root}/../../../backend/dist/api"
-  motor_codigo_dir  = "${path.root}/../../../backend/dist/motor"
-  mail_allowlist    = var.mail_allowlist
-  demo_day_minutes  = var.demo_day_minutes
+  source             = "../../modules/backend-api"
+  environment        = var.environment
+  cluster_arn        = module.aurora.cluster_arn
+  database_name      = module.aurora.database_name
+  user_pool_id       = module.cognito.user_pool_id
+  user_pool_arn      = module.cognito.user_pool_arn
+  api_id             = module.api_gateway.api_id
+  authorizer_id      = module.api_gateway.authorizer_id
+  api_execution_arn  = module.api_gateway.execution_arn
+  codigo_dir         = "${path.root}/../../../backend/dist/api"
+  motor_codigo_dir   = "${path.root}/../../../backend/dist/motor"
+  cuentas_codigo_dir = "${path.root}/../../../backend/dist/cuentas"
+  mail_allowlist     = var.mail_allowlist
+  demo_day_minutes   = var.demo_day_minutes
+  # Fase B de la spec 008: agentes en Bedrock (perfil eu.*), webs reales y OpenStreetMap.
+  agentes = "bedrock"
   # Comodín de demo para lo que el backend aún no sirva; con la spec 008 lo sirve todo
   # y pasa a false en la fase D (T042), cuando el tenant de prueba esté dado de alta.
   demo_data = true

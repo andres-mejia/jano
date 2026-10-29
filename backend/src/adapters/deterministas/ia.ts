@@ -14,6 +14,7 @@ import type {
   ReplyClassifier,
   ResumenCampana,
   RevisionCampana,
+  SelectorDeEnlaces,
 } from "../../ports/ia";
 import { enMadrid, huella, normalizar } from "./texto";
 
@@ -150,6 +151,31 @@ export class DeterministicAccountScorer implements AccountScorer {
           }
         : null,
     };
+  }
+}
+
+/** Qué buscar en el texto o la ruta de un enlace, por orden de utilidad para el encaje y las señales. */
+const PAGINAS_UTILES: readonly RegExp[] = [
+  /empleo|trabaja|careers|jobs|vacante|unete|ofertas-de-trabajo/,
+  /noticias|blog|actualidad|novedades|prensa|news/,
+  /quienes|nosotros|sobre|about|empresa|historia|equipo/,
+  /oficina|agencias|tiendas|donde|sedes|contacto/,
+];
+
+/** Elige por palabras clave, una página por tipo; lo usa también el lector si el modelo falla. */
+export function elegirPorPalabras(enlaces: readonly { url: string; texto: string }[], maximo: number): string[] {
+  const elegidas: string[] = [];
+  for (const re of PAGINAS_UTILES) {
+    if (elegidas.length >= maximo) break;
+    const e = enlaces.find((x) => !elegidas.includes(x.url) && re.test(normalizar(`${x.texto} ${new URL(x.url).pathname}`)));
+    if (e) elegidas.push(e.url);
+  }
+  return elegidas;
+}
+
+export class DeterministicSelectorDeEnlaces implements SelectorDeEnlaces {
+  async elegir({ enlaces, maximo }: Parameters<SelectorDeEnlaces["elegir"]>[0]) {
+    return elegirPorPalabras(enlaces, maximo);
   }
 }
 
@@ -303,6 +329,7 @@ export function agentesDeterministas(): Agentes {
     orquestador: new DeterministicPlanificadorOrquestador(),
     icp: new DeterministicIcpStructurer(),
     cuentas: new DeterministicAccountScorer(),
+    enlaces: new DeterministicSelectorDeEnlaces(),
     contactos: new DeterministicContactResolver(),
     redactor: new DeterministicDraftWriter(),
     respuestas: new DeterministicReplyClassifier(),

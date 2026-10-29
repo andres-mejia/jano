@@ -10,7 +10,7 @@ import type {
   Trigger,
 } from "@jano/domain";
 
-import type { EmpresaCandidata, PaginaLeida } from "./web";
+import type { EmpresaCandidata, EnlaceInterno, PaginaLeida } from "./web";
 
 /**
  * Los agentes (ADR-002, spec 008 FR-010, FR-012): proponen con razonamiento y
@@ -44,6 +44,21 @@ export interface Puntuacion {
 
 export interface AccountScorer {
   puntuar(entrada: { icp: Icp; empresa: EmpresaCandidata; paginas: readonly PaginaLeida[] }): Promise<Puntuacion>;
+}
+
+/**
+ * Account Finder, antes de puntuar: de los enlaces de la portada, qué páginas
+ * internas leer (empleo, noticias, quiénes somos, oficinas) para juzgar el encaje
+ * y ver señales de compra. Solo elige entre los enlaces que recibe; el lector
+ * descarta cualquier otra URL.
+ */
+export interface SelectorDeEnlaces {
+  elegir(entrada: {
+    dominio: string;
+    portada: { readonly titulo: string | null; readonly texto: string };
+    enlaces: readonly EnlaceInterno[];
+    maximo: number;
+  }): Promise<readonly string[]>;
 }
 
 /** Contact Finder: un cargo y por qué; nunca el nombre ni el email de una persona real (FR-015). */
@@ -167,6 +182,7 @@ export interface Agentes {
   readonly orquestador: PlanificadorOrquestador;
   readonly icp: IcpStructurer;
   readonly cuentas: AccountScorer;
+  readonly enlaces: SelectorDeEnlaces;
   readonly contactos: ContactResolver;
   readonly redactor: DraftWriter;
   readonly respuestas: ReplyClassifier;

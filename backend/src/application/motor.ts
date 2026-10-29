@@ -1,13 +1,13 @@
 import type { Account, Contact, Prospect, ProspectEvent, ProspectStage, ReplyIntent, SequenceStep } from "@jano/domain";
 
-import { noEncontrado } from "../domain/errores";
+import { IaNoDisponible, noEncontrado } from "../domain/errores";
 import { escalar, menuDeAcciones, validarPropuesta } from "../domain/motor/orquestador";
 import { type Evaluacion, evaluarReglas } from "../domain/motor/reglas";
 import { pasoDeCambioDeRama, pasoDeSeguimiento, pendientes, planificarSecuencia, siguientePaso } from "../domain/motor/secuencias";
 import { inicioDelDiaEnMadrid } from "../domain/motor/tiempo";
 import { comprobarTransicion } from "../domain/motor/transiciones";
 import type { UnidadDeTrabajo } from "../ports/db";
-import type { PropuestaOrquestador, PuntoDeDecision } from "../ports/ia";
+import type { BorradorPaso, PropuestaOrquestador, PuntoDeDecision, RevisionCampana } from "../ports/ia";
 import type { NuevoEvento, PasoGuardado, ProspectGuardado } from "../ports/repositorios";
 import type { Servicios } from "./servicios";
 
@@ -398,9 +398,12 @@ export async function procesarPaso(uow: UnidadDeTrabajo, s: Servicios, paso: Pas
   switch (a.tipo) {
     case "cambiar_rama":
       await registrar(uow, p, eventoDecision(decision, paso));
-      await proponerCambioDeRama(uow, s, c, paso.day);
       // El paso consultivo queda en pausa hasta que decidas: aprobar el cambio lo omite.
-      await uow.prospects.actualizarPaso(paso.id, { scheduledFor: null });
+      // Sin borrador para el cambio, queda bloqueado: no se vuelve a decidir cada minuto.
+      await uow.prospects.actualizarPaso(
+        paso.id,
+        (await proponerCambioDeRama(uow, s, c, paso.day)) ? { scheduledFor: null } : { status: "blocked", error: "Sin borrador para el cambio de rama" },
+      );
       return;
     case "esperar_hasta":
       await registrar(uow, p, eventoDecision(decision, paso));
@@ -422,11 +425,28 @@ export async function procesarPaso(uow: UnidadDeTrabajo, s: Servicios, paso: Pas
   const previas = await comprobarReglas(uow, s, c, new Date(paso.createdAt), false);
   if (await noEnviar(uow, s, c, paso, previas)) return;
   const guardarrailes = await uow.cumplimiento.guardarrailes();
-  const borrador = await s.agentes.redactor.redactarPaso({
-    cuenta: c.cuenta,
-    contacto: destinatario(c.contacto),
-    paso: { titulo: paso.title, intencion: paso.intent, dia: paso.day, rama: paso.branch },
-  });
+  let borrador: BorradorPaso;
+  try {
+    borrador = await s.agentes.redactor.redactarPaso({
+      cuenta: c.cuenta,
+      contacto: destinatario(c.contacto),
+      paso: { titulo: paso.title, intencion: paso.intent, dia: paso.day, rama: paso.branch },
+    });
+  } catch (e) {
+    // Sin borrador válido (tope diario, salida inválida, Bedrock caído): el paso queda
+    // bloqueado con el motivo y la decisión pasa a una persona. Nada sale sin borrador.
+    if (!(e instanceof IaNoDisponible)) throw e;
+    await uow.prospects.actualizarPaso(paso.id, { status: "blocked", error: e.message });
+    await registrar(uow, p, {
+      agent: "outreach",
+      type: "blocked",
+      summary: `No hay borrador de «${paso.title}»: queda en tus manos`,
+      reasoning: e.message,
+      rulesChecked: previas.comprobadas,
+      stepId: paso.id,
+    });
+    return;
+  }
   const conBorrador: PasoGuardado = { ...paso, subject: borrador.asunto, body: borrador.cuerpo };
   await uow.prospects.actualizarPaso(paso.id, { subject: borrador.asunto, body: borrador.cuerpo, draftReasoning: borrador.razonamiento });
 
@@ -448,18 +468,33 @@ export async function procesarPaso(uow: UnidadDeTrabajo, s: Servicios, paso: Pas
   });
 }
 
-/** El primer paso de la rama por señal, redactado y esperando tu aprobación (US4b). */
-async function proponerCambioDeRama(uow: UnidadDeTrabajo, s: Servicios, c: Contexto, diaActual: number): Promise<void> {
+/**
+ * El primer paso de la rama por señal, redactado y esperando tu aprobación (US4b).
+ * `false` si no se pudo redactar: no hay nada que aprobar.
+ */
+async function proponerCambioDeRama(uow: UnidadDeTrabajo, s: Servicios, c: Contexto, diaActual: number): Promise<boolean> {
   const pasos = await uow.prospects.pasos(c.prospect.id);
-  if (pasos.some((x) => x.proposal === "cambio_de_rama" && x.status === "awaiting_approval")) return;
+  if (pasos.some((x) => x.proposal === "cambio_de_rama" && x.status === "awaiting_approval")) return true;
   const nuevo = pasoDeCambioDeRama(pasos, "trigger", diaActual);
+  let b: BorradorPaso;
+  try {
+    b = await s.agentes.redactor.redactarPaso({
+      cuenta: c.cuenta,
+      contacto: destinatario(c.contacto),
+      paso: { titulo: nuevo.title, intencion: nuevo.intent, dia: nuevo.day, rama: "trigger" },
+    });
+  } catch (e) {
+    if (!(e instanceof IaNoDisponible)) throw e;
+    await registrar(uow, c.prospect, {
+      agent: "outreach",
+      type: "rejected",
+      summary: "No hay borrador para el cambio de rama: la decisión queda en tus manos",
+      reasoning: e.message,
+    });
+    return false;
+  }
   const [guardado] = await uow.prospects.insertarPasos(c.prospect.id, [nuevo]);
-  if (!guardado) return;
-  const b = await s.agentes.redactor.redactarPaso({
-    cuenta: c.cuenta,
-    contacto: destinatario(c.contacto),
-    paso: { titulo: nuevo.title, intencion: nuevo.intent, dia: nuevo.day, rama: "trigger" },
-  });
+  if (!guardado) return false;
   await uow.prospects.actualizarPaso(guardado.id, { subject: b.asunto, body: b.cuerpo, draftReasoning: b.razonamiento });
   await registrar(uow, c.prospect, {
     agent: "outreach",
@@ -469,6 +504,7 @@ async function proponerCambioDeRama(uow: UnidadDeTrabajo, s: Servicios, c: Conte
     message: { channel: "email", subject: b.asunto, body: b.cuerpo },
     stepId: guardado.id,
   });
+  return true;
 }
 
 /**
@@ -515,12 +551,20 @@ export async function revisarCampanas(uow: UnidadDeTrabajo, s: Servicios, campai
     const campana = await uow.campanas.obtener(id);
     const previa = await uow.campanas.ultimaRevision(id);
     if (!campana || (previa && Date.parse(previa.at) >= desde.getTime())) continue;
-    const revision = await s.agentes.orquestador.revisarCampana({
-      campaignName: campana.name,
-      actuales: await uow.vistas.actuales(id),
-      cuentasEncontradas: campana.stats.accountsFound,
-      aplazadosHoy: await uow.vistas.aplazadosDesde(desde),
-    });
+    let revision: RevisionCampana;
+    try {
+      revision = await s.agentes.orquestador.revisarCampana({
+        campaignName: campana.name,
+        actuales: await uow.vistas.actuales(id),
+        cuentasEncontradas: campana.stats.accountsFound,
+        aplazadosHoy: await uow.vistas.aplazadosDesde(desde),
+      });
+    } catch (e) {
+      // Sin lectura hoy: se intentará en la próxima pasada con actividad.
+      if (!(e instanceof IaNoDisponible)) throw e;
+      console.warn(JSON.stringify({ msg: "revision_sin_lectura", campaign_id: id, motivo: e.motivo }));
+      continue;
+    }
     await uow.campanas.guardarRevision(id, revision);
   }
 }
