@@ -74,6 +74,7 @@ locals {
   state_arn        = "arn:aws:s3:::${var.state_bucket}"
   state_keys_arn   = "arn:aws:s3:::${var.state_bucket}/${var.state_key_prefix}*"
   lock_arn         = "arn:aws:dynamodb:${local.region}:${local.account_id}:table/${var.lock_table}"
+  motor_param_arn  = "arn:aws:ssm:${local.region}:${local.account_id}:parameter/jano/${var.environment}/motor/*"
   google_oauth_arn = "arn:aws:secretsmanager:${local.region}:${local.account_id}:secret:jano/${var.environment}/google-oauth-*"
 }
 
@@ -197,13 +198,20 @@ resource "aws_iam_role_policy" "plan_state" {
         Sid    = "SinPlanosDeDatos"
         Effect = "Deny"
         Action = [
-          "ssm:GetParameter", "ssm:GetParameters", "ssm:GetParametersByPath",
           "sqs:ReceiveMessage", "rds-db:connect", "rds-data:*",
           "cognito-idp:ListUsers", "cognito-idp:AdminGetUser", "cognito-idp:ListUsersInGroup",
           "logs:GetLogEvents", "logs:FilterLogEvents", "logs:StartQuery",
           "kinesis:GetRecords", "athena:GetQueryResults",
         ]
         Resource = "*"
+      },
+      {
+        # El plan refresca el parámetro del despertador del motor (spec 008), que solo
+        # guarda la hora del próximo paso; ningún otro parámetro.
+        Sid         = "SinParametrosSalvoMotor"
+        Effect      = "Deny"
+        Action      = ["ssm:GetParameter", "ssm:GetParameters", "ssm:GetParametersByPath"]
+        NotResource = [local.motor_param_arn]
       },
       {
         # El plan lee con `data` el client OAuth de Google (spec 006); ningún otro secreto.
