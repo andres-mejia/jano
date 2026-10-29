@@ -60,20 +60,21 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 locals {
-  prefix          = "jano-${var.environment}"
-  account_id      = data.aws_caller_identity.current.account_id
-  region          = data.aws_region.current.region
-  oidc_aud        = "token.actions.githubusercontent.com:aud"
-  oidc_sub        = "token.actions.githubusercontent.com:sub"
-  oidc_wf         = "token.actions.githubusercontent.com:job_workflow_ref"
-  sub_prefix      = var.oidc_sub_prefix != "" ? var.oidc_sub_prefix : "repo:${var.github_repo}"
-  sub_main        = "${local.sub_prefix}:ref:refs/heads/main"
-  sub_pr          = "${local.sub_prefix}:pull_request"
-  deploy_wf_refs  = [for f in var.deploy_workflows : "${var.github_repo}/.github/workflows/${f}@refs/heads/main"]
-  plan_wf_pattern = "${var.github_repo}/.github/workflows/infra-plan.yml@*"
-  state_arn       = "arn:aws:s3:::${var.state_bucket}"
-  state_keys_arn  = "arn:aws:s3:::${var.state_bucket}/${var.state_key_prefix}*"
-  lock_arn        = "arn:aws:dynamodb:${local.region}:${local.account_id}:table/${var.lock_table}"
+  prefix           = "jano-${var.environment}"
+  account_id       = data.aws_caller_identity.current.account_id
+  region           = data.aws_region.current.region
+  oidc_aud         = "token.actions.githubusercontent.com:aud"
+  oidc_sub         = "token.actions.githubusercontent.com:sub"
+  oidc_wf          = "token.actions.githubusercontent.com:job_workflow_ref"
+  sub_prefix       = var.oidc_sub_prefix != "" ? var.oidc_sub_prefix : "repo:${var.github_repo}"
+  sub_main         = "${local.sub_prefix}:ref:refs/heads/main"
+  sub_pr           = "${local.sub_prefix}:pull_request"
+  deploy_wf_refs   = [for f in var.deploy_workflows : "${var.github_repo}/.github/workflows/${f}@refs/heads/main"]
+  plan_wf_pattern  = "${var.github_repo}/.github/workflows/infra-plan.yml@*"
+  state_arn        = "arn:aws:s3:::${var.state_bucket}"
+  state_keys_arn   = "arn:aws:s3:::${var.state_bucket}/${var.state_key_prefix}*"
+  lock_arn         = "arn:aws:dynamodb:${local.region}:${local.account_id}:table/${var.lock_table}"
+  google_oauth_arn = "arn:aws:secretsmanager:${local.region}:${local.account_id}:secret:jano/${var.environment}/google-oauth-*"
 }
 
 # ── Rol de escritura ────────────────────────────────────────────────
@@ -173,6 +174,9 @@ resource "aws_iam_role_policy" "plan_state" {
     Version = "2012-10-17"
     Statement = [
       { Sid = "ListarEstado", Effect = "Allow", Action = ["s3:ListBucket"], Resource = local.state_arn },
+      # ReadOnlyAccess no incluye GetSecretValue: el plan lo necesita para el client OAuth
+      # de Google (spec 006), y solo ese secreto (ver `SinSecretosSalvoGoogleOAuth`).
+      { Sid = "LeerGoogleOAuth", Effect = "Allow", Action = ["secretsmanager:GetSecretValue"], Resource = local.google_oauth_arn },
       { Sid = "LeerEstado", Effect = "Allow", Action = ["s3:GetObject"], Resource = local.state_keys_arn },
       { Sid = "Bloqueo", Effect = "Allow", Action = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem"], Resource = local.lock_arn },
       {
@@ -206,7 +210,7 @@ resource "aws_iam_role_policy" "plan_state" {
         Sid         = "SinSecretosSalvoGoogleOAuth"
         Effect      = "Deny"
         Action      = ["secretsmanager:GetSecretValue"]
-        NotResource = ["arn:aws:secretsmanager:${local.region}:${local.account_id}:secret:jano/${var.environment}/google-oauth-*"]
+        NotResource = [local.google_oauth_arn]
       },
       {
         Sid      = "SinEscrituras"
