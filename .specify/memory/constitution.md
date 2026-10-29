@@ -2,7 +2,7 @@
 
 <!--
 Fuente de verdad: AGENTS.md. Este fichero es la versión que leen los comandos
-de Spec Kit (/speckit.specify, /speckit.plan, /speckit.tasks, /speckit.implement).
+de Spec Kit (/speckit-specify, /speckit-plan, /speckit-tasks, /speckit-implement).
 Si los dos discrepan, manda AGENTS.md y se corrige aquí.
 -->
 
@@ -33,11 +33,11 @@ Un criterio se cierra con el comando y su salida, no con prosa. `pnpm type-check
 
 ## Flujo con Spec Kit
 
-1. `/speckit.specify` crea `specs/NNN-<verbo-objeto>/spec.md` con escenarios, requisitos (FR) y criterios de éxito medibles. Sin decisiones de implementación.
-2. `/speckit.clarify` solo si quedan `[NEEDS CLARIFICATION]`; las dudas que puede decidir Andrés en un minuto se le preguntan, no se asumen.
-3. `/speckit.plan` fija stack, módulos, contratos y datos, y pasa la **puerta de constitución**: cada principio de arriba con un sí o una justificación.
-4. `/speckit.tasks` produce tareas pequeñas, cada una con su comando de verificación.
-5. `/speckit.implement` ejecuta por fases; al terminar cada fase: tests, type-check, build, commit en la rama de la feature y parada para el OK.
+1. `/speckit-specify` crea `specs/NNN-<verbo-objeto>/spec.md` con escenarios, requisitos (FR) y criterios de éxito medibles. Sin decisiones de implementación.
+2. `/speckit-clarify` solo si quedan `[NEEDS CLARIFICATION]`; las dudas que puede decidir Andrés en un minuto se le preguntan, no se asumen.
+3. `/speckit-plan` fija stack, módulos, contratos y datos, y pasa la **puerta de constitución**: cada principio de arriba con un sí o una justificación.
+4. `/speckit-tasks` produce tareas pequeñas, cada una con su comando de verificación.
+5. `/speckit-implement` ejecuta por fases; al terminar cada fase: tests, type-check, build, commit en la rama de la feature y parada para el OK.
 
 ## Gobierno
 
