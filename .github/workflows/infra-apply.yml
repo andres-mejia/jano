@@ -65,7 +65,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: pnpm
-      - name: Construir el backend (Terraform empaqueta backend/dist/api y dist/motor)
+      - name: Construir el backend (Terraform empaqueta backend/dist/api, dist/motor y dist/cuentas)
         run: |
           pnpm install --frozen-lockfile
           pnpm --filter @jano/backend build

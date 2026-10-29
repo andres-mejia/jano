@@ -1,5 +1,6 @@
-# Lambdas del backend de Jano: la API (spec 007) y el motor (spec 008, ADR-003).
-# La API sirve el contrato; EventBridge Scheduler invoca el motor cada minuto.
+# Lambdas del backend de Jano: la API (spec 007), el motor (spec 008, ADR-003) y el
+# trabajador de cuentas (spec 008 fase B). La API sirve el contrato; EventBridge
+# Scheduler invoca el motor cada minuto; SQS alimenta el trabajador de cuentas.
 #
 #   - Entran en Aurora por Data API con el rol `jano_api` (sin BYPASSRLS ni tablas
 #     propias): el aislamiento por fila de la base de datos se aplica también a ellas.
@@ -14,6 +15,13 @@
 #     vencidos termina sin despertar Aurora. La API lo adelanta al planificar.
 #   - MAIL_ALLOWLIST: fuera de producción solo se escribe a esas direcciones
 #     (spec 008 FR-021); vacía, no sale ningún correo.
+#   - Agentes (spec 008 FR-010): AGENTES=bedrock usa la Converse API con el perfil de
+#     inferencia BEDROCK_MODEL_ID (eu.*). El permiso se limita a ese perfil y a su
+#     modelo en las regiones de la UE, y al modelo solo a través del perfil.
+#   - Buscar cuentas no cabe en los 29 s de la API: la API encola en
+#     jano-<env>-cuentas y el trabajador lee las webs y puntúa, un mensaje por
+#     invocación y 5 a la vez como mucho (webs ajenas y cuota de Bedrock). Tres
+#     intentos y a la DLQ.
 
 terraform {
   required_providers {
@@ -54,6 +62,47 @@ variable "demo_day_minutes" {
   validation {
     condition     = var.demo_day_minutes >= 1 && var.demo_day_minutes <= 1440
     error_message = "demo_day_minutes va de 1 a 1440."
+  }
+}
+
+variable "cuentas_codigo_dir" {
+  type        = string
+  description = "Directorio con el index.mjs empaquetado del trabajador de cuentas (backend/dist/cuentas), con sus prompts."
+}
+
+variable "agentes" {
+  type        = string
+  default     = "deterministas"
+  description = "Agentes del motor (AGENTES): «bedrock» (Converse API, webs reales y OpenStreetMap) o «deterministas» (sin modelo ni red)."
+  validation {
+    condition     = contains(["bedrock", "deterministas"], var.agentes)
+    error_message = "agentes es «bedrock» o «deterministas»."
+  }
+}
+
+variable "bedrock_model_id" {
+  type        = string
+  default     = "eu.anthropic.claude-sonnet-4-6"
+  description = "Perfil de inferencia geográfico de la UE (BEDROCK_MODEL_ID): los datos no salen de regiones de la UE."
+  validation {
+    condition     = startswith(var.bedrock_model_id, "eu.anthropic.")
+    error_message = "Solo perfiles de inferencia eu.anthropic.* (AGENTS.md §3: datos en la UE)."
+  }
+}
+
+variable "ia_daily_cap" {
+  type        = number
+  default     = 500
+  description = "Tope diario de llamadas al modelo por tenant (IA_TOPE_DIARIO, spec 008 FR-016)."
+}
+
+variable "cuentas_max_concurrency" {
+  type        = number
+  default     = 5
+  description = "Invocaciones simultáneas del trabajador de cuentas (concurrencia reservada y máximo del event source mapping)."
+  validation {
+    condition     = var.cuentas_max_concurrency >= 2 && var.cuentas_max_concurrency <= 20
+    error_message = "cuentas_max_concurrency va de 2 a 20."
   }
 }
 
@@ -128,19 +177,53 @@ variable "log_retention_days" {
   default = 30
 }
 
+data "aws_region" "actual" {}
+
 locals {
   function_name = "jano-${var.environment}-api"
   motor_name    = "jano-${var.environment}-motor"
-  # Lo que comparten la API y el motor: base de datos, lista blanca y despertador.
+  cuentas_name  = "jano-${var.environment}-cuentas"
+  # Lo que comparten la API, el motor y el trabajador: base de datos, lista blanca,
+  # despertador, agentes y cola de cuentas.
   entorno_motor = {
-    CLUSTER_ARN      = var.cluster_arn
-    DB_SECRET_ARN    = aws_secretsmanager_secret.api_db.arn
-    DB_NAME          = var.database_name
-    JANO_ENV         = var.environment
-    MAIL_ALLOWLIST   = var.mail_allowlist
-    DEMO_DAY_MINUTES = tostring(var.demo_day_minutes)
-    MOTOR_PARAMETER  = aws_ssm_parameter.despertador.name
+    CLUSTER_ARN       = var.cluster_arn
+    DB_SECRET_ARN     = aws_secretsmanager_secret.api_db.arn
+    DB_NAME           = var.database_name
+    JANO_ENV          = var.environment
+    MAIL_ALLOWLIST    = var.mail_allowlist
+    DEMO_DAY_MINUTES  = tostring(var.demo_day_minutes)
+    MOTOR_PARAMETER   = aws_ssm_parameter.despertador.name
+    AGENTES           = var.agentes
+    BEDROCK_MODEL_ID  = var.bedrock_model_id
+    IA_TOPE_DIARIO    = tostring(var.ia_daily_cap)
+    CUENTAS_QUEUE_URL = aws_sqs_queue.cuentas.url
   }
+  # El perfil de inferencia y el modelo al que enruta en cada región de la UE
+  # (eu.anthropic.claude-sonnet-4-6 → anthropic.claude-sonnet-4-6).
+  perfil_bedrock = "arn:aws:bedrock:${data.aws_region.actual.region}:${data.aws_caller_identity.actual.account_id}:inference-profile/${var.bedrock_model_id}"
+  modelo_bedrock = "arn:aws:bedrock:eu-*::foundation-model/${trimprefix(var.bedrock_model_id, "eu.")}"
+  # Las tres Lambdas llaman al modelo solo a través del perfil eu.* y encolan cuentas.
+  permisos_agentes = [
+    {
+      Sid      = "BedrockPerfilEu"
+      Effect   = "Allow"
+      Action   = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
+      Resource = local.perfil_bedrock
+    },
+    {
+      Sid       = "BedrockModeloViaPerfil"
+      Effect    = "Allow"
+      Action    = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
+      Resource  = local.modelo_bedrock
+      Condition = { StringEquals = { "bedrock:InferenceProfileArn" = local.perfil_bedrock } }
+    },
+    {
+      Sid      = "EncolarCuentas"
+      Effect   = "Allow"
+      Action   = ["sqs:SendMessage"]
+      Resource = aws_sqs_queue.cuentas.arn
+    },
+  ]
   # Las rutas concretas ganan a las comodín: el equipo va a sus casos de uso y el resto, a la demo.
   rutas_demo = var.demo_data ? ["GET /v1/{proxy+}", "POST /v1/{proxy+}", "PUT /v1/{proxy+}", "DELETE /v1/{proxy+}"] : []
 }
@@ -179,7 +262,7 @@ resource "aws_iam_role_policy" "api" {
   role = aws_iam_role.api.id
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
+    Statement = concat([
       {
         Sid      = "DataApi"
         Effect   = "Allow"
@@ -214,7 +297,7 @@ resource "aws_iam_role_policy" "api" {
         Action   = ["logs:CreateLogStream", "logs:PutLogEvents"]
         Resource = "${aws_cloudwatch_log_group.api.arn}:*"
       },
-    ]
+    ], local.permisos_agentes)
   })
 }
 
@@ -301,7 +384,7 @@ resource "aws_iam_role_policy" "motor" {
   role = aws_iam_role.motor.id
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
+    Statement = concat([
       {
         Sid      = "DataApi"
         Effect   = "Allow"
@@ -326,7 +409,7 @@ resource "aws_iam_role_policy" "motor" {
         Action   = ["logs:CreateLogStream", "logs:PutLogEvents"]
         Resource = "${aws_cloudwatch_log_group.motor.arn}:*"
       },
-    ]
+    ], local.permisos_agentes)
   })
 }
 
@@ -409,6 +492,119 @@ resource "aws_scheduler_schedule" "motor" {
   }
 }
 
+
+# ── Trabajador de cuentas (spec 008 fase B) ──────────────────────────────
+
+# Cola estándar con DLQ: SQS puede entregar dos veces y el trabajador es idempotente
+# por campaña y dominio. La visibilidad cubre de sobra una invocación de 120 s.
+resource "aws_sqs_queue" "cuentas_dlq" {
+  name                      = "${local.cuentas_name}-dlq"
+  message_retention_seconds = 1209600 # 14 días para revisar qué falló
+  sqs_managed_sse_enabled   = true
+  tags                      = { Component = "cuentas" }
+}
+
+resource "aws_sqs_queue" "cuentas" {
+  name                       = local.cuentas_name
+  visibility_timeout_seconds = 720 # 6 × el timeout de la Lambda, como recomienda AWS para SQS
+  message_retention_seconds  = 345600
+  sqs_managed_sse_enabled    = true
+  redrive_policy             = jsonencode({ deadLetterTargetArn = aws_sqs_queue.cuentas_dlq.arn, maxReceiveCount = 3 })
+  tags                       = { Component = "cuentas" }
+}
+
+resource "aws_iam_role" "cuentas" {
+  name = "${local.cuentas_name}-role"
+  assume_role_policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [{ Effect = "Allow", Action = "sts:AssumeRole", Principal = { Service = "lambda.amazonaws.com" } }]
+  })
+  tags = { Component = "cuentas" }
+}
+
+resource "aws_iam_role_policy" "cuentas" {
+  name = "${local.cuentas_name}-policy"
+  role = aws_iam_role.cuentas.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = concat([
+      {
+        Sid      = "DataApi"
+        Effect   = "Allow"
+        Action   = ["rds-data:ExecuteStatement", "rds-data:BeginTransaction", "rds-data:CommitTransaction", "rds-data:RollbackTransaction"]
+        Resource = var.cluster_arn
+      },
+      {
+        Sid      = "SecretoDelRolApi"
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
+        Resource = aws_secretsmanager_secret.api_db.arn
+      },
+      {
+        Sid      = "ConsumirCuentas"
+        Effect   = "Allow"
+        Action   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes", "sqs:ChangeMessageVisibility"]
+        Resource = aws_sqs_queue.cuentas.arn
+      },
+      {
+        Sid      = "Logs"
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogStream", "logs:PutLogEvents"]
+        Resource = "${aws_cloudwatch_log_group.cuentas.arn}:*"
+      },
+    ], local.permisos_agentes)
+  })
+}
+
+resource "aws_cloudwatch_log_group" "cuentas" {
+  name              = "/aws/lambda/${local.cuentas_name}"
+  retention_in_days = var.log_retention_days
+  tags              = { Component = "cuentas" }
+}
+
+data "archive_file" "cuentas" {
+  type        = "zip"
+  source_dir  = var.cuentas_codigo_dir
+  output_path = "${path.module}/cuentas.zip"
+}
+
+resource "aws_lambda_function" "cuentas" {
+  function_name                  = local.cuentas_name
+  description                    = "Trabajador de cuentas de Jano: busca candidatas, lee sus webs y las puntúa (spec 008 US2)."
+  role                           = aws_iam_role.cuentas.arn
+  handler                        = "index.handler"
+  runtime                        = "nodejs22.x"
+  timeout                        = 120 # robots.txt y 4 páginas de 10 s, más dos llamadas al modelo con reintento
+  memory_size                    = 512 # linkedom y Readability sobre páginas de hasta 512 KB
+  reserved_concurrent_executions = var.cuentas_max_concurrency
+  filename                       = data.archive_file.cuentas.output_path
+  source_code_hash               = data.archive_file.cuentas.output_base64sha256
+  tags                           = { Component = "cuentas" }
+
+  environment {
+    variables = local.entorno_motor
+  }
+
+  depends_on = [aws_cloudwatch_log_group.cuentas]
+}
+
+# Un mensaje por invocación: un fallo solo devuelve a la cola ese mensaje. El máximo
+# del mapping coincide con la concurrencia reservada para que SQS no reciba
+# rechazos por throttling (que gastarían intentos camino de la DLQ).
+resource "aws_lambda_event_source_mapping" "cuentas" {
+  event_source_arn        = aws_sqs_queue.cuentas.arn
+  function_name           = aws_lambda_function.cuentas.arn
+  batch_size              = 1
+  function_response_types = ["ReportBatchItemFailures"]
+
+  scaling_config {
+    maximum_concurrency = var.cuentas_max_concurrency
+  }
+}
+
 output "function_name" { value = aws_lambda_function.api.function_name }
 output "motor_function_name" { value = aws_lambda_function.motor.function_name }
 output "api_secret_arn" { value = aws_secretsmanager_secret.api_db.arn }
+output "cuentas_function_name" { value = aws_lambda_function.cuentas.function_name }
+output "cuentas_queue_url" { value = aws_sqs_queue.cuentas.url }
+output "cuentas_dlq_url" { value = aws_sqs_queue.cuentas_dlq.url }
