@@ -8,6 +8,10 @@ on:
     branches: [main]
     paths:
       - 'infra/**'
+      # La Lambda de la API empaqueta backend/ y los paquetes del workspace (@jano/domain, @jano/demo).
+      - 'backend/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
       - '.github/workflows/infra-apply.yml'
       - '.github/scripts/guardia_plan.py'
   workflow_dispatch:
