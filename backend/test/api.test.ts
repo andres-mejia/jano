@@ -190,3 +190,33 @@ test("demo: el resto del contrato sale de @jano/demo, con la misma comprobación
   const sinDemo = await manejar({ routeKey: "GET /v1/{proxy+}", rawPath: "/v1/dashboard/summary", requestContext: { requestId: "r", authorizer: { jwt: { claims: { sub: ana(), "custom:tenant_id": A.id } } } } });
   assert.equal(sinDemo.statusCode, 404);
 });
+
+test("tenants de demo: ven datos de ejemplo aunque la ruta real exista, salvo equipo", async () => {
+  const { resolverDemo } = await import("@jano/demo");
+  const conTenants = crearManejador({
+    db: base.db,
+    directorio,
+    servicios: serviciosDePrueba().servicios,
+    demo: (m, p, b) => resolverDemo(m, p, b, 0),
+    tenantsDemo: new Set([A.id]),
+  });
+  const pedirComo = async (quien: string, tenant: string, routeKey: string) => {
+    const rawPath = routeKey.split(" ")[1] ?? "";
+    const r = await conTenants({ routeKey, rawPath, requestContext: { requestId: "r", authorizer: { jwt: { claims: { sub: quien, "custom:tenant_id": tenant } } } } });
+    return { status: r.statusCode, body: JSON.parse(r.body) as Record<string, unknown> };
+  };
+  // A está en la lista: el centro de mando sale de los datos de ejemplo, no de su base de datos vacía.
+  const a = await pedirComo(ana(), A.id, "GET /v1/dashboard/summary");
+  assert.equal(a.status, 200);
+  const ejemplo = (await resolverDemo("GET", "/dashboard/summary", undefined, 0)) as Record<string, unknown>;
+  assert.deepEqual(a.body["kpis"], ejemplo["kpis"]);
+  // Equipo sigue siendo real para A.
+  const t = await pedirComo(ana(), A.id, "GET /v1/tenant");
+  assert.equal(t.body["id"], A.id);
+  // B no está en la lista: su centro de mando es el real.
+  const b = await pedirComo(idsB["bruno@brisa.example"] ?? "", B.id, "GET /v1/dashboard/summary");
+  assert.equal(b.status, 200);
+  assert.notDeepEqual(b.body["kpis"], a.body["kpis"]);
+  // Sin acceso, tampoco hay demo.
+  assert.equal((await pedirComo("sub-desconocido", A.id, "GET /v1/dashboard/summary")).status, 403);
+});

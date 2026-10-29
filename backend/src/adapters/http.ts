@@ -98,6 +98,12 @@ export interface Dependencias {
    * (spec 003). Solo en dev y para demos; sin esto, esas rutas dan 404.
    */
   readonly demo?: (method: string, path: string, body: unknown) => Promise<unknown>;
+  /**
+   * Tenants que siguen viendo los datos de ejemplo en todo el contrato salvo equipo
+   * (`/tenant`), aunque exista la ruta real: la demo comercial no se rompe mientras la
+   * prueba de concepto corre en otro tenant. Requiere `demo`.
+   */
+  readonly tenantsDemo?: ReadonlySet<string>;
 }
 
 const ESTADO: Record<TipoDeError, number> = { prohibido: 403, no_encontrado: 404, conflicto: 409, invalido: 400 };
@@ -324,10 +330,10 @@ export function crearManejador(deps: Dependencias) {
       }
     }
 
-    const ruta = RUTAS[evento.routeKey] ?? rutaDemo(evento, deps);
-    if (!ruta) return json(404, { title: "No encontrado", status: 404 });
-
     const sesion = sesionDe(evento);
+    const deEjemplo = !!sesion && !!deps.tenantsDemo?.has(sesion.tenantId) && !evento.rawPath?.startsWith("/v1/tenant");
+    const ruta = (deEjemplo ? rutaDemo(evento, deps) : null) ?? RUTAS[evento.routeKey] ?? rutaDemo(evento, deps);
+    if (!ruta) return json(404, { title: "No encontrado", status: 404 });
     if (!sesion) return json(401, { title: "Sin sesión", status: 401 });
 
     const log = (msg: string, extra: Record<string, unknown> = {}) =>

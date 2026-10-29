@@ -59,4 +59,6 @@ module "backend_api" {
   # Comodín de demo para lo que el backend aún no sirva; con la spec 008 lo sirve todo
   # y pasa a false en la fase D (T042), cuando el tenant de prueba esté dado de alta.
   demo_data = true
+  # La demo comercial sigue con datos de ejemplo; la prueba de concepto va en otro tenant.
+  demo_tenants = ["tenant-rumbonorte"]
 }

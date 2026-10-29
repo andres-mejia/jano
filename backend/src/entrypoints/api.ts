@@ -16,5 +16,11 @@ export const handler = crearManejador({
   directorio: new CognitoDirectorio(requerida(env, "USER_POOL_ID")),
   servicios: serviciosDesdeEntorno(env),
   // DEMO_DATA=on solo en dev: las rutas del contrato que el backend aún no sirve, con datos de ejemplo.
-  ...(env["DEMO_DATA"] === "on" ? { demo: (m: string, p: string, b: unknown) => resolverDemo(m, p, b, 0) } : {}),
+  // DEMO_TENANTS: tenants que ven datos de ejemplo en todo el contrato (la demo comercial).
+  ...(env["DEMO_DATA"] === "on"
+    ? {
+        demo: (m: string, p: string, b: unknown) => resolverDemo(m, p, b, 0),
+        tenantsDemo: new Set((env["DEMO_TENANTS"] ?? "").split(",").map((t) => t.trim()).filter(Boolean)),
+      }
+    : {}),
 });

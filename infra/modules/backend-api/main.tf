@@ -117,6 +117,12 @@ variable "demo_data" {
   description = "Sirve el resto del contrato con datos de ejemplo (@jano/demo) por rutas comodín. Solo dev, hasta la spec 003."
 }
 
+variable "demo_tenants" {
+  type        = list(string)
+  default     = []
+  description = "Tenants que ven datos de ejemplo en todo el contrato salvo equipo, aunque la ruta real exista (la demo comercial). Requiere demo_data."
+}
+
 variable "log_retention_days" {
   type    = number
   default = 30
@@ -240,6 +246,7 @@ resource "aws_lambda_function" "api" {
     variables = merge(local.entorno_motor, {
       USER_POOL_ID = var.user_pool_id
       DEMO_DATA    = var.demo_data ? "on" : "off"
+      DEMO_TENANTS = join(",", var.demo_tenants)
     })
   }
 
