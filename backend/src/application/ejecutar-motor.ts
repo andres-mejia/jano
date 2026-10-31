@@ -1,4 +1,5 @@
 import type { Db } from "../ports/db";
+import { conTenant } from "./contexto-tenant";
 import { procesarVencidos } from "./motor";
 import type { Servicios } from "./servicios";
 
@@ -31,11 +32,13 @@ export async function ejecutarMotor(db: Db, s: Servicios, lote = LOTE): Promise<
   let tenants = 0;
   for (const tenantId of agenda.vencidos) {
     if (procesados >= lote) break;
-    const r = await db.enTenant(tenantId, async (uow) => {
-      // Un tenant suspendido no opera: sus pasos esperan a que se reactive.
-      if ((await uow.equipo.tenant())?.status !== "active") return { procesados: 0 };
-      return procesarVencidos(uow, s, lote - procesados);
-    });
+    const r = await conTenant(tenantId, () =>
+      db.enTenant(tenantId, async (uow) => {
+        // Un tenant suspendido no opera: sus pasos esperan a que se reactive.
+        if ((await uow.equipo.tenant())?.status !== "active") return { procesados: 0 };
+        return procesarVencidos(uow, s, lote - procesados);
+      }),
+    );
     procesados += r.procesados;
     tenants++;
     console.log(JSON.stringify({ msg: "motor_tenant", tenant_id: tenantId, procesados: r.procesados }));

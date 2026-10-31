@@ -29,6 +29,7 @@ import type {
 
 import type { PasoNuevo } from "../domain/motor/secuencias";
 import type { RevisionCampana } from "./ia";
+import type { EmpresaCandidata } from "./web";
 
 /**
  * Persistencia del motor (spec 008). Igual que el equipo: todo dentro de la
@@ -77,7 +78,11 @@ export interface NuevoContacto {
 
 export interface RepositorioCuentas {
   dominios(campaignId: string): Promise<Set<string>>;
-  insertar(c: NuevaCuenta): Promise<Account>;
+  /** `null` si el dominio ya estaba en la campaña: analizar dos veces la misma candidata no la duplica. */
+  insertar(c: NuevaCuenta): Promise<Account | null>;
+  /** Candidatas de una búsqueda guardadas después de `desde` (caché de 24 h de FR-013b). */
+  candidatasEnCache(clave: string, desde: Date): Promise<EmpresaCandidata[] | null>;
+  guardarCandidatas(clave: string, empresas: readonly EmpresaCandidata[], en: Date): Promise<void>;
   obtener(id: string): Promise<Account | null>;
   listar(campaignId: string, filtro: { status: AccountStatus | null; limite: number }): Promise<Account[]>;
   /** Cambia las que están en `desde`; devuelve los ids cambiados. */
@@ -206,6 +211,13 @@ export interface RepositorioCumplimiento {
   suprimir(email: string, source: "enlace_baja" | "respuesta" | "manual", prospectId: string | null): Promise<void>;
   contactos(): Promise<{ total: number; conOrigen: number; baseValidada: number }>;
   bajas(): Promise<{ total: number; atendidas: number }>;
+}
+
+/** Uso del modelo por tenant y día (spec 008 FR-016). `dia` es la fecha en Europe/Madrid (AAAA-MM-DD). */
+export interface RepositorioConsumo {
+  /** Suma una llamada si el día no ha llegado a `tope`; `false` si ya llegó y no hay que llamar. */
+  reservarLlamada(dia: string, tope: number): Promise<boolean>;
+  anotar(dia: string, uso: { readonly tokensEntrada: number; readonly tokensSalida: number; readonly costeUsd: number }): Promise<void>;
 }
 
 export interface Proyecciones {

@@ -1,8 +1,10 @@
 import type { Servicios } from "../src/application/servicios";
+import { ColaEnMemoria } from "../src/adapters/deterministas/cola";
 import { DeterministicMailSender } from "../src/adapters/deterministas/correo";
 import { agentesDeterministas } from "../src/adapters/deterministas/ia";
 import { DespertadorEnMemoria, relojDelSistema } from "../src/adapters/deterministas/reloj";
 import { DeterministicCompanySource, DeterministicWebReader } from "../src/adapters/deterministas/web";
+import { ManualCompanySource } from "../src/adapters/web/osm";
 import { crearListaBlanca } from "../src/domain/motor/lista-blanca";
 import type { Agentes } from "../src/ports/ia";
 import type { Reloj } from "../src/ports/reloj";
@@ -12,11 +14,13 @@ export const LISTA_BLANCA = "demo.jano@correo.example";
 
 /**
  * Servicios del motor para tests: adaptadores deterministas (infraestructura), el
- * dominio real. Devuelve también el correo y el despertador para inspeccionarlos.
+ * dominio real. Devuelve también el correo, el despertador y la cola de cuentas
+ * para inspeccionarlos (la cola se vacía con el trabajador real).
  */
 export function serviciosDePrueba(opciones: { reloj?: Reloj; minutosPorDia?: number; agentes?: Partial<Agentes>; lista?: string | null } = {}) {
   const correo = new DeterministicMailSender();
   const despertador = new DespertadorEnMemoria();
+  const cola = new ColaEnMemoria();
   const reloj = opciones.reloj ?? relojDelSistema;
   const lista = opciones.lista === undefined ? LISTA_BLANCA : opciones.lista;
   const servicios: Servicios = {
@@ -24,6 +28,8 @@ export function serviciosDePrueba(opciones: { reloj?: Reloj; minutosPorDia?: num
     correo,
     web: new DeterministicWebReader(reloj),
     empresas: new DeterministicCompanySource(),
+    manual: new ManualCompanySource(),
+    cola,
     reloj,
     despertador,
     config: {
@@ -32,5 +38,5 @@ export function serviciosDePrueba(opciones: { reloj?: Reloj; minutosPorDia?: num
       conexiones: [{ kind: "crm", name: "CRM o Excel", detail: "Exportación a Excel (CSV)", status: "connected", lastCheckedAt: null }],
     },
   };
-  return { servicios, correo, despertador };
+  return { servicios, correo, despertador, cola };
 }

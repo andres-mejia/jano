@@ -64,6 +64,7 @@ __pycache__/
 .credentials/
 infra/modules/backend-api/api.zip
 infra/modules/backend-api/motor.zip
+infra/modules/backend-api/cuentas.zip
 
 # Copias de trabajo de agentes de Claude Code
 .claude/worktrees/
